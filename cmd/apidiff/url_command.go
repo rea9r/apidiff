@@ -40,7 +40,8 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				Scope:        common.scope,
 				View:         common.view,
 				Summary:      common.summary,
-				IgnorePaths:  common.ignorePaths,
+				FailOn:       common.failOn,
+				IgnorePaths:  append([]string(nil), common.ignorePaths...),
 				OnlyBreaking: common.onlyBreaking,
 				NoColor:      common.noColor,
 			})

@@ -145,6 +145,60 @@ func TestRun_ScopeBothText(t *testing.T) {
 	}
 }
 
+func TestRun_FailOnNone_WithDiffs(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, _, err := RunWithOptions(Options{
+		Format:  "text",
+		FailOn:  FailOnNone,
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitOK {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+}
+
+func TestRun_FailOnBreaking_WithOnlyChanged(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, _, err := RunWithOptions(Options{
+		Format:  "text",
+		FailOn:  FailOnBreaking,
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitOK {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+}
+
+func TestRun_FailOnBreaking_WithBreakingDiff(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"age":"20"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
+
+	code, _, err := RunWithOptions(Options{
+		Format:  "text",
+		FailOn:  FailOnBreaking,
+		OldPath: oldPath,
+		NewPath: newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+}
+
 func writeTempJSON(t *testing.T, content string, fileName string) string {
 	t.Helper()
 

@@ -40,6 +40,7 @@ Common flags (`apidiff` and `apidiff url`):
 | `--scope diff\|both` | Output scope (`diff`: diff only, `both`: old/new + diff) | `diff` |
 | `--view unified\|semantic` | Text diff style (`unified` is Git-like line diff) | `unified` |
 | `--summary auto\|always\|never` | Summary visibility (`auto`: semantic=on, unified=off) | `auto` |
+| `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
 | `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--no-color` | Disable colored text output | `false` |
@@ -89,16 +90,160 @@ Force summary on unified view:
 go run ./cmd/apidiff --view unified --summary always testdata/old.json testdata/new.json
 ```
 
+Fail only when breaking changes are detected:
+
+```bash
+go run ./cmd/apidiff --fail-on breaking testdata/old.json testdata/new.json
+```
+
 URL comparison with auth header and timeout:
 
 ```bash
 go run ./cmd/apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
 
+## Output Samples
+
+Default output (`--view unified`, GitHub-like patch):
+
+```text
+--- old
++++ new
+@@ -1,12 +1,13 @@
+ {
+   "items": [
+     "a",
+-    "b"
++    "c",
++    "d"
+   ],
+   "user": {
+-    "age": "20",
+-    "email": "taro@example.com",
+-    "name": "Taro"
++    "age": 20,
++    "name": "Hanako",
++    "phone": "090-xxxx-xxxx"
+   }
+ }
+```
+
+Semantic output (`--view semantic --summary always`):
+
+```text
+~ items[1]: "b" -> "c"
++ items[2]: "d"
+- user.email: "taro@example.com"
+! user.age: string -> number
+~ user.name: "Taro" -> "Hanako"
++ user.phone: "090-xxxx-xxxx"
+
+Summary:
+  added: 2
+  removed: 1
+  changed: 2
+  type_changed: 1
+```
+
+Full context output (`--scope both --view semantic --summary always`):
+
+```text
+=== OLD ===
+{
+  "items": [
+    "a",
+    "b"
+  ],
+  "user": {
+    "age": "20",
+    "email": "taro@example.com",
+    "name": "Taro"
+  }
+}
+
+=== NEW ===
+{
+  "items": [
+    "a",
+    "c",
+    "d"
+  ],
+  "user": {
+    "age": 20,
+    "name": "Hanako",
+    "phone": "090-xxxx-xxxx"
+  }
+}
+
+=== DIFF ===
+~ items[1]: "b" -> "c"
++ items[2]: "d"
+- user.email: "taro@example.com"
+! user.age: string -> number
+~ user.name: "Taro" -> "Hanako"
++ user.phone: "090-xxxx-xxxx"
+
+Summary:
+  added: 2
+  removed: 1
+  changed: 2
+  type_changed: 1
+```
+
+Machine-readable output (`--format json`):
+
+```json
+{
+  "diffs": [
+    {
+      "type": "changed",
+      "path": "items[1]",
+      "old_value": "b",
+      "new_value": "c"
+    },
+    {
+      "type": "added",
+      "path": "items[2]",
+      "new_value": "d"
+    },
+    {
+      "type": "removed",
+      "path": "user.email",
+      "old_value": "taro@example.com"
+    },
+    {
+      "type": "type_changed",
+      "path": "user.age",
+      "old_value": "20",
+      "new_value": 20,
+      "old_type": "string",
+      "new_type": "number"
+    },
+    {
+      "type": "changed",
+      "path": "user.name",
+      "old_value": "Taro",
+      "new_value": "Hanako"
+    },
+    {
+      "type": "added",
+      "path": "user.phone",
+      "new_value": "090-xxxx-xxxx"
+    }
+  ],
+  "summary": {
+    "added": 2,
+    "removed": 1,
+    "changed": 2,
+    "type_changed": 1
+  }
+}
+```
+
 ## Exit Codes
 
 - `0`: no differences
-- `1`: differences found
+- `1`: differences found (based on `--fail-on` policy)
 - `2`: execution error
 
 ## Development

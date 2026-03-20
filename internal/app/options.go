@@ -5,6 +5,7 @@ type Options struct {
 	Scope        string
 	View         string
 	Summary      string
+	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
 	NoColor      bool
@@ -17,6 +18,7 @@ type CompareOptions struct {
 	Scope        string
 	View         string
 	Summary      string
+	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
 	NoColor      bool
@@ -28,6 +30,7 @@ func (o Options) CompareOptions() CompareOptions {
 		Scope:        o.Scope,
 		View:         o.View,
 		Summary:      o.Summary,
+		FailOn:       o.FailOn,
 		IgnorePaths:  o.IgnorePaths,
 		OnlyBreaking: o.OnlyBreaking,
 		NoColor:      o.NoColor,

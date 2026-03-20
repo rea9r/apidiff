@@ -49,7 +49,7 @@ func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		return exitError, "", err
 	}
 
-	if len(diffs) > 0 {
+	if HasFailureByMode(diffs, opts.FailOn) {
 		return exitDiffFound, out, nil
 	}
 	return exitOK, out, nil
@@ -74,6 +74,9 @@ func validateCompareOptions(opts CompareOptions) error {
 	}
 	if opts.Summary != "" && !output.IsSupportedSummary(opts.Summary) {
 		return fmt.Errorf("invalid summary mode %q (allowed: auto, always, never)", opts.Summary)
+	}
+	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {
+		return fmt.Errorf("invalid fail-on mode %q (allowed: none, breaking, any)", opts.FailOn)
 	}
 	return nil
 }

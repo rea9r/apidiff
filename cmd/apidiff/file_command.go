@@ -14,6 +14,7 @@ func runFileCompare(common *commonFlagValues, exitCode *int) func(*cobra.Command
 			Scope:        common.scope,
 			View:         common.view,
 			Summary:      common.summary,
+			FailOn:       common.failOn,
 			IgnorePaths:  append([]string(nil), common.ignorePaths...),
 			OnlyBreaking: common.onlyBreaking,
 			NoColor:      common.noColor,
