@@ -60,7 +60,9 @@ func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		return exitError, "", err
 	}
 
-	if HasFailureByMode(diffs, opts.FailOn) {
+	hasFailure := HasFailureByMode(diffs, opts.FailOn)
+	out = decorateTextResult(opts.Format, opts.FailOn, hasFailure, diffs, out)
+	if hasFailure {
 		return exitDiffFound, out, nil
 	}
 	return exitOK, out, nil
@@ -84,7 +86,9 @@ func RunWithDiffs(diffs []diff.Diff, opts CompareOptions) (int, string, error) {
 		return exitError, "", err
 	}
 
-	if HasFailureByMode(filtered, opts.FailOn) {
+	hasFailure := HasFailureByMode(filtered, opts.FailOn)
+	out = decorateTextResult(opts.Format, opts.FailOn, hasFailure, filtered, out)
+	if hasFailure {
 		return exitDiffFound, out, nil
 	}
 	return exitOK, out, nil

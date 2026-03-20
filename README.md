@@ -205,6 +205,7 @@ This repository includes a working example workflow: [`.github/workflows/apidiff
 
 For practical production patterns, see:
 - [`docs/ci-use-cases.md`](docs/ci-use-cases.md)
+- [`docs/ux-scenarios.md`](docs/ux-scenarios.md)
 
 Core command used in the workflow:
 
