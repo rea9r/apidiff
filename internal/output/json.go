@@ -23,52 +23,32 @@ type jsonSummary struct {
 }
 
 type jsonResult struct {
-	Old     any          `json:"old,omitempty"`
-	New     any          `json:"new,omitempty"`
 	Diffs   []jsonDiff   `json:"diffs,omitempty"`
 	Summary *jsonSummary `json:"summary,omitempty"`
 }
 
 func FormatJSON(diffs []diff.Diff) (string, error) {
-	return RenderJSONWithOptions(nil, nil, diffs, JSONOptions{Scope: ScopeDiff})
+	return RenderJSON(diffs)
 }
 
-type JSONOptions struct {
-	Scope string
-}
-
-func RenderJSONWithOptions(oldValue, newValue any, diffs []diff.Diff, opts JSONOptions) (string, error) {
-	scope := opts.Scope
-	if scope == "" {
-		scope = ScopeDiff
-	}
-
+func RenderJSON(diffs []diff.Diff) (string, error) {
 	result := jsonResult{
 		Diffs: make([]jsonDiff, 0, len(diffs)),
 	}
-	if scope == ScopeBoth {
-		result.Old = oldValue
-		result.New = newValue
-	}
+	result.Summary = toJSONSummaryPtr(diff.Summarize(diffs))
 
-	if scope == ScopeDiff || scope == ScopeBoth {
-		result.Summary = toJSONSummaryPtr(diff.Summarize(diffs))
-
-		for _, d := range diffs {
-			jd := jsonDiff{
-				Type:     d.Type,
-				Path:     d.Path,
-				OldValue: d.OldValue,
-				NewValue: d.NewValue,
-			}
-			if d.Type == diff.TypeChanged {
-				jd.OldType = diff.ValueType(d.OldValue)
-				jd.NewType = diff.ValueType(d.NewValue)
-			}
-			result.Diffs = append(result.Diffs, jd)
+	for _, d := range diffs {
+		jd := jsonDiff{
+			Type:     d.Type,
+			Path:     d.Path,
+			OldValue: d.OldValue,
+			NewValue: d.NewValue,
 		}
-	} else {
-		result.Diffs = nil
+		if d.Type == diff.TypeChanged {
+			jd.OldType = diff.ValueType(d.OldValue)
+			jd.NewType = diff.ValueType(d.NewValue)
+		}
+		result.Diffs = append(result.Diffs, jd)
 	}
 
 	data, err := json.MarshalIndent(result, "", "  ")

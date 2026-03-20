@@ -2,9 +2,3 @@
 - user.email: "a@example.com"
 ~ user.name: "Taro" -> "Hanako"
 ! user.age: string -> number
-
-Summary:
-  added: 1
-  removed: 1
-  changed: 1
-  type_changed: 1

@@ -11,9 +11,6 @@ func runFileCompare(common *commonFlagValues, exitCode *int) func(*cobra.Command
 	return func(_ *cobra.Command, positionalArgs []string) error {
 		opts := app.Options{
 			Format:       common.format,
-			Scope:        common.scope,
-			View:         common.view,
-			Summary:      common.summary,
 			FailOn:       common.failOn,
 			IgnorePaths:  append([]string(nil), common.ignorePaths...),
 			OnlyBreaking: common.onlyBreaking,

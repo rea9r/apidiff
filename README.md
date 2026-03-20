@@ -37,9 +37,6 @@ Common flags (`apidiff` and `apidiff url`):
 | Flag | Description | Default |
 | --- | --- | --- |
 | `--format text\|json` | Output format | `text` |
-| `--scope diff\|both` | Output scope (`diff`: diff only, `both`: old/new + diff) | `diff` |
-| `--view unified\|semantic` | Text diff style (`unified` is Git-like line diff) | `unified` |
-| `--summary auto\|always\|never` | Summary visibility (`auto`: semantic=on, unified=off) | `auto` |
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
 | `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
@@ -72,24 +69,6 @@ Show only breaking changes:
 go run ./cmd/apidiff --only-breaking testdata/old.json testdata/new.json
 ```
 
-Show full context (old/new + diff):
-
-```bash
-go run ./cmd/apidiff --scope both testdata/old.json testdata/new.json
-```
-
-Use semantic diff view (path-based):
-
-```bash
-go run ./cmd/apidiff --view semantic testdata/old.json testdata/new.json
-```
-
-Force summary on unified view:
-
-```bash
-go run ./cmd/apidiff --view unified --summary always testdata/old.json testdata/new.json
-```
-
 Fail only when breaking changes are detected:
 
 ```bash
@@ -104,7 +83,7 @@ go run ./cmd/apidiff url --timeout 3s --header "Authorization: Bearer xxx" https
 
 ## Output Samples
 
-Default output (`--view unified`, GitHub-like patch):
+Default output (GitHub-like patch):
 
 ```text
 --- old
@@ -126,68 +105,6 @@ Default output (`--view unified`, GitHub-like patch):
 +    "phone": "090-xxxx-xxxx"
    }
  }
-```
-
-Semantic output (`--view semantic --summary always`):
-
-```text
-~ items[1]: "b" -> "c"
-+ items[2]: "d"
-- user.email: "taro@example.com"
-! user.age: string -> number
-~ user.name: "Taro" -> "Hanako"
-+ user.phone: "090-xxxx-xxxx"
-
-Summary:
-  added: 2
-  removed: 1
-  changed: 2
-  type_changed: 1
-```
-
-Full context output (`--scope both --view semantic --summary always`):
-
-```text
-=== OLD ===
-{
-  "items": [
-    "a",
-    "b"
-  ],
-  "user": {
-    "age": "20",
-    "email": "taro@example.com",
-    "name": "Taro"
-  }
-}
-
-=== NEW ===
-{
-  "items": [
-    "a",
-    "c",
-    "d"
-  ],
-  "user": {
-    "age": 20,
-    "name": "Hanako",
-    "phone": "090-xxxx-xxxx"
-  }
-}
-
-=== DIFF ===
-~ items[1]: "b" -> "c"
-+ items[2]: "d"
-- user.email: "taro@example.com"
-! user.age: string -> number
-~ user.name: "Taro" -> "Hanako"
-+ user.phone: "090-xxxx-xxxx"
-
-Summary:
-  added: 2
-  removed: 1
-  changed: 2
-  type_changed: 1
 ```
 
 Machine-readable output (`--format json`):

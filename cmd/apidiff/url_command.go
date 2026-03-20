@@ -37,9 +37,6 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 
 			code, out, err := app.RunWithValues(oldValue, newValue, app.CompareOptions{
 				Format:       common.format,
-				Scope:        common.scope,
-				View:         common.view,
-				Summary:      common.summary,
 				FailOn:       common.failOn,
 				IgnorePaths:  append([]string(nil), common.ignorePaths...),
 				OnlyBreaking: common.onlyBreaking,

@@ -2,9 +2,6 @@ package app
 
 type Options struct {
 	Format       string
-	Scope        string
-	View         string
-	Summary      string
 	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
@@ -15,9 +12,6 @@ type Options struct {
 
 type CompareOptions struct {
 	Format       string
-	Scope        string
-	View         string
-	Summary      string
 	FailOn       string
 	IgnorePaths  []string
 	OnlyBreaking bool
@@ -27,9 +21,6 @@ type CompareOptions struct {
 func (o Options) CompareOptions() CompareOptions {
 	return CompareOptions{
 		Format:       o.Format,
-		Scope:        o.Scope,
-		View:         o.View,
-		Summary:      o.Summary,
 		FailOn:       o.FailOn,
 		IgnorePaths:  o.IgnorePaths,
 		OnlyBreaking: o.OnlyBreaking,
