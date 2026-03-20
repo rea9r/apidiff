@@ -2,7 +2,14 @@ name: apidiff-example
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   success-case:
@@ -90,6 +97,53 @@ jobs:
         with:
           name: apidiff-success-result
           path: apidiff-success-result.json
+
+      - name: Comment success result on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          marker="<!-- apidiff-example-success -->"
+          body_file="$(mktemp)"
+
+          {
+            echo "$marker"
+            echo "## apidiff example: non-breaking pass"
+            echo
+            echo "- expected exit code: \`0\`"
+            echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
+            echo
+            echo "<details><summary>summary</summary>"
+            echo
+            echo '```json'
+            python3 -c 'import json; print(json.dumps(json.load(open("apidiff-success-result.json", "r", encoding="utf-8")).get("summary", {}), indent=2))'
+            echo '```'
+            echo "</details>"
+          } > "$body_file"
+          payload_file="$(mktemp)"
+          jq -Rs '{body: .}' < "$body_file" > "$payload_file"
+
+          comments_json="$(mktemp)"
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" > "$comments_json"
+          comment_id="$(
+            jq -r '.[] | select((.body // "") | contains("<!-- apidiff-example-success -->")) | .id' "$comments_json" | head -n 1
+          )"
+
+          if [ -n "$comment_id" ]; then
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${{ github.repository }}/issues/comments/${comment_id}" \
+              --input "$payload_file" >/dev/null
+          else
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              --input "$payload_file" >/dev/null
+          fi
 
       - name: Add success summary
         run: |
@@ -193,6 +247,53 @@ jobs:
         with:
           name: apidiff-failure-result
           path: apidiff-failure-result.json
+
+      - name: Comment failure result on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          marker="<!-- apidiff-example-failure -->"
+          body_file="$(mktemp)"
+
+          {
+            echo "$marker"
+            echo "## apidiff example: breaking-change detection"
+            echo
+            echo "- expected exit code: \`1\`"
+            echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
+            echo
+            echo "<details><summary>summary</summary>"
+            echo
+            echo '```json'
+            python3 -c 'import json; print(json.dumps(json.load(open("apidiff-failure-result.json", "r", encoding="utf-8")).get("summary", {}), indent=2))'
+            echo '```'
+            echo "</details>"
+          } > "$body_file"
+          payload_file="$(mktemp)"
+          jq -Rs '{body: .}' < "$body_file" > "$payload_file"
+
+          comments_json="$(mktemp)"
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" > "$comments_json"
+          comment_id="$(
+            jq -r '.[] | select((.body // "") | contains("<!-- apidiff-example-failure -->")) | .id' "$comments_json" | head -n 1
+          )"
+
+          if [ -n "$comment_id" ]; then
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${{ github.repository }}/issues/comments/${comment_id}" \
+              --input "$payload_file" >/dev/null
+          else
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              --input "$payload_file" >/dev/null
+          fi
 
       - name: Add failure summary
         run: |

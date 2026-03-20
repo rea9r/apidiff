@@ -12,6 +12,7 @@ const (
 	colorRed     = "\x1b[31m"
 	colorGreen   = "\x1b[32m"
 	colorYellow  = "\x1b[33m"
+	colorCyan    = "\x1b[36m"
 	colorMagenta = "\x1b[35m"
 )
 
@@ -71,10 +72,12 @@ func colorizeUnified(s string, useColor bool) string {
 	var b strings.Builder
 	for _, line := range lines {
 		switch {
-		case strings.HasPrefix(line, "+++"), strings.HasPrefix(line, "---"):
-			b.WriteString(colorMagenta + line + colorReset)
+		case strings.HasPrefix(line, "+++"):
+			b.WriteString(colorGreen + line + colorReset)
+		case strings.HasPrefix(line, "---"):
+			b.WriteString(colorRed + line + colorReset)
 		case strings.HasPrefix(line, "@@"):
-			b.WriteString(colorYellow + line + colorReset)
+			b.WriteString(colorCyan + line + colorReset)
 		case strings.HasPrefix(line, "+"):
 			b.WriteString(colorGreen + line + colorReset)
 		case strings.HasPrefix(line, "-"):
