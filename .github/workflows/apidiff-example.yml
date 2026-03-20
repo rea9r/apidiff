@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  example:
-    name: Example CI run (URL mode with mock APIs)
+  success-case:
+    name: Success case (non-breaking changes)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,93 @@ jobs:
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - id: diff
-        name: Compare mock API responses
+        name: Compare mock API responses (non-breaking)
+        run: |
+          set -euo pipefail
+
+          mkdir -p old-api new-api
+          cat > old-api/user.json <<'JSON'
+          {"user":{"name":"Taro","age":"20"}}
+          JSON
+          cat > new-api/user.json <<'JSON'
+          {"user":{"name":"Hanako","age":"20"}}
+          JSON
+
+          python3 -m http.server 18081 --bind 127.0.0.1 --directory old-api >/tmp/old-api.log 2>&1 &
+          OLD_PID=$!
+          python3 -m http.server 18082 --bind 127.0.0.1 --directory new-api >/tmp/new-api.log 2>&1 &
+          NEW_PID=$!
+
+          cleanup() {
+            kill "$OLD_PID" "$NEW_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          wait_for_server() {
+            local url="$1"
+            local log_file="$2"
+            for _ in $(seq 1 30); do
+              if curl -fsS "$url" >/dev/null; then
+                return 0
+              fi
+              sleep 0.2
+            done
+
+            echo "Server did not become ready: $url"
+            echo "--- $log_file ---"
+            cat "$log_file" || true
+            return 1
+          }
+
+          wait_for_server "http://127.0.0.1:18081/user.json" "/tmp/old-api.log"
+          wait_for_server "http://127.0.0.1:18082/user.json" "/tmp/new-api.log"
+
+          set +e
+          apidiff \
+            url \
+            --format json \
+            --fail-on breaking \
+            http://127.0.0.1:18081/user.json \
+            http://127.0.0.1:18082/user.json > apidiff-success-result.json
+          EXIT_CODE=$?
+          set -e
+
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          echo "apidiff exit code: $EXIT_CODE"
+
+      - name: Validate expected exit code
+        run: |
+          if [ "${{ steps.diff.outputs.exit_code }}" != "0" ]; then
+            echo "Expected exit code 0 for non-breaking case."
+            exit 1
+          fi
+
+      - name: Upload success artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apidiff-success-result
+          path: apidiff-success-result.json
+
+  failure-case:
+    name: Failure case (breaking changes)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install apidiff
+        run: go install ./cmd/apidiff
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - id: diff
+        name: Compare mock API responses (breaking)
         run: |
           set -euo pipefail
 
@@ -71,45 +157,22 @@ jobs:
             --format json \
             --fail-on breaking \
             http://127.0.0.1:18081/user.json \
-            http://127.0.0.1:18082/user.json > apidiff-result.json
+            http://127.0.0.1:18082/user.json > apidiff-failure-result.json
           EXIT_CODE=$?
           set -e
 
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           echo "apidiff exit code: $EXIT_CODE"
 
-      - name: Show result JSON
-        run: cat apidiff-result.json
-
-      - name: Upload result artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: apidiff-result
-          path: apidiff-result.json
-
-      - name: Add job summary
+      - name: Validate expected exit code
         run: |
-          {
-            echo "## apidiff result"
-            echo
-            echo "- exit code: `${{ steps.diff.outputs.exit_code }}`"
-            echo "- mode: `--fail-on breaking`"
-            echo
-            echo "<details><summary>JSON output</summary>"
-            echo
-            echo '```json'
-            cat apidiff-result.json
-            echo '```'
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Enforce fail policy
-        if: steps.diff.outputs.exit_code != '0'
-        run: |
-          code="${{ steps.diff.outputs.exit_code }}"
-          if [ "$code" = "1" ]; then
-            echo "Breaking changes detected by policy (--fail-on breaking)."
+          if [ "${{ steps.diff.outputs.exit_code }}" != "1" ]; then
+            echo "Expected exit code 1 for breaking case."
             exit 1
           fi
-          echo "apidiff execution error."
-          exit 2
+
+      - name: Upload failure artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apidiff-failure-result
+          path: apidiff-failure-result.json

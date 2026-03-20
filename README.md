@@ -175,8 +175,9 @@ Machine-readable output (`--format json`):
 
 This repository includes a working example workflow: [`.github/workflows/apidiff-example.yml`](.github/workflows/apidiff-example.yml)
 - It runs `apidiff url` against two mock HTTP APIs inside CI.
-- It always publishes `apidiff-result.json` as an artifact.
-- It writes the JSON output into the job summary for quick review.
+- It includes a success case (`non-breaking`, expected exit code `0`).
+- It includes a failure-detection case (`breaking`, expected exit code `1`).
+- It publishes JSON outputs as workflow artifacts.
 
 For practical production patterns, see:
 - [`docs/ci-use-cases.md`](docs/ci-use-cases.md)
