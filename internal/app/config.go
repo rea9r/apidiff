@@ -16,3 +16,21 @@ func (c config) diffOptions() diff.Options {
 		OnlyBreaking: c.onlyBreaking,
 	}
 }
+
+type Options struct {
+	Format       string
+	IgnorePaths  []string
+	OnlyBreaking bool
+	OldPath      string
+	NewPath      string
+}
+
+func (c config) toOptions() Options {
+	return Options{
+		Format:       c.format,
+		IgnorePaths:  c.ignorePaths,
+		OnlyBreaking: c.onlyBreaking,
+		OldPath:      c.oldPath,
+		NewPath:      c.newPath,
+	}
+}
