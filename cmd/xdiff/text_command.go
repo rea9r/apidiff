@@ -14,7 +14,7 @@ func newTextCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, positionalArgs []string) error {
 			code, out, err := app.RunTextWithOptions(app.Options{
-				Format:       common.format,
+				Format:       common.outputFormat,
 				FailOn:       common.failOn,
 				IgnorePaths:  append([]string(nil), common.ignorePaths...),
 				OnlyBreaking: common.onlyBreaking,

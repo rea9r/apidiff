@@ -32,7 +32,7 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				load(positionalArgs[0]),
 				load(positionalArgs[1]),
 				app.CompareOptions{
-					Format:       common.format,
+					Format:       common.outputFormat,
 					FailOn:       common.failOn,
 					IgnorePaths:  append([]string(nil), common.ignorePaths...),
 					OnlyBreaking: common.onlyBreaking,

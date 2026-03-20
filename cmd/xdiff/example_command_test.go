@@ -7,8 +7,8 @@ import (
 
 func TestBuildExampleOutput_Default(t *testing.T) {
 	out, sampleCode, err := buildExampleOutput(commonFlagValues{
-		format: "text",
-		failOn: "any",
+		outputFormat: "text",
+		failOn:       "any",
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)

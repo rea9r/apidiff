@@ -26,7 +26,7 @@ func newSpecCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 
 			diffs := spec.ComparePathsMethods(oldSpec, newSpec)
 			code, out, err := app.RunWithDiffs(diffs, app.CompareOptions{
-				Format:       common.format,
+				Format:       common.outputFormat,
 				FailOn:       common.failOn,
 				IgnorePaths:  append([]string(nil), common.ignorePaths...),
 				OnlyBreaking: common.onlyBreaking,

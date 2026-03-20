@@ -42,7 +42,7 @@ jobs:
       - name: Fail only on breaking changes
         run: |
           xdiff \
-            --format json \
+            --output-format json \
             --fail-on breaking \
             old.json \
             new.json > xdiff-result.json
@@ -80,7 +80,7 @@ jobs:
       - name: Compare staging/prod
         run: |
           xdiff url \
-            --format json \
+            --output-format json \
             --fail-on none \
             --header "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
             "https://stg.example.com/api/v1/users/1" \

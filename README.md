@@ -58,11 +58,11 @@ xdiff spec [flags] <old-spec> <new-spec>
 
 ## Flags
 
-Common flags (`xdiff`, `xdiff url`, and `xdiff spec`):
+Common flags (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 
 | Flag | Description | Default |
 | --- | --- | --- |
-| `--format text\|json` | Output format | `text` |
+| `--output-format text\|json` | Output format | `text` |
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
 | `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
@@ -80,7 +80,7 @@ URL command only:
 Output JSON for CI:
 
 ```bash
-xdiff --format json testdata/old.json testdata/new.json
+xdiff --output-format json testdata/old.json testdata/new.json
 ```
 
 Ignore noisy fields:
@@ -150,7 +150,7 @@ Default output (GitHub-like patch):
  }
 ```
 
-Machine-readable output (`--format json`):
+Machine-readable output (`--output-format json`):
 
 ```json
 {
@@ -229,7 +229,7 @@ Core command used in the workflow:
 
 ```bash
 xdiff url \
-  --format json \
+  --output-format json \
   --fail-on breaking \
   http://127.0.0.1:18081/user.json \
   http://127.0.0.1:18082/user.json > xdiff-result.json

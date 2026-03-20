@@ -40,7 +40,7 @@ func buildExampleOutput(common commonFlagValues) (string, int, error) {
 	}
 
 	code, rendered, err := app.RunWithValues(oldValue, newValue, app.CompareOptions{
-		Format:       common.format,
+		Format:       common.outputFormat,
 		FailOn:       common.failOn,
 		IgnorePaths:  append([]string(nil), common.ignorePaths...),
 		OnlyBreaking: common.onlyBreaking,
@@ -61,6 +61,6 @@ func buildExampleOutput(common commonFlagValues) (string, int, error) {
 	}
 	fmt.Fprintf(&b, "\nSample command exit code (with current --fail-on): %d\n", code)
 	b.WriteString("Tip:\n")
-	b.WriteString("  xdiff --format json testdata/old.json testdata/new.json\n")
+	b.WriteString("  xdiff --output-format json testdata/old.json testdata/new.json\n")
 	return b.String(), code, nil
 }

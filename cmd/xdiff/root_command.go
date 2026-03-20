@@ -29,7 +29,7 @@ const rootHelpExamples = `  # Local comparison (quickest)
   xdiff spec --fail-on breaking openapi-old.yaml openapi-new.yaml
 
   # CI usage
-  xdiff --format json --fail-on breaking testdata/old.json testdata/new.json`
+  xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json`
 
 func newRootCommand(exitCode *int) *cobra.Command {
 	commonFlags := newCommonFlags()

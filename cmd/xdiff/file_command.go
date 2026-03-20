@@ -10,7 +10,7 @@ import (
 func runFileCompare(common *commonFlagValues, exitCode *int) func(*cobra.Command, []string) error {
 	return func(_ *cobra.Command, positionalArgs []string) error {
 		opts := app.Options{
-			Format:       common.format,
+			Format:       common.outputFormat,
 			FailOn:       common.failOn,
 			IgnorePaths:  append([]string(nil), common.ignorePaths...),
 			OnlyBreaking: common.onlyBreaking,

@@ -43,14 +43,14 @@ func TestRunCLI_InvalidFormat(t *testing.T) {
 	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
 	newPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
-	code, err := runCLI([]string{"--format", "yaml", oldPath, newPath})
+	code, err := runCLI([]string{"--output-format", "yaml", oldPath, newPath})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 	if code != 2 {
 		t.Fatalf("exit code mismatch: got=%d want=2", code)
 	}
-	if !strings.Contains(err.Error(), "invalid format") {
+	if !strings.Contains(err.Error(), "invalid output format") {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
@@ -142,7 +142,7 @@ func TestRunCLI_Text_JSONFormat(t *testing.T) {
 	oldPath := writeCLIFile(t, "a\n", "old.txt")
 	newPath := writeCLIFile(t, "b\n", "new.txt")
 
-	code, err := runCLI([]string{"text", "--format", "json", oldPath, newPath})
+	code, err := runCLI([]string{"text", "--output-format", "json", oldPath, newPath})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}

@@ -103,7 +103,7 @@ func validateFileOptions(opts Options) error {
 
 func validateCompareOptions(opts CompareOptions) error {
 	if !output.IsSupportedFormat(opts.Format) {
-		return fmt.Errorf("invalid format %q (allowed: text, json)", opts.Format)
+		return fmt.Errorf("invalid output format %q (allowed: text, json)", opts.Format)
 	}
 	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {
 		return fmt.Errorf("invalid fail-on mode %q (allowed: none, breaking, any)", opts.FailOn)

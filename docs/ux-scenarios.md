@@ -50,7 +50,7 @@ Checkpoints:
 Command:
 
 ```bash
-xdiff --format json --fail-on breaking testdata/old.json testdata/new.json
+xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json
 ```
 
 Checkpoints:
