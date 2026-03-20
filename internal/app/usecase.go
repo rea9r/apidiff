@@ -9,22 +9,36 @@ import (
 	"github.com/rea9r/apidiff/internal/output"
 )
 
+type ValueLoader func() (any, error)
+
 func RunWithOptions(opts Options) (int, string, error) {
 	if err := validateFileOptions(opts); err != nil {
 		return exitError, "", err
 	}
 
-	oldValue, err := input.LoadJSONFile(opts.OldPath)
+	return RunWithValueLoaders(
+		func() (any, error) {
+			return input.LoadJSONFile(opts.OldPath)
+		},
+		func() (any, error) {
+			return input.LoadJSONFile(opts.NewPath)
+		},
+		opts.CompareOptions(),
+	)
+}
+
+func RunWithValueLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int, string, error) {
+	oldValue, err := oldLoader()
 	if err != nil {
 		return exitError, "", err
 	}
 
-	newValue, err := input.LoadJSONFile(opts.NewPath)
+	newValue, err := newLoader()
 	if err != nil {
 		return exitError, "", err
 	}
 
-	return RunWithValues(oldValue, newValue, opts.CompareOptions())
+	return RunWithValues(oldValue, newValue, opts)
 }
 
 func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, error) {
