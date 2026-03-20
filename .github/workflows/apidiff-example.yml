@@ -91,6 +91,23 @@ jobs:
           name: apidiff-success-result
           path: apidiff-success-result.json
 
+      - name: Add success summary
+        run: |
+          {
+            echo "## apidiff success case"
+            echo
+            echo "- expected exit code: \`0\`"
+            echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
+            echo "- artifact: \`apidiff-success-result\`"
+            echo
+            echo "<details><summary>JSON output</summary>"
+            echo
+            echo '```json'
+            cat apidiff-success-result.json
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   failure-case:
     name: Breaking-change detection (expected)
     runs-on: ubuntu-latest
@@ -176,3 +193,20 @@ jobs:
         with:
           name: apidiff-failure-result
           path: apidiff-failure-result.json
+
+      - name: Add failure summary
+        run: |
+          {
+            echo "## apidiff breaking-change detection case"
+            echo
+            echo "- expected exit code: \`1\`"
+            echo "- observed exit code: \`${{ steps.diff.outputs.exit_code }}\`"
+            echo "- artifact: \`apidiff-failure-result\`"
+            echo
+            echo "<details><summary>JSON output</summary>"
+            echo
+            echo '```json'
+            cat apidiff-failure-result.json
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -178,6 +178,7 @@ This repository includes a working example workflow: [`.github/workflows/apidiff
 - It includes a success case (`non-breaking`, expected exit code `0`).
 - It includes a failure-detection case (`breaking`, expected exit code `1`).
 - It publishes JSON outputs as workflow artifacts.
+- It writes observed/expected exit codes and JSON output to Job Summary.
 
 For practical production patterns, see:
 - [`docs/ci-use-cases.md`](docs/ci-use-cases.md)
