@@ -1,0 +1,34 @@
+{
+  "diffs": [
+    {
+      "type": "added",
+      "path": "user.phone",
+      "new_value": "090"
+    },
+    {
+      "type": "removed",
+      "path": "user.email",
+      "old_value": "a@example.com"
+    },
+    {
+      "type": "changed",
+      "path": "user.name",
+      "old_value": "Taro",
+      "new_value": "Hanako"
+    },
+    {
+      "type": "type_changed",
+      "path": "user.age",
+      "old_value": "20",
+      "new_value": 20,
+      "old_type": "string",
+      "new_type": "number"
+    }
+  ],
+  "summary": {
+    "added": 1,
+    "removed": 1,
+    "changed": 1,
+    "type_changed": 1
+  }
+}

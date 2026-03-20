@@ -1,0 +1,10 @@
+ADDED        user.phone                     "090"
+REMOVED      user.email                     "a@example.com"
+CHANGED      user.name                      "Taro" -> "Hanako"
+TYPE_CHANGED user.age                       string -> number
+
+Summary:
+  added: 1
+  removed: 1
+  changed: 1
+  type_changed: 1

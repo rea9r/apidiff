@@ -1,0 +1,30 @@
+package output
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/rea9r/apidiff/internal/diff"
+)
+
+func sampleDiffs() []diff.Diff {
+	return []diff.Diff{
+		{Type: diff.Added, Path: "user.phone", NewValue: "090"},
+		{Type: diff.Removed, Path: "user.email", OldValue: "a@example.com"},
+		{Type: diff.Changed, Path: "user.name", OldValue: "Taro", NewValue: "Hanako"},
+		{Type: diff.TypeChanged, Path: "user.age", OldValue: "20", NewValue: json.Number("20")},
+	}
+}
+
+func readGolden(t *testing.T, name string) string {
+	t.Helper()
+
+	path := filepath.Join("testdata", name)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read golden file %q: %v", path, err)
+	}
+	return string(data)
+}
