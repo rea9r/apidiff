@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# build artifacts
+bin/
+dist/
+
+# Go test / coverage
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# local-only files
+.env
+
+# ignore only if you are not intentionally using Go workspaces
+go.work
+go.work.sum
+
+# GoLand / IntelliJ
+.idea/
