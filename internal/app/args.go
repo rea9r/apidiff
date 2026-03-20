@@ -14,6 +14,8 @@ func parseArgs(args []string) (config, error) {
 	fs.SetOutput(io.Discard)
 
 	format := fs.String("format", "text", "output format: text or json")
+	var ignorePaths multiValueFlag
+	fs.Var(&ignorePaths, "ignore-path", "ignore diff by exact path (can be specified multiple times)")
 	if err := fs.Parse(flagArgs); err != nil {
 		return config{}, fmt.Errorf("failed to parse args: %w", err)
 	}
@@ -24,13 +26,14 @@ func parseArgs(args []string) (config, error) {
 
 	rest := fs.Args()
 	if len(rest) != 2 {
-		return config{}, fmt.Errorf("usage: apidiff [--format text|json] old.json new.json")
+		return config{}, fmt.Errorf("usage: apidiff [--format text|json] [--ignore-path path] old.json new.json")
 	}
 
 	return config{
-		format:  *format,
-		oldPath: rest[0],
-		newPath: rest[1],
+		format:      *format,
+		ignorePaths: ignorePaths,
+		oldPath:     rest[0],
+		newPath:     rest[1],
 	}, nil
 }
 
@@ -42,9 +45,24 @@ func normalizeLongFlags(args []string) []string {
 			normalized = append(normalized, "-format")
 		case strings.HasPrefix(arg, "--format="):
 			normalized = append(normalized, "-format="+strings.TrimPrefix(arg, "--format="))
+		case arg == "--ignore-path":
+			normalized = append(normalized, "-ignore-path")
+		case strings.HasPrefix(arg, "--ignore-path="):
+			normalized = append(normalized, "-ignore-path="+strings.TrimPrefix(arg, "--ignore-path="))
 		default:
 			normalized = append(normalized, arg)
 		}
 	}
 	return normalized
+}
+
+type multiValueFlag []string
+
+func (m *multiValueFlag) String() string {
+	return strings.Join(*m, ",")
+}
+
+func (m *multiValueFlag) Set(value string) error {
+	*m = append(*m, value)
+	return nil
 }

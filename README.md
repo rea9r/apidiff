@@ -7,6 +7,7 @@ API response diff tool written in Go.
 ```bash
 go run ./cmd/apidiff testdata/old.json testdata/new.json
 go run ./cmd/apidiff --format json testdata/old.json testdata/new.json
+go run ./cmd/apidiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
 ```
 
 Exit code:

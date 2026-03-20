@@ -1,6 +1,9 @@
 package app
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestParseArgs(t *testing.T) {
 	tests := []struct {
@@ -13,27 +16,40 @@ func TestParseArgs(t *testing.T) {
 			name: "default format",
 			args: []string{"old.json", "new.json"},
 			want: config{
-				format:  "text",
-				oldPath: "old.json",
-				newPath: "new.json",
+				format:      "text",
+				ignorePaths: nil,
+				oldPath:     "old.json",
+				newPath:     "new.json",
 			},
 		},
 		{
 			name: "format flag short style",
 			args: []string{"-format", "json", "old.json", "new.json"},
 			want: config{
-				format:  "json",
-				oldPath: "old.json",
-				newPath: "new.json",
+				format:      "json",
+				ignorePaths: nil,
+				oldPath:     "old.json",
+				newPath:     "new.json",
 			},
 		},
 		{
 			name: "format flag long style",
 			args: []string{"--format=json", "old.json", "new.json"},
 			want: config{
-				format:  "json",
-				oldPath: "old.json",
-				newPath: "new.json",
+				format:      "json",
+				ignorePaths: nil,
+				oldPath:     "old.json",
+				newPath:     "new.json",
+			},
+		},
+		{
+			name: "ignore path repeated",
+			args: []string{"--ignore-path", "user.updated_at", "--ignore-path=meta.request_id", "old.json", "new.json"},
+			want: config{
+				format:      "text",
+				ignorePaths: []string{"user.updated_at", "meta.request_id"},
+				oldPath:     "old.json",
+				newPath:     "new.json",
 			},
 		},
 		{
@@ -61,7 +77,7 @@ func TestParseArgs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parseArgs returned error: %v", err)
 			}
-			if got != tt.want {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("config mismatch: got=%+v want=%+v", got, tt.want)
 			}
 		})
