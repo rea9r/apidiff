@@ -85,7 +85,7 @@ run_xdiff() {
   set +e
   xdiff \
     url \
-    --format json \
+    --output-format json \
     --fail-on breaking \
     "$old_url" \
     "$new_url" > "$output_path"
