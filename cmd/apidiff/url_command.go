@@ -39,6 +39,7 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				Format:       common.format,
 				IgnorePaths:  common.ignorePaths,
 				OnlyBreaking: common.onlyBreaking,
+				NoColor:      common.noColor,
 			})
 			if writeErr := writeOutput(out); writeErr != nil {
 				return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))

@@ -39,6 +39,7 @@ Common flags (`apidiff` and `apidiff url`):
 | `--format text\|json` | Output format | `text` |
 | `--ignore-path <path>` | Ignore exact diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
+| `--no-color` | Disable colored text output | `false` |
 
 URL command only:
 

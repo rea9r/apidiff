@@ -9,6 +9,14 @@ import (
 )
 
 func FormatText(diffs []diff.Diff) string {
+	return FormatTextWithOptions(diffs, TextOptions{Color: false})
+}
+
+type TextOptions struct {
+	Color bool
+}
+
+func FormatTextWithOptions(diffs []diff.Diff, opts TextOptions) string {
 	summary := diff.Summarize(diffs)
 
 	var b strings.Builder
@@ -17,7 +25,7 @@ func FormatText(diffs []diff.Diff) string {
 		b.WriteString("No differences.\n")
 	} else {
 		for _, d := range diffs {
-			action := strings.ToUpper(string(d.Type))
+			action := colorizeAction(strings.ToUpper(string(d.Type)), d.Type, opts.Color)
 			path := d.Path
 			if path == "" {
 				path = "(root)"

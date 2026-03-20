@@ -11,14 +11,26 @@ const (
 	JSONFormat = "json"
 )
 
+type Options struct {
+	Format string
+	Color  bool
+}
+
 func Format(diffs []diff.Diff, format string) (string, error) {
-	switch format {
+	return FormatWithOptions(diffs, Options{
+		Format: format,
+		Color:  false,
+	})
+}
+
+func FormatWithOptions(diffs []diff.Diff, opts Options) (string, error) {
+	switch opts.Format {
 	case TextFormat:
-		return FormatText(diffs), nil
+		return FormatTextWithOptions(diffs, TextOptions{Color: opts.Color}), nil
 	case JSONFormat:
 		return FormatJSON(diffs)
 	default:
-		return "", fmt.Errorf("unsupported format %q", format)
+		return "", fmt.Errorf("unsupported format %q", opts.Format)
 	}
 }
 

@@ -38,7 +38,10 @@ func RunWithValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		OnlyBreaking: opts.OnlyBreaking,
 	})
 
-	out, err := output.Format(diffs, opts.Format)
+	out, err := output.FormatWithOptions(diffs, output.Options{
+		Format: opts.Format,
+		Color:  output.ShouldUseColor(opts.NoColor),
+	})
 	if err != nil {
 		return exitError, "", err
 	}

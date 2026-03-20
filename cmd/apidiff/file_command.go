@@ -13,6 +13,7 @@ func runFileCompare(common *commonFlagValues, exitCode *int) func(*cobra.Command
 			Format:       common.format,
 			IgnorePaths:  append([]string(nil), common.ignorePaths...),
 			OnlyBreaking: common.onlyBreaking,
+			NoColor:      common.noColor,
 			OldPath:      positionalArgs[0],
 			NewPath:      positionalArgs[1],
 		}
