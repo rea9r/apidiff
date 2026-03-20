@@ -6,14 +6,22 @@ API response diff tool written in Go.
 
 ## Quick Start
 
+Install once:
+
 ```bash
-go run ./cmd/apidiff testdata/old.json testdata/new.json
+go install ./cmd/apidiff
+```
+
+Then run:
+
+```bash
+apidiff testdata/old.json testdata/new.json
 ```
 
 Compare two URLs:
 
 ```bash
-go run ./cmd/apidiff url https://old.example.com/api https://new.example.com/api
+apidiff url https://old.example.com/api https://new.example.com/api
 ```
 
 ## Command Reference
@@ -54,31 +62,31 @@ URL command only:
 Output JSON for CI:
 
 ```bash
-go run ./cmd/apidiff --format json testdata/old.json testdata/new.json
+apidiff --format json testdata/old.json testdata/new.json
 ```
 
 Ignore noisy fields:
 
 ```bash
-go run ./cmd/apidiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
+apidiff --ignore-path user.updated_at --ignore-path meta.request_id testdata/old.json testdata/new.json
 ```
 
 Show only breaking changes:
 
 ```bash
-go run ./cmd/apidiff --only-breaking testdata/old.json testdata/new.json
+apidiff --only-breaking testdata/old.json testdata/new.json
 ```
 
 Fail only when breaking changes are detected:
 
 ```bash
-go run ./cmd/apidiff --fail-on breaking testdata/old.json testdata/new.json
+apidiff --fail-on breaking testdata/old.json testdata/new.json
 ```
 
 URL comparison with auth header and timeout:
 
 ```bash
-go run ./cmd/apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
+apidiff url --timeout 3s --header "Authorization: Bearer xxx" https://old.example.com/api https://new.example.com/api
 ```
 
 ## Output Samples
@@ -162,6 +170,45 @@ Machine-readable output (`--format json`):
 - `0`: no differences
 - `1`: differences found (based on `--fail-on` policy)
 - `2`: execution error
+
+## CI Example (GitHub Actions)
+
+This repository includes a working workflow: [`.github/workflows/apidiff.yml`](.github/workflows/apidiff.yml)
+
+Minimal pattern:
+
+```yaml
+name: apidiff
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install apidiff
+        run: go install ./cmd/apidiff
+
+      - name: Compare API fixtures (fail only on breaking)
+        run: |
+          apidiff \
+            --format json \
+            --fail-on breaking \
+            testdata/old.json \
+            testdata/new.json
+```
+
+If you want to inspect the JSON output even when differences exist, add `continue-on-error: true` to the step and upload or print the output separately.
 
 ## Development
 

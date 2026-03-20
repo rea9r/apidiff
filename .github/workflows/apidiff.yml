@@ -1,0 +1,42 @@
+name: apidiff
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  example:
+    name: Example CI run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install apidiff
+        run: go install ./cmd/apidiff
+
+      - name: Prepare sample inputs
+        run: |
+          cat > old.json <<'JSON'
+          {"user":{"name":"Taro","age":"20"}}
+          JSON
+          cat > new.json <<'JSON'
+          {"user":{"name":"Hanako","age":"20"}}
+          JSON
+
+      - name: Compare (fail only on breaking)
+        run: |
+          apidiff \
+            --format json \
+            --fail-on breaking \
+            old.json \
+            new.json > apidiff-result.json
+
+      - name: Show result
+        run: cat apidiff-result.json
+
