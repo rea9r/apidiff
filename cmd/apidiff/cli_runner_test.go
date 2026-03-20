@@ -106,8 +106,8 @@ func TestRunCLI_URL_SuccessDiffFound(t *testing.T) {
 }
 
 func TestRunCLI_Spec_NonBreaking(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{}}}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{},"post":{}}}}`, "new.json")
+	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
+	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")
 
 	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
@@ -119,8 +119,8 @@ func TestRunCLI_Spec_NonBreaking(t *testing.T) {
 }
 
 func TestRunCLI_Spec_Breaking(t *testing.T) {
-	oldPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{},"post":{}}}}`, "old.json")
-	newPath := writeCLIJSON(t, `{"openapi":"3.0.0","paths":{"/users":{"get":{}}}}`, "new.json")
+	oldPath := fixturePath("testdata/spec/breaking_old.yaml")
+	newPath := fixturePath("testdata/spec/breaking_new.yaml")
 
 	code, err := runCLI([]string{"spec", "--fail-on", "breaking", oldPath, newPath})
 	if err != nil {
@@ -171,11 +171,20 @@ func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
 }
 
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
+	return writeCLIFile(t, content, fileName)
+}
+
+func writeCLIFile(t *testing.T, content string, fileName string) string {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), fileName)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	normalized := strings.TrimSpace(content) + "\n"
+	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	return path
+}
+
+func fixturePath(path string) string {
+	return filepath.Clean(path)
 }

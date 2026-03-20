@@ -8,28 +8,14 @@ import (
 )
 
 func TestComparePathsMethods(t *testing.T) {
-	oldSpec := map[string]any{
-		"paths": map[string]any{
-			"/users": map[string]any{
-				"get":  map[string]any{},
-				"post": map[string]any{},
-			},
-			"/orders": map[string]any{
-				"get": map[string]any{},
-			},
-		},
-	}
-	newSpec := map[string]any{
-		"paths": map[string]any{
-			"/users": map[string]any{
-				"get":    map[string]any{},
-				"delete": map[string]any{},
-			},
-			"/products": map[string]any{
-				"post": map[string]any{},
-			},
-		},
-	}
+	oldSpec := specWithPaths(map[string][]string{
+		"/users":  {"get", "post"},
+		"/orders": {"get"},
+	})
+	newSpec := specWithPaths(map[string][]string{
+		"/users":    {"get", "delete"},
+		"/products": {"post"},
+	})
 
 	got := ComparePathsMethods(oldSpec, newSpec)
 	want := []diff.Diff{
@@ -41,5 +27,21 @@ func TestComparePathsMethods(t *testing.T) {
 
 	if d := cmp.Diff(want, got); d != "" {
 		t.Fatalf("ComparePathsMethods mismatch (-want +got):\n%s", d)
+	}
+}
+
+func specWithPaths(pathMethods map[string][]string) map[string]any {
+	paths := map[string]any{}
+	for path, methods := range pathMethods {
+		pathItem := map[string]any{}
+		for _, method := range methods {
+			pathItem[method] = map[string]any{}
+		}
+		paths[path] = pathItem
+	}
+
+	return map[string]any{
+		"openapi": "3.0.0",
+		"paths":   paths,
 	}
 }

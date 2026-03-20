@@ -7,11 +7,14 @@ import (
 )
 
 func TestLoadOpenAPISpecFile_JSON(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "openapi.json")
-	content := `{"openapi":"3.0.0","paths":{"/users":{"get":{}}}}`
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("failed to write temp spec: %v", err)
-	}
+	path := writeTempSpecFile(t, "openapi.json", `{
+  "openapi": "3.0.0",
+  "paths": {
+    "/users": {
+      "get": {}
+    }
+  }
+}`)
 
 	got, err := LoadOpenAPISpecFile(path)
 	if err != nil {
@@ -28,11 +31,12 @@ func TestLoadOpenAPISpecFile_JSON(t *testing.T) {
 }
 
 func TestLoadOpenAPISpecFile_YAML(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "openapi.yaml")
-	content := "openapi: 3.0.0\npaths:\n  /users:\n    get: {}\n"
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("failed to write temp spec: %v", err)
-	}
+	path := writeTempSpecFile(t, "openapi.yaml", `
+openapi: 3.0.0
+paths:
+  /users:
+    get: {}
+`)
 
 	got, err := LoadOpenAPISpecFile(path)
 	if err != nil {
@@ -50,4 +54,14 @@ func TestLoadOpenAPISpecFile_YAML(t *testing.T) {
 	if _, ok := paths["/users"]; !ok {
 		t.Fatalf("missing /users path: %#v", paths)
 	}
+}
+
+func writeTempSpecFile(t *testing.T, name string, content string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write temp spec: %v", err)
+	}
+	return path
 }
