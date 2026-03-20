@@ -174,41 +174,24 @@ Machine-readable output (`--format json`):
 ## CI Example (GitHub Actions)
 
 This repository includes a working workflow: [`.github/workflows/apidiff.yml`](.github/workflows/apidiff.yml)
+- It runs `apidiff url` against two mock HTTP APIs inside CI.
+- It always publishes `apidiff-result.json` as an artifact.
+- It writes the JSON output into the job summary for quick review.
 
-Minimal pattern:
+For practical production patterns, see:
+- [`docs/ci-use-cases.md`](docs/ci-use-cases.md)
 
-```yaml
-name: apidiff
+Core command used in the workflow:
 
-on:
-  pull_request:
-  workflow_dispatch:
-
-jobs:
-  example:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
-      - name: Install apidiff
-        run: go install ./cmd/apidiff
-
-      - name: Compare API fixtures (fail only on breaking)
-        run: |
-          apidiff \
-            --format json \
-            --fail-on breaking \
-            testdata/old.json \
-            testdata/new.json
+```bash
+apidiff url \
+  --format json \
+  --fail-on breaking \
+  http://127.0.0.1:18081/user.json \
+  http://127.0.0.1:18082/user.json > apidiff-result.json
 ```
 
-If you want to inspect the JSON output even when differences exist, add `continue-on-error: true` to the step and upload or print the output separately.
+Use the workflow file as the source of truth for a runnable setup.
 
 ## Development
 

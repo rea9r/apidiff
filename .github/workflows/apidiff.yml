@@ -6,7 +6,7 @@ on:
 
 jobs:
   example:
-    name: Example CI run
+    name: Example CI run (URL mode with mock APIs)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,23 +20,77 @@ jobs:
       - name: Install apidiff
         run: go install ./cmd/apidiff
 
-      - name: Prepare sample inputs
+      - id: diff
+        name: Compare mock API responses
         run: |
-          cat > old.json <<'JSON'
-          {"user":{"name":"Taro","age":"20"}}
+          set -euo pipefail
+
+          mkdir -p old-api new-api
+          cat > old-api/user.json <<'JSON'
+          {"user":{"name":"Taro","age":"20","email":"taro@example.com"}}
           JSON
-          cat > new.json <<'JSON'
-          {"user":{"name":"Hanako","age":"20"}}
+          cat > new-api/user.json <<'JSON'
+          {"user":{"name":"Hanako","age":"20","phone":"090-xxxx-xxxx"}}
           JSON
 
-      - name: Compare (fail only on breaking)
-        run: |
+          python3 -m http.server 18081 --bind 127.0.0.1 --directory old-api >/tmp/old-api.log 2>&1 &
+          OLD_PID=$!
+          python3 -m http.server 18082 --bind 127.0.0.1 --directory new-api >/tmp/new-api.log 2>&1 &
+          NEW_PID=$!
+
+          cleanup() {
+            kill "$OLD_PID" "$NEW_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          curl -fsS http://127.0.0.1:18081/user.json >/dev/null
+          curl -fsS http://127.0.0.1:18082/user.json >/dev/null
+
+          set +e
           apidiff \
+            url \
             --format json \
             --fail-on breaking \
-            old.json \
-            new.json > apidiff-result.json
+            http://127.0.0.1:18081/user.json \
+            http://127.0.0.1:18082/user.json > apidiff-result.json
+          EXIT_CODE=$?
+          set -e
 
-      - name: Show result
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          echo "apidiff exit code: $EXIT_CODE"
+
+      - name: Show result JSON
         run: cat apidiff-result.json
 
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apidiff-result
+          path: apidiff-result.json
+
+      - name: Add job summary
+        run: |
+          {
+            echo "## apidiff result"
+            echo
+            echo "- exit code: `${{ steps.diff.outputs.exit_code }}`"
+            echo "- mode: `--fail-on breaking`"
+            echo
+            echo "<details><summary>JSON output</summary>"
+            echo
+            echo '```json'
+            cat apidiff-result.json
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce fail policy
+        if: steps.diff.outputs.exit_code != '0'
+        run: |
+          code="${{ steps.diff.outputs.exit_code }}"
+          if [ "$code" = "1" ]; then
+            echo "Breaking changes detected by policy (--fail-on breaking)."
+            exit 1
+          fi
+          echo "apidiff execution error."
+          exit 2
