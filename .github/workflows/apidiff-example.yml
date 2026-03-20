@@ -255,6 +255,8 @@ jobs:
 
           success_summary="$(jq '.summary // {}' artifacts/success/apidiff-success-result.json)"
           failure_summary="$(jq '.summary // {}' artifacts/failure/apidiff-failure-result.json)"
+          success_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/success/apidiff-success-result.json)"
+          failure_top_diffs="$(jq '(.diffs // [])[:3]' artifacts/failure/apidiff-failure-result.json)"
 
           {
             echo "$marker"
@@ -272,10 +274,24 @@ jobs:
             echo '```'
             echo "</details>"
             echo
+            echo "<details><summary>Success case top diffs (up to 3)</summary>"
+            echo
+            echo '```json'
+            echo "$success_top_diffs"
+            echo '```'
+            echo "</details>"
+            echo
             echo "<details><summary>Failure case summary</summary>"
             echo
             echo '```json'
             echo "$failure_summary"
+            echo '```'
+            echo "</details>"
+            echo
+            echo "<details><summary>Failure case top diffs (up to 3)</summary>"
+            echo
+            echo '```json'
+            echo "$failure_top_diffs"
             echo '```'
             echo "</details>"
           } > "$body_file"

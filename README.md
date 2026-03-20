@@ -180,6 +180,7 @@ This repository includes a working example workflow: [`.github/workflows/apidiff
 - It publishes JSON outputs as workflow artifacts.
 - It writes observed/expected exit codes and JSON output to Job Summary.
 - On pull requests, it posts/updates a single consolidated PR comment with both cases.
+- The PR comment includes summaries and top diffs (up to 3) for each case.
 - On direct pushes to `main`, it runs without PR comments and keeps results in artifacts/summary.
 
 For practical production patterns, see:
