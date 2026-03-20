@@ -18,6 +18,12 @@ Then run:
 xdiff testdata/old.json testdata/new.json
 ```
 
+Show a quick runnable example with expected output:
+
+```bash
+xdiff --example
+```
+
 Compare two URLs:
 
 ```bash
