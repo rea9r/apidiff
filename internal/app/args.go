@@ -16,6 +16,7 @@ func parseArgs(args []string) (config, error) {
 	format := fs.String("format", "text", "output format: text or json")
 	var ignorePaths multiValueFlag
 	fs.Var(&ignorePaths, "ignore-path", "ignore diff by exact path (can be specified multiple times)")
+	onlyBreaking := fs.Bool("only-breaking", false, "show only breaking changes")
 	if err := fs.Parse(flagArgs); err != nil {
 		return config{}, fmt.Errorf("failed to parse args: %w", err)
 	}
@@ -26,14 +27,15 @@ func parseArgs(args []string) (config, error) {
 
 	rest := fs.Args()
 	if len(rest) != 2 {
-		return config{}, fmt.Errorf("usage: apidiff [--format text|json] [--ignore-path path] old.json new.json")
+		return config{}, fmt.Errorf("usage: apidiff [--format text|json] [--ignore-path path] [--only-breaking] old.json new.json")
 	}
 
 	return config{
-		format:      *format,
-		ignorePaths: ignorePaths,
-		oldPath:     rest[0],
-		newPath:     rest[1],
+		format:       *format,
+		ignorePaths:  ignorePaths,
+		onlyBreaking: *onlyBreaking,
+		oldPath:      rest[0],
+		newPath:      rest[1],
 	}, nil
 }
 
@@ -49,6 +51,8 @@ func normalizeLongFlags(args []string) []string {
 			normalized = append(normalized, "-ignore-path")
 		case strings.HasPrefix(arg, "--ignore-path="):
 			normalized = append(normalized, "-ignore-path="+strings.TrimPrefix(arg, "--ignore-path="))
+		case arg == "--only-breaking":
+			normalized = append(normalized, "-only-breaking")
 		default:
 			normalized = append(normalized, arg)
 		}

@@ -24,6 +24,9 @@ func Run(args []string) (int, string, error) {
 
 	diffs := diff.Compare(oldValue, newValue)
 	diffs = diff.FilterIgnoredPaths(diffs, cfg.ignorePaths)
+	if cfg.onlyBreaking {
+		diffs = diff.FilterOnlyBreaking(diffs)
+	}
 	out, err := output.Format(diffs, cfg.format)
 	if err != nil {
 		return 2, "", err
@@ -36,8 +39,9 @@ func Run(args []string) (int, string, error) {
 }
 
 type config struct {
-	format      string
-	ignorePaths []string
-	oldPath     string
-	newPath     string
+	format       string
+	ignorePaths  []string
+	onlyBreaking bool
+	oldPath      string
+	newPath      string
 }
