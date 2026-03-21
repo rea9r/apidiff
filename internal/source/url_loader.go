@@ -1,6 +1,7 @@
 package source
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,7 +13,7 @@ type HTTPOptions struct {
 	Timeout time.Duration
 }
 
-func LoadJSONURL(rawURL string, opts HTTPOptions) (any, error) {
+func LoadJSONURL(ctx context.Context, rawURL string, opts HTTPOptions) (any, error) {
 	timeout := opts.Timeout
 	if timeout <= 0 {
 		timeout = 5 * time.Second
@@ -22,7 +23,7 @@ func LoadJSONURL(rawURL string, opts HTTPOptions) (any, error) {
 		Timeout: timeout,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request for %q: %w", rawURL, err)
 	}

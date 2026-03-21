@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/rea9r/xdiff/internal/source"
 )
 
-type ValueLoader func() (any, error)
+type ValueLoader func(context.Context) (any, error)
 
 type loadResult struct {
 	value any
@@ -23,10 +24,10 @@ func RunJSONFiles(opts Options) (int, string, error) {
 	}
 
 	return RunJSONLoaders(
-		func() (any, error) {
+		func(_ context.Context) (any, error) {
 			return source.LoadJSONFile(opts.OldPath)
 		},
-		func() (any, error) {
+		func(_ context.Context) (any, error) {
 			return source.LoadJSONFile(opts.NewPath)
 		},
 		opts.CompareOptions(),
@@ -34,27 +35,54 @@ func RunJSONFiles(opts Options) (int, string, error) {
 }
 
 func RunJSONLoaders(oldLoader, newLoader ValueLoader, opts CompareOptions) (int, string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	oldCh := make(chan loadResult, 1)
 	newCh := make(chan loadResult, 1)
 
 	go func() {
-		v, err := oldLoader()
+		v, err := oldLoader(ctx)
 		oldCh <- loadResult{value: v, err: err}
 	}()
 
 	go func() {
-		v, err := newLoader()
+		v, err := newLoader(ctx)
 		newCh <- loadResult{value: v, err: err}
 	}()
 
-	oldRes := <-oldCh
-	newRes := <-newCh
+	var (
+		oldRes loadResult
+		newRes loadResult
+		gotOld bool
+		gotNew bool
+	)
 
-	if oldRes.err != nil {
-		return exitError, "", oldRes.err
-	}
-	if newRes.err != nil {
-		return exitError, "", newRes.err
+	for !gotOld || !gotNew {
+		select {
+		case res := <-oldCh:
+			oldRes = res
+			gotOld = true
+			if oldRes.err != nil {
+				cancel()
+				return exitError, "", oldRes.err
+			}
+			if gotNew && newRes.err != nil {
+				return exitError, "", newRes.err
+			}
+		case res := <-newCh:
+			newRes = res
+			gotNew = true
+			if gotOld {
+				if oldRes.err != nil {
+					cancel()
+					return exitError, "", oldRes.err
+				}
+				if newRes.err != nil {
+					return exitError, "", newRes.err
+				}
+			}
+		}
 	}
 
 	return RunJSONValues(oldRes.value, newRes.value, opts)

@@ -1,6 +1,7 @@
 package source
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +18,7 @@ func TestLoadJSONURL(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := LoadJSONURL(server.URL, HTTPOptions{
+	got, err := LoadJSONURL(context.Background(), server.URL, HTTPOptions{
 		Headers: []string{"X-Test: hello"},
 		Timeout: time.Second,
 	})
@@ -48,7 +49,7 @@ func TestLoadJSONURL_Non2xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := LoadJSONURL(server.URL, HTTPOptions{})
+	_, err := LoadJSONURL(context.Background(), server.URL, HTTPOptions{})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
@@ -60,7 +61,7 @@ func TestLoadJSONURL_InvalidHeader(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := LoadJSONURL(server.URL, HTTPOptions{
+	_, err := LoadJSONURL(context.Background(), server.URL, HTTPOptions{
 		Headers: []string{"InvalidHeader"},
 	})
 	if err == nil {
@@ -74,7 +75,7 @@ func TestLoadJSONURL_UsesNumber(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := LoadJSONURL(server.URL, HTTPOptions{})
+	got, err := LoadJSONURL(context.Background(), server.URL, HTTPOptions{})
 	if err != nil {
 		t.Fatalf("LoadJSONURL returned error: %v", err)
 	}
@@ -82,5 +83,47 @@ func TestLoadJSONURL_UsesNumber(t *testing.T) {
 	obj := got.(map[string]any)
 	if _, ok := obj["age"].(json.Number); !ok {
 		t.Fatalf("age type mismatch: got=%T want=json.Number", obj["age"])
+	}
+}
+
+func TestLoadJSONURL_UsesRequestContextCancellation(t *testing.T) {
+	started := make(chan struct{}, 1)
+	observedCancel := make(chan struct{}, 1)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started <- struct{}{}
+		<-r.Context().Done()
+		observedCancel <- struct{}{}
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := LoadJSONURL(ctx, server.URL, HTTPOptions{Timeout: 2 * time.Second})
+		errCh <- err
+	}()
+
+	select {
+	case <-started:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("request did not reach server")
+	}
+
+	cancel()
+
+	select {
+	case err := <-errCh:
+		if err == nil {
+			t.Fatal("expected cancellation error, got nil")
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("LoadJSONURL did not return after cancellation")
+	}
+
+	select {
+	case <-observedCancel:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("server did not observe request context cancellation")
 	}
 }

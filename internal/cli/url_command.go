@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"time"
 
 	"github.com/rea9r/xdiff/internal/runner"
@@ -27,8 +28,8 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, positionalArgs []string) error {
 			load := func(rawURL string) runner.ValueLoader {
-				return func() (any, error) {
-					return source.LoadJSONURL(rawURL, source.HTTPOptions{
+				return func(ctx context.Context) (any, error) {
+					return source.LoadJSONURL(ctx, rawURL, source.HTTPOptions{
 						Headers: urlFlags.headers,
 						Timeout: urlFlags.timeout,
 					})
