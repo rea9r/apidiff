@@ -30,37 +30,56 @@ Compare two URLs:
 xdiff url https://old.example.com/api https://new.example.com/api
 ```
 
+> This README uses **options** for named command-line settings such as `--output-format`.
+> Cobra help may refer to the same settings as **flags**.
+
 ## Command Reference
 
 Compare local JSON files:
 
 ```bash
-xdiff [flags] old.json new.json
+xdiff [options] old.json new.json
 ```
+
+Arguments:
+- `old.json`: base JSON file
+- `new.json`: JSON file to compare
 
 Compare local text files:
 
 ```bash
-xdiff text [flags] old.txt new.txt
+xdiff text [options] old.txt new.txt
 ```
+
+Arguments:
+- `old.txt`: base text file
+- `new.txt`: text file to compare
 
 Compare JSON from URLs:
 
 ```bash
-xdiff url [flags] <old-url> <new-url>
+xdiff url [options] <old-url> <new-url>
 ```
+
+Arguments:
+- `<old-url>`: base endpoint URL
+- `<new-url>`: endpoint URL to compare
 
 Compare OpenAPI specs (JSON or YAML):
 
 ```bash
-xdiff spec [flags] <old-spec> <new-spec>
+xdiff spec [options] <old-spec> <new-spec>
 ```
 
-## Flags
+Arguments:
+- `<old-spec>`: base OpenAPI spec file
+- `<new-spec>`: OpenAPI spec file to compare
 
-Common flags (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
+## Options
 
-| Flag | Description | Default |
+Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
+
+| Option | Description | Default |
 | --- | --- | --- |
 | `--output-format text\|json` | Output format | `text` |
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
@@ -68,9 +87,9 @@ Common flags (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--no-color` | Disable colored text output | `false` |
 
-URL command only:
+URL-specific options:
 
-| Flag | Description | Default |
+| Option | Description | Default |
 | --- | --- | --- |
 | `--header "Key: Value"` | Add HTTP header (repeatable) | none |
 | `--timeout <duration>` | Request timeout (`3s`, `1m`) | `5s` |
