@@ -23,9 +23,6 @@ CI usage
 const rootHelpExamples = `  # Local comparison (quickest)
   xdiff testdata/old.json testdata/new.json
 
-  # Show a runnable example
-  xdiff example
-
   # Plain text comparison
   xdiff text old.txt new.txt
 
@@ -53,7 +50,6 @@ func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	}
 
 	bindCommonFlags(root.Flags(), commonFlags)
-	root.AddCommand(newExampleCommand(exitCode, stdout))
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
 	root.AddCommand(newURLCommand(commonFlags, exitCode))
 	root.AddCommand(newSpecCommand(commonFlags, exitCode))

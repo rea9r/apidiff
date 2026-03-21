@@ -24,18 +24,8 @@ func TestRunCLI_MissingArgs(t *testing.T) {
 	}
 }
 
-func TestRunCLI_Example(t *testing.T) {
+func TestRunCLI_UnknownCommand(t *testing.T) {
 	code, err := runCLIForTest([]string{"example"})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code mismatch: got=%d want=0", code)
-	}
-}
-
-func TestRunCLI_Example_WithPositionalArgs(t *testing.T) {
-	code, err := runCLIForTest([]string{"example", "testdata/old.json", "testdata/new.json"})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}

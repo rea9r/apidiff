@@ -29,22 +29,17 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	}
 }
 
-func TestRootCommandRegistersExampleSubcommand(t *testing.T) {
+func TestRootCommandDoesNotRegisterExampleSubcommand(t *testing.T) {
 	cmd := newRootCommand(new(int), io.Discard)
 
-	found := false
 	for _, child := range cmd.Commands() {
 		if child.Name() == "example" {
-			found = true
-			break
+			t.Fatal("did not expect example subcommand to be registered")
 		}
-	}
-	if !found {
-		t.Fatal("expected example subcommand to be registered")
 	}
 }
 
-func TestRootCommandHelpDoesNotExposeExampleFlag(t *testing.T) {
+func TestRootCommandHelpDoesNotExposeExampleFlagOrCommand(t *testing.T) {
 	exitCode := 0
 	var out bytes.Buffer
 
@@ -58,10 +53,11 @@ func TestRootCommandHelpDoesNotExposeExampleFlag(t *testing.T) {
 	}
 
 	help := out.String()
-	if strings.Contains(help, "--example") {
-		t.Fatalf("help should not contain --example:\n%s", help)
+	exampleFlag := "--" + "example"
+	if strings.Contains(help, exampleFlag) {
+		t.Fatalf("help should not contain example flag:\n%s", help)
 	}
-	if !strings.Contains(help, "example") {
-		t.Fatalf("help should contain example subcommand:\n%s", help)
+	if strings.Contains(help, " example     ") {
+		t.Fatalf("help should not contain example command:\n%s", help)
 	}
 }

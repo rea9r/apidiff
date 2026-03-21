@@ -6,22 +6,22 @@ Data diff tool written in Go.
 
 ## Quick Start
 
+Try it from the repository root:
+
+```bash
+go run ./cmd/xdiff testdata/old.json testdata/new.json
+```
+
 Install once:
 
 ```bash
 go install ./cmd/xdiff
 ```
 
-Then run:
+Then compare your own files:
 
 ```bash
-xdiff testdata/old.json testdata/new.json
-```
-
-Show a quick runnable example with expected output:
-
-```bash
-xdiff example
+xdiff old.json new.json
 ```
 
 Compare two URLs:
@@ -36,12 +36,6 @@ Compare local JSON files:
 
 ```bash
 xdiff [flags] old.json new.json
-```
-
-Show a runnable example:
-
-```bash
-xdiff example [flags]
 ```
 
 Compare local text files:
@@ -64,7 +58,7 @@ xdiff spec [flags] <old-spec> <new-spec>
 
 ## Flags
 
-Common flags (`xdiff`, `xdiff example`, `xdiff text`, `xdiff url`, and `xdiff spec`):
+Common flags (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 
 | Flag | Description | Default |
 | --- | --- | --- |
@@ -99,12 +93,6 @@ Show only breaking changes:
 
 ```bash
 xdiff --only-breaking testdata/old.json testdata/new.json
-```
-
-Show the built-in example as JSON:
-
-```bash
-xdiff example --output-format json
 ```
 
 Compare text files:
