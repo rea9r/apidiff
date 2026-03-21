@@ -6,7 +6,7 @@ import (
 
 	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/jsondiff"
-	"github.com/rea9r/xdiff/internal/output"
+	"github.com/rea9r/xdiff/internal/render"
 	"github.com/rea9r/xdiff/internal/source"
 )
 
@@ -53,16 +53,19 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		OnlyBreaking: opts.OnlyBreaking,
 	})
 
-	out, err := output.FormatResultWithOptions(oldValue, newValue, diffs, output.Options{
-		Format: opts.Format,
-		Color:  output.ShouldUseColor(opts.NoColor),
-	})
-	if err != nil {
-		return exitError, "", err
+	var out string
+	switch opts.Format {
+	case render.TextFormat:
+		out = render.RenderUnifiedJSONWithColor(oldValue, newValue, render.ShouldUseColor(opts.NoColor))
+	case render.JSONFormat:
+		rendered, err := render.RenderJSON(diffs)
+		if err != nil {
+			return exitError, "", err
+		}
+		out = rendered
 	}
 
 	hasFailure := HasFailureByMode(diffs, opts.FailOn)
-	out = decorateTextResult(opts.Format, opts.FailOn, hasFailure, diffs, out)
 	if hasFailure {
 		return exitDiffFound, out, nil
 	}
@@ -79,16 +82,19 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 		OnlyBreaking: opts.OnlyBreaking,
 	})
 
-	out, err := output.FormatWithOptions(filtered, output.Options{
-		Format: opts.Format,
-		Color:  output.ShouldUseColor(opts.NoColor),
-	})
-	if err != nil {
-		return exitError, "", err
+	var out string
+	switch opts.Format {
+	case render.TextFormat:
+		out = render.RenderSemanticTextWithColor(filtered, render.ShouldUseColor(opts.NoColor))
+	case render.JSONFormat:
+		rendered, err := render.RenderJSON(filtered)
+		if err != nil {
+			return exitError, "", err
+		}
+		out = rendered
 	}
 
 	hasFailure := HasFailureByMode(filtered, opts.FailOn)
-	out = decorateTextResult(opts.Format, opts.FailOn, hasFailure, filtered, out)
 	if hasFailure {
 		return exitDiffFound, out, nil
 	}
@@ -103,7 +109,7 @@ func validateFileOptions(opts Options) error {
 }
 
 func validateCompareOptions(opts CompareOptions) error {
-	if !output.IsSupportedFormat(opts.Format) {
+	if !render.IsSupportedFormat(opts.Format) {
 		return fmt.Errorf("invalid output format %q (allowed: text, json)", opts.Format)
 	}
 	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {

@@ -24,7 +24,7 @@ func newSpecCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				return asRunError(2, err)
 			}
 
-			diffs := openapi.ComparePathsMethods(oldSpec, newSpec)
+			diffs := openapi.LabelDiffPaths(openapi.ComparePathsMethods(oldSpec, newSpec))
 			code, out, err := runner.RunDeltaDiffs(diffs, runner.CompareOptions{
 				Format:       common.outputFormat,
 				FailOn:       common.failOn,

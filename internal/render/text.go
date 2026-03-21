@@ -1,4 +1,4 @@
-package output
+package render
 
 import (
 	"encoding/json"
@@ -10,20 +10,11 @@ import (
 )
 
 func FormatText(diffs []delta.Diff) string {
-	return RenderTextWithOptions(nil, nil, diffs, TextOptions{
-		Color: false,
-	})
+	return RenderSemanticTextWithColor(diffs, false)
 }
 
-type TextOptions struct {
-	Color bool
-}
-
-func RenderTextWithOptions(oldValue, newValue any, diffs []delta.Diff, opts TextOptions) string {
-	if oldValue == nil && newValue == nil {
-		return renderSemanticDiffSection(diffs, opts.Color)
-	}
-	return renderUnifiedDiffSection(oldValue, newValue, opts.Color)
+func RenderSemanticTextWithColor(diffs []delta.Diff, color bool) string {
+	return renderSemanticDiffSection(diffs, color)
 }
 
 func renderSemanticDiffSection(diffs []delta.Diff, color bool) string {
@@ -34,7 +25,7 @@ func renderSemanticDiffSection(diffs []delta.Diff, color bool) string {
 	} else {
 		for _, d := range diffs {
 			marker := colorizeAction(diffMarker(d.Type), d.Type, color)
-			path := humanizeDiffPath(d.Path)
+			path := d.Path
 			if path == "" {
 				path = "(root)"
 			}
@@ -46,10 +37,9 @@ func renderSemanticDiffSection(diffs []delta.Diff, color bool) string {
 	return b.String()
 }
 
-func renderUnifiedDiffSection(oldValue, newValue any, color bool) string {
+func RenderUnifiedJSONWithColor(oldValue, newValue any, color bool) string {
 	oldText := prettyJSON(oldValue)
 	newText := prettyJSON(newValue)
-
 	return renderUnifiedText(oldText, newText, color)
 }
 
@@ -122,35 +112,4 @@ func diffMarker(typ delta.DiffType) string {
 	default:
 		return "?"
 	}
-}
-
-func humanizeDiffPath(path string) string {
-	const prefix = "paths."
-	if !strings.HasPrefix(path, prefix) {
-		return path
-	}
-
-	parts := strings.Split(path[len(prefix):], ".")
-	if len(parts) < 2 {
-		return path
-	}
-
-	apiPath := parts[0]
-	method := strings.ToUpper(parts[1])
-
-	switch {
-	case len(parts) == 2:
-		return method + " " + apiPath
-	case len(parts) >= 4 && parts[2] == "requestBody" && parts[3] == "required":
-		return method + " " + apiPath + " request body required"
-	case len(parts) >= 7 && parts[2] == "responses" && parts[4] == "content":
-		statusCode := parts[3]
-		contentType := parts[5]
-		detail := strings.Join(parts[6:], ".")
-		if detail == "schema.type" {
-			return method + " " + apiPath + " response " + statusCode + " " + contentType + " schema type"
-		}
-	}
-
-	return path
 }
