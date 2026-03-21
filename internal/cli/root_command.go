@@ -23,6 +23,9 @@ CI usage
 const rootHelpExamples = `  # Local comparison (quickest)
   xdiff testdata/old.json testdata/new.json
 
+  # Show a runnable example
+  xdiff example
+
   # Plain text comparison
   xdiff text old.txt new.txt
 
@@ -35,9 +38,8 @@ const rootHelpExamples = `  # Local comparison (quickest)
   # CI usage
   xdiff --output-format json --fail-on breaking testdata/old.json testdata/new.json`
 
-func newRootCommand(exitCode *int, stdout, _ io.Writer) *cobra.Command {
+func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	commonFlags := newCommonFlags(stdout)
-	showExample := false
 
 	root := &cobra.Command{
 		Use:           "xdiff [flags] old.json new.json",
@@ -46,22 +48,12 @@ func newRootCommand(exitCode *int, stdout, _ io.Writer) *cobra.Command {
 		Example:       rootHelpExamples,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if showExample {
-				return cobra.NoArgs(cmd, args)
-			}
-			return cobra.ExactArgs(2)(cmd, args)
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if showExample {
-				return runExample(commonFlags, exitCode)(cmd, args)
-			}
-			return runFileCompare(commonFlags, exitCode)(cmd, args)
-		},
+		Args:          cobra.ExactArgs(2),
+		RunE:          runFileCompare(commonFlags, exitCode),
 	}
 
 	bindCommonFlags(root.Flags(), commonFlags)
-	root.Flags().BoolVar(&showExample, "example", false, "show a runnable quick example and expected output")
+	root.AddCommand(newExampleCommand(exitCode, stdout))
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
 	root.AddCommand(newURLCommand(commonFlags, exitCode))
 	root.AddCommand(newSpecCommand(commonFlags, exitCode))

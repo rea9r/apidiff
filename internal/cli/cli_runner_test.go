@@ -11,7 +11,7 @@ import (
 )
 
 func runCLIForTest(args []string) (int, error) {
-	return runCLI(args, io.Discard, io.Discard)
+	return runCLI(args, io.Discard)
 }
 
 func TestRunCLI_MissingArgs(t *testing.T) {
@@ -25,7 +25,7 @@ func TestRunCLI_MissingArgs(t *testing.T) {
 }
 
 func TestRunCLI_Example(t *testing.T) {
-	code, err := runCLIForTest([]string{"--example"})
+	code, err := runCLIForTest([]string{"example"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestRunCLI_Example(t *testing.T) {
 }
 
 func TestRunCLI_Example_WithPositionalArgs(t *testing.T) {
-	code, err := runCLIForTest([]string{"--example", "testdata/old.json", "testdata/new.json"})
+	code, err := runCLIForTest([]string{"example", "testdata/old.json", "testdata/new.json"})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}

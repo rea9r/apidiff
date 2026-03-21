@@ -1,32 +1,19 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/rea9r/xdiff/internal/runner"
 	"github.com/spf13/cobra"
 )
 
 func newTextCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "text [flags] <old-text-file> <new-text-file>",
+		Use:   "text [flags] old.txt new.txt",
 		Short: "Compare plain text files",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, positionalArgs []string) error {
-			code, out, err := runner.RunTextFiles(runner.Options{
-				Format:       common.outputFormat,
-				FailOn:       common.failOn,
-				IgnorePaths:  append([]string(nil), common.ignorePaths...),
-				OnlyBreaking: common.onlyBreaking,
-				UseColor:     common.useColor(),
-				OldPath:      positionalArgs[0],
-				NewPath:      positionalArgs[1],
-			})
-			if writeErr := writeOutput(common.stdout, out); writeErr != nil {
-				return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))
-			}
-			if err != nil {
-				return asRunError(code, err)
+			code, out, err := runner.RunTextFiles(common.fileOptions(positionalArgs[0], positionalArgs[1]))
+			if err := writeRunnerResult(common.stdout, code, out, err); err != nil {
+				return err
 			}
 
 			*exitCode = code

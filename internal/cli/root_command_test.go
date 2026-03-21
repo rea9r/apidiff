@@ -7,7 +7,7 @@ import (
 )
 
 func TestRootHelpContent_IsTaskOriented(t *testing.T) {
-	cmd := newRootCommand(new(int), io.Discard, io.Discard)
+	cmd := newRootCommand(new(int), io.Discard)
 
 	if !strings.Contains(cmd.Long, "Local comparison") {
 		t.Fatalf("missing Local comparison section in Long help")

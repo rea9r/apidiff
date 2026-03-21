@@ -26,10 +26,10 @@ func humanizePath(path string) string {
 		return path
 	}
 
-	switch {
-	case rest == "":
+	switch rest {
+	case "":
 		return method + " " + apiPath
-	case rest == ".requestBody.required":
+	case ".requestBody.required":
 		return method + " " + apiPath + " request body required"
 	}
 

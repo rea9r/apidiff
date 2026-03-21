@@ -2,11 +2,28 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rea9r/xdiff/internal/runner"
 	"github.com/spf13/cobra"
 )
+
+func newExampleCommand(exitCode *int, stdout io.Writer) *cobra.Command {
+	common := newCommonFlags(stdout)
+
+	cmd := &cobra.Command{
+		Use:           "example [flags]",
+		Short:         "Show a runnable quick example and expected output",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Args:          cobra.NoArgs,
+		RunE:          runExample(common, exitCode),
+	}
+
+	bindCommonFlags(cmd.Flags(), common)
+	return cmd
+}
 
 func runExample(common *commonFlagValues, exitCode *int) func(*cobra.Command, []string) error {
 	return func(_ *cobra.Command, _ []string) error {
@@ -39,13 +56,10 @@ func buildExampleOutput(common commonFlagValues) (string, int, error) {
 		},
 	}
 
-	code, rendered, err := runner.RunJSONValues(oldValue, newValue, runner.CompareOptions{
-		Format:       common.outputFormat,
-		FailOn:       common.failOn,
-		IgnorePaths:  append([]string(nil), common.ignorePaths...),
-		OnlyBreaking: common.onlyBreaking,
-		UseColor:     false,
-	})
+	opts := common.compareOptions()
+	opts.UseColor = false
+
+	code, rendered, err := runner.RunJSONValues(oldValue, newValue, opts)
 	if err != nil {
 		return "", 0, err
 	}

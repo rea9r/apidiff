@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/rea9r/xdiff/internal/runner"
@@ -31,19 +30,10 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 			code, out, err := runner.RunJSONLoaders(
 				load(positionalArgs[0]),
 				load(positionalArgs[1]),
-				runner.CompareOptions{
-					Format:       common.outputFormat,
-					FailOn:       common.failOn,
-					IgnorePaths:  append([]string(nil), common.ignorePaths...),
-					OnlyBreaking: common.onlyBreaking,
-					UseColor:     common.useColor(),
-				},
+				common.compareOptions(),
 			)
-			if writeErr := writeOutput(common.stdout, out); writeErr != nil {
-				return asRunError(2, fmt.Errorf("failed to write stdout: %w", writeErr))
-			}
-			if err != nil {
-				return asRunError(code, err)
+			if err := writeRunnerResult(common.stdout, code, out, err); err != nil {
+				return err
 			}
 
 			*exitCode = code
