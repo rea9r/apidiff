@@ -237,6 +237,19 @@ func TestRunCLI_FailOnBreaking_BreakingDiffReturnsOne(t *testing.T) {
 	}
 }
 
+func TestRunCLI_IgnoreOrder_ReorderedArrayReturnsZero(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"items":[1,2,3]}`, "old.json")
+	newPath := writeCLIJSON(t, `{"items":[3,2,1]}`, "new.json")
+
+	code, err := runCLIForTest([]string{"--ignore-order", oldPath, newPath})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code mismatch: got=%d want=0", code)
+	}
+}
+
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
 	return writeCLIFile(t, content, fileName)
 }

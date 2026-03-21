@@ -223,6 +223,51 @@ func TestRun_FailOnBreaking_WithBreakingDiff(t *testing.T) {
 	}
 }
 
+func TestRun_IgnoreOrder_ReorderOnly_NoDifferences(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"items":[1,2,3]}`, "old.json")
+	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:      "text",
+		IgnoreOrder: true,
+		OldPath:     oldPath,
+		NewPath:     newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitOK {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitOK)
+	}
+	if out != "No differences.\n" {
+		t.Fatalf("unexpected output: %q", out)
+	}
+}
+
+func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"items":[{"k":1},{"k":2}]}`, "old.json")
+	newPath := writeTempJSON(t, `{"items":[{"k":2},{"k":3}]}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:      "text",
+		IgnoreOrder: true,
+		OldPath:     oldPath,
+		NewPath:     newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if strings.Contains(out, "--- old") || strings.Contains(out, "+++ new") {
+		t.Fatalf("expected semantic output when ignore-order is enabled, got: %q", out)
+	}
+	if !strings.Contains(out, "~ items[") {
+		t.Fatalf("expected semantic array diff, got: %q", out)
+	}
+}
+
 func writeTempJSON(t *testing.T, content string, fileName string) string {
 	t.Helper()
 

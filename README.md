@@ -87,6 +87,12 @@ Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--no-color` | Disable colored text output | `false` |
 
+JSON comparison options (`xdiff`, `xdiff url`):
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `--ignore-order` | Treat JSON arrays as unordered when comparing | `false` |
+
 URL-specific options:
 
 | Option | Description | Default |
@@ -138,6 +144,18 @@ OpenAPI spec comparison (JSON or YAML):
 xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 ```
 
+Ignore array order in local JSON comparison:
+
+```bash
+xdiff --ignore-order old.json new.json
+```
+
+Ignore array order in URL comparison:
+
+```bash
+xdiff url --ignore-order https://old.example.com/api https://new.example.com/api
+```
+
 For OpenAPI comparison, `--ignore-path` matches canonical paths such as:
 
 - `paths./users.post`
@@ -145,6 +163,11 @@ For OpenAPI comparison, `--ignore-path` matches canonical paths such as:
 - `paths./users.get.responses.200.content.application/json.schema.type`
 
 Text output may show human-readable OpenAPI labels, but `--ignore-path` and `--output-format json` use canonical paths.
+
+Notes for `--ignore-order`:
+- Arrays are compared as unordered normalized values.
+- This does not perform ID-based object matching.
+- Diff indices may reflect normalized comparison order rather than original source order.
 
 Current `spec` comparison scope:
 - path/method added or removed

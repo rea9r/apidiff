@@ -85,3 +85,39 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 		}
 	}
 }
+
+func TestIgnoreOrderFlagAvailability(t *testing.T) {
+	common := newCommonFlags(io.Discard)
+
+	root := newRootCommand(new(int), io.Discard)
+	if root.Flags().Lookup("ignore-order") == nil {
+		t.Fatal("root command should expose --ignore-order")
+	}
+	if !strings.Contains(root.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("root help should include --ignore-order")
+	}
+
+	urlCmd := newURLCommand(common, new(int))
+	if urlCmd.Flags().Lookup("ignore-order") == nil {
+		t.Fatal("url command should expose --ignore-order")
+	}
+	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("url help should include --ignore-order")
+	}
+
+	textCmd := newTextCommand(common, new(int))
+	if textCmd.Flags().Lookup("ignore-order") != nil {
+		t.Fatal("text command should not expose --ignore-order")
+	}
+	if strings.Contains(textCmd.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("text help should not include --ignore-order")
+	}
+
+	specCmd := newSpecCommand(common, new(int))
+	if specCmd.Flags().Lookup("ignore-order") != nil {
+		t.Fatal("spec command should not expose --ignore-order")
+	}
+	if strings.Contains(specCmd.Flags().FlagUsages(), "--ignore-order") {
+		t.Fatal("spec help should not include --ignore-order")
+	}
+}

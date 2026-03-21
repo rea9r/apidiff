@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type jsonCompareFlagValues struct {
+	ignoreOrder bool
+}
+
 type commonFlagValues struct {
 	outputFormat string
 	failOn       string
@@ -57,4 +61,8 @@ func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {
 	flags.StringArrayVar(&common.ignorePaths, "ignore-path", nil, "ignore diff by exact path (can be specified multiple times)")
 	flags.BoolVar(&common.onlyBreaking, "only-breaking", false, "show only breaking changes")
 	flags.BoolVar(&common.noColor, "no-color", false, "disable colored text output")
+}
+
+func bindJSONCompareFlags(flags *pflag.FlagSet, jsonFlags *jsonCompareFlagValues) {
+	flags.BoolVar(&jsonFlags.ignoreOrder, "ignore-order", false, "treat JSON arrays as unordered when comparing")
 }

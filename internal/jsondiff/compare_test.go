@@ -80,6 +80,56 @@ func TestCompare(t *testing.T) {
 	}
 }
 
+func TestCompareWithOptions_IgnoreOrder_ReorderedScalarArrayHasNoDiff(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[1,2,3]}`)
+	newValue := mustParseJSON(t, `{"items":[3,2,1]}`)
+
+	got := CompareWithOptions(oldValue, newValue, Options{IgnoreOrder: true})
+	if len(got) != 0 {
+		t.Fatalf("expected no diffs for reordered scalar array, got: %+v", got)
+	}
+}
+
+func TestCompareWithOptions_IgnoreOrder_ReorderedObjectArrayHasNoDiff(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[{"id":1,"name":"a"},{"id":2,"name":"b"}]}`)
+	newValue := mustParseJSON(t, `{"items":[{"id":2,"name":"b"},{"id":1,"name":"a"}]}`)
+
+	got := CompareWithOptions(oldValue, newValue, Options{IgnoreOrder: true})
+	if len(got) != 0 {
+		t.Fatalf("expected no diffs for reordered object array, got: %+v", got)
+	}
+}
+
+func TestCompareWithOptions_IgnoreOrder_ObjectFieldChangedStillDiffs(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[{"id":1,"name":"a"},{"id":2,"name":"b"}]}`)
+	newValue := mustParseJSON(t, `{"items":[{"id":2,"name":"B"},{"id":1,"name":"a"}]}`)
+
+	got := CompareWithOptions(oldValue, newValue, Options{IgnoreOrder: true})
+	if len(got) == 0 {
+		t.Fatal("expected diffs when object field changes")
+	}
+}
+
+func TestCompareWithOptions_IgnoreOrder_DuplicatesUseMultisetSemantics(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[1,1,2]}`)
+	newValue := mustParseJSON(t, `{"items":[1,2,2]}`)
+
+	got := CompareWithOptions(oldValue, newValue, Options{IgnoreOrder: true})
+	if len(got) == 0 {
+		t.Fatal("expected diffs when multiplicity changes")
+	}
+}
+
+func TestCompareWithOptions_DefaultOrderSensitive(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[1,2,3]}`)
+	newValue := mustParseJSON(t, `{"items":[3,2,1]}`)
+
+	got := CompareWithOptions(oldValue, newValue, Options{})
+	if len(got) == 0 {
+		t.Fatal("expected diffs when ignore-order is disabled")
+	}
+}
+
 func mustParseJSON(t *testing.T, s string) any {
 	t.Helper()
 

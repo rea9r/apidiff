@@ -47,7 +47,9 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 		return exitError, "", err
 	}
 
-	diffs := jsondiff.Compare(oldValue, newValue)
+	diffs := jsondiff.CompareWithOptions(oldValue, newValue, jsondiff.Options{
+		IgnoreOrder: opts.IgnoreOrder,
+	})
 	diffs = delta.ApplyOptions(diffs, delta.Options{
 		IgnorePaths:  opts.IgnorePaths,
 		OnlyBreaking: opts.OnlyBreaking,
@@ -60,7 +62,7 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 			out = "No differences.\n"
 			break
 		}
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking || opts.IgnoreOrder {
 			out = output.RenderSemanticText(diffs, output.SemanticTextOptions{
 				UseColor:      opts.UseColor,
 				PathFormatter: opts.PathFormatter,

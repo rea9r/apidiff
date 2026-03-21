@@ -18,6 +18,7 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	urlFlags := urlFlagValues{
 		timeout: 5 * time.Second,
 	}
+	jsonFlags := &jsonCompareFlagValues{}
 
 	cmd := &cobra.Command{
 		Use:     "url [flags] <old-url> <new-url>",
@@ -34,10 +35,13 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 				}
 			}
 
+			opts := common.compareOptions()
+			opts.IgnoreOrder = jsonFlags.ignoreOrder
+
 			code, out, err := runner.RunJSONLoaders(
 				load(positionalArgs[0]),
 				load(positionalArgs[1]),
-				common.compareOptions(),
+				opts,
 			)
 			if err := writeRunnerResult(common.stdout, code, out, err); err != nil {
 				return err
@@ -49,6 +53,7 @@ func newURLCommand(common *commonFlagValues, exitCode *int) *cobra.Command {
 	}
 
 	bindCommonFlags(cmd.Flags(), common)
+	bindJSONCompareFlags(cmd.Flags(), jsonFlags)
 	cmd.Flags().StringArrayVar(&urlFlags.headers, "header", nil, "HTTP header (can be specified multiple times, e.g. \"Authorization: Bearer xxx\")")
 	cmd.Flags().DurationVar(&urlFlags.timeout, "timeout", 5*time.Second, "request timeout (e.g. 3s, 1m)")
 	return cmd

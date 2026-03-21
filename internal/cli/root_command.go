@@ -37,6 +37,7 @@ const rootHelpExamples = `  # Local comparison (quickest)
 
 func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	commonFlags := newCommonFlags(stdout)
+	jsonFlags := &jsonCompareFlagValues{}
 
 	root := &cobra.Command{
 		Use:           "xdiff [flags] old.json new.json",
@@ -46,10 +47,11 @@ func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.ExactArgs(2),
-		RunE:          runFileCompare(commonFlags, exitCode),
+		RunE:          runFileCompare(commonFlags, jsonFlags, exitCode),
 	}
 
 	bindCommonFlags(root.Flags(), commonFlags)
+	bindJSONCompareFlags(root.Flags(), jsonFlags)
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
 	root.AddCommand(newURLCommand(commonFlags, exitCode))
 	root.AddCommand(newSpecCommand(commonFlags, exitCode))

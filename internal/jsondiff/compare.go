@@ -7,6 +7,13 @@ import (
 )
 
 func Compare(oldValue, newValue any) []delta.Diff {
+	return CompareWithOptions(oldValue, newValue, Options{})
+}
+
+func CompareWithOptions(oldValue, newValue any, opts Options) []delta.Diff {
+	oldValue = normalizeValue(oldValue, opts.IgnoreOrder)
+	newValue = normalizeValue(newValue, opts.IgnoreOrder)
+
 	var diffs []delta.Diff
 	compare("", oldValue, newValue, &diffs)
 	return diffs
