@@ -11,8 +11,10 @@ func Compare(oldValue, newValue any) []delta.Diff {
 }
 
 func CompareWithOptions(oldValue, newValue any, opts Options) []delta.Diff {
-	oldValue = normalizeValue(oldValue, opts.IgnoreOrder)
-	newValue = normalizeValue(newValue, opts.IgnoreOrder)
+	if opts.IgnoreOrder {
+		oldValue = normalizeUnorderedValue(oldValue)
+		newValue = normalizeUnorderedValue(newValue)
+	}
 
 	var diffs []delta.Diff
 	compare("", oldValue, newValue, &diffs)

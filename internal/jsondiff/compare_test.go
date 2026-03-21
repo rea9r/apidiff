@@ -3,6 +3,7 @@ package jsondiff
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -127,6 +128,18 @@ func TestCompareWithOptions_DefaultOrderSensitive(t *testing.T) {
 	got := CompareWithOptions(oldValue, newValue, Options{})
 	if len(got) == 0 {
 		t.Fatal("expected diffs when ignore-order is disabled")
+	}
+}
+
+func TestCompare_EqualsCompareWithDefaultOptions(t *testing.T) {
+	oldValue := mustParseJSON(t, `{"items":[1,2,3],"obj":{"name":"taro"}}`)
+	newValue := mustParseJSON(t, `{"items":[3,2,1],"obj":{"name":"hanako"}}`)
+
+	gotCompare := Compare(oldValue, newValue)
+	gotWithOpts := CompareWithOptions(oldValue, newValue, Options{})
+
+	if !reflect.DeepEqual(gotCompare, gotWithOpts) {
+		t.Fatalf("expected Compare and CompareWithOptions(default) to match\nCompare: %#v\nCompareWithOptions: %#v", gotCompare, gotWithOpts)
 	}
 }
 

@@ -11,29 +11,27 @@ type normalizedItem struct {
 	value any
 }
 
-func normalizeValue(v any, ignoreOrder bool) any {
+func normalizeUnorderedValue(v any) any {
 	switch typed := v.(type) {
 	case map[string]any:
 		out := make(map[string]any, len(typed))
 		for k, child := range typed {
-			out[k] = normalizeValue(child, ignoreOrder)
+			out[k] = normalizeUnorderedValue(child)
 		}
 		return out
 	case []any:
 		items := make([]normalizedItem, len(typed))
 		for i, child := range typed {
-			nv := normalizeValue(child, ignoreOrder)
+			nv := normalizeUnorderedValue(child)
 			items[i] = normalizedItem{
 				key:   canonicalKey(nv),
 				value: nv,
 			}
 		}
 
-		if ignoreOrder {
-			sort.SliceStable(items, func(i, j int) bool {
-				return items[i].key < items[j].key
-			})
-		}
+		sort.SliceStable(items, func(i, j int) bool {
+			return items[i].key < items[j].key
+		})
 
 		out := make([]any, len(items))
 		for i, item := range items {
