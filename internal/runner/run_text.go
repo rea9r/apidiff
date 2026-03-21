@@ -39,9 +39,17 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 	var out string
 	switch opts.Format {
 	case output.TextFormat:
+		style, err := resolveTextDiffStyle(opts)
+		if err != nil {
+			return exitError, "", err
+		}
+
 		if len(filtered) == 0 {
 			out = "No differences.\n"
-		} else if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking {
+			break
+		}
+
+		if style == TextStyleSemantic {
 			out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
 				UseColor:      opts.UseColor,
 				PathFormatter: opts.PathFormatter,

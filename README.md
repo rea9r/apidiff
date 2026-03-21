@@ -85,6 +85,7 @@ Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
 | `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
+| `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
 | `--no-color` | Disable colored text output | `false` |
 
 JSON comparison options (`xdiff`, `xdiff url`):
@@ -168,6 +169,30 @@ Notes for `--ignore-order`:
 - Arrays are compared as unordered normalized values.
 - This does not perform ID-based object matching.
 - Diff indices may reflect normalized comparison order rather than original source order.
+
+Notes for `--text-style`:
+- `auto` keeps the current behavior.
+- `patch` uses unified patch output when that style is supported.
+- `semantic` always renders structured diffs.
+- `patch` is invalid for `xdiff spec`, and also invalid with semantic-only filters such as `--ignore-path`, `--only-breaking`, or `--ignore-order`.
+
+Force semantic text output for JSON comparison:
+
+```bash
+xdiff --text-style semantic old.json new.json
+```
+
+Force patch-style text output for plain text comparison:
+
+```bash
+xdiff text --text-style patch before.txt after.txt
+```
+
+Use semantic text output for OpenAPI comparison:
+
+```bash
+xdiff spec --text-style semantic old-openapi.yaml new-openapi.yaml
+```
 
 Current `spec` comparison scope:
 - path/method added or removed

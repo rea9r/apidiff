@@ -121,3 +121,33 @@ func TestIgnoreOrderFlagAvailability(t *testing.T) {
 		t.Fatal("spec help should not include --ignore-order")
 	}
 }
+
+func TestTextStyleFlagAvailability(t *testing.T) {
+	common := newCommonFlags(io.Discard)
+
+	root := newRootCommand(new(int), io.Discard)
+	if root.Flags().Lookup("text-style") == nil {
+		t.Fatal("root command should expose --text-style")
+	}
+	if !strings.Contains(root.Flags().FlagUsages(), "--text-style") {
+		t.Fatal("root help should include --text-style")
+	}
+
+	urlCmd := newURLCommand(common, new(int))
+	if urlCmd.Flags().Lookup("text-style") == nil {
+		t.Fatal("url command should expose --text-style")
+	}
+	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--text-style") {
+		t.Fatal("url help should include --text-style")
+	}
+
+	textCmd := newTextCommand(common, new(int))
+	if textCmd.Flags().Lookup("text-style") == nil {
+		t.Fatal("text command should expose --text-style")
+	}
+
+	specCmd := newSpecCommand(common, new(int))
+	if specCmd.Flags().Lookup("text-style") == nil {
+		t.Fatal("spec command should expose --text-style")
+	}
+}

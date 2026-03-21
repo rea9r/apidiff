@@ -58,11 +58,16 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	var out string
 	switch opts.Format {
 	case output.TextFormat:
+		style, err := resolveJSONTextStyle(opts)
+		if err != nil {
+			return exitError, "", err
+		}
+
 		if len(diffs) == 0 {
 			out = "No differences.\n"
 			break
 		}
-		if len(opts.IgnorePaths) > 0 || opts.OnlyBreaking || opts.IgnoreOrder {
+		if style == TextStyleSemantic {
 			out = output.RenderSemanticText(diffs, output.SemanticTextOptions{
 				UseColor:      opts.UseColor,
 				PathFormatter: opts.PathFormatter,
@@ -98,6 +103,9 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 	var out string
 	switch opts.Format {
 	case output.TextFormat:
+		if _, err := resolveDeltaTextStyle(opts); err != nil {
+			return exitError, "", err
+		}
 		out = output.RenderSemanticText(filtered, output.SemanticTextOptions{
 			UseColor:      opts.UseColor,
 			PathFormatter: opts.PathFormatter,
@@ -130,6 +138,9 @@ func validateCompareOptions(opts CompareOptions) error {
 	}
 	if opts.FailOn != "" && !IsSupportedFailOn(opts.FailOn) {
 		return fmt.Errorf("invalid fail-on mode %q (allowed: none, breaking, any)", opts.FailOn)
+	}
+	if !isSupportedTextStyle(opts.TextStyle) {
+		return fmt.Errorf("invalid text style %q (allowed: auto, patch, semantic)", opts.TextStyle)
 	}
 	return nil
 }

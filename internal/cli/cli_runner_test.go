@@ -250,6 +250,54 @@ func TestRunCLI_IgnoreOrder_ReorderedArrayReturnsZero(t *testing.T) {
 	}
 }
 
+func TestRunCLI_Spec_TextStylePatchIsUnsupported(t *testing.T) {
+	oldPath := fixturePath("testdata/spec/non_breaking_old.yaml")
+	newPath := fixturePath("testdata/spec/non_breaking_new.yaml")
+
+	code, err := runCLIForTest([]string{"spec", "--text-style", "patch", oldPath, newPath})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), `text style "patch" is not supported for delta-only comparisons`) {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_PatchStyleWithIgnoreOrderReturnsError(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"items":[1,2,3]}`, "old.json")
+	newPath := writeCLIJSON(t, `{"items":[3,2,1]}`, "new.json")
+
+	code, err := runCLIForTest([]string{"--text-style", "patch", "--ignore-order", oldPath, newPath})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCLI_InvalidTextStyle(t *testing.T) {
+	oldPath := writeCLIJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeCLIJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, err := runCLIForTest([]string{"--text-style", "fancy", oldPath, newPath})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != 2 {
+		t.Fatalf("exit code mismatch: got=%d want=2", code)
+	}
+	if !strings.Contains(err.Error(), `invalid text style "fancy"`) {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func writeCLIJSON(t *testing.T, content string, fileName string) string {
 	return writeCLIFile(t, content, fileName)
 }

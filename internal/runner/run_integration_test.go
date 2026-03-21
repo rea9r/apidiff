@@ -268,6 +268,79 @@ func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
 	}
 }
 
+func TestRun_TextStyleSemantic_ForJSONUsesSemanticOutput(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:    "text",
+		TextStyle: TextStyleSemantic,
+		OldPath:   oldPath,
+		NewPath:   newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if strings.Contains(out, "--- old") || strings.Contains(out, "+++ new") {
+		t.Fatalf("expected semantic output, got: %q", out)
+	}
+	if !strings.Contains(out, "~ user.name:") {
+		t.Fatalf("expected semantic field diff, got: %q", out)
+	}
+}
+
+func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"items":[1,2,3]}`, "old.json")
+	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:      "text",
+		TextStyle:   TextStylePatch,
+		IgnoreOrder: true,
+		OldPath:     oldPath,
+		NewPath:     newPath,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != exitError {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
+	}
+	if out != "" {
+		t.Fatalf("expected empty output on error, got: %q", out)
+	}
+	if !strings.Contains(err.Error(), `text style "patch" cannot be used with --ignore-path, --only-breaking, or --ignore-order`) {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:    "text",
+		TextStyle: "fancy",
+		OldPath:   oldPath,
+		NewPath:   newPath,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if code != exitError {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitError)
+	}
+	if out != "" {
+		t.Fatalf("expected empty output on error, got: %q", out)
+	}
+	if !strings.Contains(err.Error(), `invalid text style "fancy"`) {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func writeTempJSON(t *testing.T, content string, fileName string) string {
 	t.Helper()
 

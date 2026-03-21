@@ -1,11 +1,18 @@
 package runner
 
+const (
+	TextStyleAuto     = "auto"
+	TextStylePatch    = "patch"
+	TextStyleSemantic = "semantic"
+)
+
 type Options struct {
 	Format        string
 	FailOn        string
 	IgnorePaths   []string
 	OnlyBreaking  bool
 	IgnoreOrder   bool
+	TextStyle     string
 	UseColor      bool
 	PathFormatter func(string) string
 	OldPath       string
@@ -18,6 +25,7 @@ type CompareOptions struct {
 	IgnorePaths   []string
 	OnlyBreaking  bool
 	IgnoreOrder   bool
+	TextStyle     string
 	UseColor      bool
 	PathFormatter func(string) string
 }
@@ -29,6 +37,7 @@ func (o Options) CompareOptions() CompareOptions {
 		IgnorePaths:   o.IgnorePaths,
 		OnlyBreaking:  o.OnlyBreaking,
 		IgnoreOrder:   o.IgnoreOrder,
+		TextStyle:     o.TextStyle,
 		UseColor:      o.UseColor,
 		PathFormatter: o.PathFormatter,
 	}

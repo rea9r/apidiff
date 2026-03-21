@@ -17,6 +17,7 @@ type commonFlagValues struct {
 	failOn       string
 	ignorePaths  []string
 	onlyBreaking bool
+	textStyle    string
 	noColor      bool
 	stdout       io.Writer
 }
@@ -25,6 +26,7 @@ func newCommonFlags(stdout io.Writer) *commonFlagValues {
 	return &commonFlagValues{
 		outputFormat: output.TextFormat,
 		failOn:       "any",
+		textStyle:    runner.TextStyleAuto,
 		stdout:       stdout,
 	}
 }
@@ -39,6 +41,7 @@ func (c *commonFlagValues) compareOptions() runner.CompareOptions {
 		FailOn:       c.failOn,
 		IgnorePaths:  append([]string(nil), c.ignorePaths...),
 		OnlyBreaking: c.onlyBreaking,
+		TextStyle:    c.textStyle,
 		UseColor:     c.useColor(),
 	}
 }
@@ -49,6 +52,7 @@ func (c *commonFlagValues) fileOptions(oldPath, newPath string) runner.Options {
 		FailOn:       c.failOn,
 		IgnorePaths:  append([]string(nil), c.ignorePaths...),
 		OnlyBreaking: c.onlyBreaking,
+		TextStyle:    c.textStyle,
 		UseColor:     c.useColor(),
 		OldPath:      oldPath,
 		NewPath:      newPath,
@@ -60,6 +64,7 @@ func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {
 	flags.StringVar(&common.failOn, "fail-on", "any", "failure mode: none, breaking, or any")
 	flags.StringArrayVar(&common.ignorePaths, "ignore-path", nil, "ignore diff by exact path (can be specified multiple times)")
 	flags.BoolVar(&common.onlyBreaking, "only-breaking", false, "show only breaking changes")
+	flags.StringVar(&common.textStyle, "text-style", runner.TextStyleAuto, "text rendering style: auto, patch, semantic")
 	flags.BoolVar(&common.noColor, "no-color", false, "disable colored text output")
 }
 
