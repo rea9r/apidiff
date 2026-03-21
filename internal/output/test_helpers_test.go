@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func sampleDiffs() []diff.Diff {
-	return []diff.Diff{
-		{Type: diff.Added, Path: "user.phone", NewValue: "090"},
-		{Type: diff.Removed, Path: "user.email", OldValue: "a@example.com"},
-		{Type: diff.Changed, Path: "user.name", OldValue: "Taro", NewValue: "Hanako"},
-		{Type: diff.TypeChanged, Path: "user.age", OldValue: "20", NewValue: json.Number("20")},
+func sampleDiffs() []delta.Diff {
+	return []delta.Diff{
+		{Type: delta.Added, Path: "user.phone", NewValue: "090"},
+		{Type: delta.Removed, Path: "user.email", OldValue: "a@example.com"},
+		{Type: delta.Changed, Path: "user.name", OldValue: "Taro", NewValue: "Hanako"},
+		{Type: delta.TypeChanged, Path: "user.age", OldValue: "20", NewValue: json.Number("20")},
 	}
 }
 

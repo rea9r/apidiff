@@ -5,46 +5,46 @@ import (
 	"strings"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func Compare(oldText, newText string) []diff.Diff {
+func Compare(oldText, newText string) []delta.Diff {
 	oldLines := difflib.SplitLines(oldText)
 	newLines := difflib.SplitLines(newText)
 
 	matcher := difflib.NewMatcher(oldLines, newLines)
 	opCodes := matcher.GetOpCodes()
 
-	out := make([]diff.Diff, 0)
+	out := make([]delta.Diff, 0)
 	for _, op := range opCodes {
 		switch op.Tag {
 		case 'd':
 			for i := op.I1; i < op.I2; i++ {
-				out = append(out, diff.Diff{
-					Type:     diff.Removed,
+				out = append(out, delta.Diff{
+					Type:     delta.Removed,
 					Path:     linePath(i + 1),
 					OldValue: normalizeLine(oldLines[i]),
 				})
 			}
 		case 'i':
 			for j := op.J1; j < op.J2; j++ {
-				out = append(out, diff.Diff{
-					Type:     diff.Added,
+				out = append(out, delta.Diff{
+					Type:     delta.Added,
 					Path:     linePath(j + 1),
 					NewValue: normalizeLine(newLines[j]),
 				})
 			}
 		case 'r':
 			for i := op.I1; i < op.I2; i++ {
-				out = append(out, diff.Diff{
-					Type:     diff.Removed,
+				out = append(out, delta.Diff{
+					Type:     delta.Removed,
 					Path:     linePath(i + 1),
 					OldValue: normalizeLine(oldLines[i]),
 				})
 			}
 			for j := op.J1; j < op.J2; j++ {
-				out = append(out, diff.Diff{
-					Type:     diff.Added,
+				out = append(out, delta.Diff{
+					Type:     delta.Added,
 					Path:     linePath(j + 1),
 					NewValue: normalizeLine(newLines[j]),
 				})

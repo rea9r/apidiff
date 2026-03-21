@@ -3,7 +3,7 @@ package output
 import (
 	"fmt"
 
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
 const (
@@ -16,14 +16,14 @@ type Options struct {
 	Color  bool
 }
 
-func Format(diffs []diff.Diff, format string) (string, error) {
+func Format(diffs []delta.Diff, format string) (string, error) {
 	return FormatWithOptions(diffs, Options{
 		Format: format,
 		Color:  false,
 	})
 }
 
-func FormatWithOptions(diffs []diff.Diff, opts Options) (string, error) {
+func FormatWithOptions(diffs []delta.Diff, opts Options) (string, error) {
 	switch opts.Format {
 	case TextFormat:
 		return RenderTextWithOptions(nil, nil, diffs, TextOptions{Color: opts.Color}), nil
@@ -34,7 +34,7 @@ func FormatWithOptions(diffs []diff.Diff, opts Options) (string, error) {
 	}
 }
 
-func FormatResultWithOptions(oldValue, newValue any, diffs []diff.Diff, opts Options) (string, error) {
+func FormatResultWithOptions(oldValue, newValue any, diffs []delta.Diff, opts Options) (string, error) {
 	switch opts.Format {
 	case TextFormat:
 		return RenderTextWithOptions(oldValue, newValue, diffs, TextOptions{Color: opts.Color}), nil

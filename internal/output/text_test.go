@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
 func TestFormatText_Golden(t *testing.T) {
@@ -18,10 +18,10 @@ func TestFormatText_Golden(t *testing.T) {
 }
 
 func TestRenderTextWithOptions_HumanizeSpecPaths(t *testing.T) {
-	diffs := []diff.Diff{
-		{Type: diff.Added, Path: "paths./users.post", NewValue: "operation"},
-		{Type: diff.Removed, Path: "paths./users.post.requestBody.required", OldValue: "optional"},
-		{Type: diff.TypeChanged, Path: "paths./users.get.responses.200.content.application/json.schema.type", OldValue: "object", NewValue: "array"},
+	diffs := []delta.Diff{
+		{Type: delta.Added, Path: "paths./users.post", NewValue: "operation"},
+		{Type: delta.Removed, Path: "paths./users.post.requestBody.required", OldValue: "optional"},
+		{Type: delta.TypeChanged, Path: "paths./users.get.responses.200.content.application/json.schema.type", OldValue: "object", NewValue: "array"},
 	}
 
 	got := RenderTextWithOptions(nil, nil, diffs, TextOptions{Color: false})

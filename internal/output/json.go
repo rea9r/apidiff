@@ -3,16 +3,16 @@ package output
 import (
 	"encoding/json"
 
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
 type jsonDiff struct {
-	Type     diff.DiffType `json:"type"`
-	Path     string        `json:"path"`
-	OldValue any           `json:"old_value,omitempty"`
-	NewValue any           `json:"new_value,omitempty"`
-	OldType  string        `json:"old_type,omitempty"`
-	NewType  string        `json:"new_type,omitempty"`
+	Type     delta.DiffType `json:"type"`
+	Path     string         `json:"path"`
+	OldValue any            `json:"old_value,omitempty"`
+	NewValue any            `json:"new_value,omitempty"`
+	OldType  string         `json:"old_type,omitempty"`
+	NewType  string         `json:"new_type,omitempty"`
 }
 
 type jsonSummary struct {
@@ -27,15 +27,15 @@ type jsonResult struct {
 	Summary *jsonSummary `json:"summary,omitempty"`
 }
 
-func FormatJSON(diffs []diff.Diff) (string, error) {
+func FormatJSON(diffs []delta.Diff) (string, error) {
 	return RenderJSON(diffs)
 }
 
-func RenderJSON(diffs []diff.Diff) (string, error) {
+func RenderJSON(diffs []delta.Diff) (string, error) {
 	result := jsonResult{
 		Diffs: make([]jsonDiff, 0, len(diffs)),
 	}
-	result.Summary = toJSONSummaryPtr(diff.Summarize(diffs))
+	result.Summary = toJSONSummaryPtr(delta.Summarize(diffs))
 
 	for _, d := range diffs {
 		jd := jsonDiff{
@@ -44,9 +44,9 @@ func RenderJSON(diffs []diff.Diff) (string, error) {
 			OldValue: d.OldValue,
 			NewValue: d.NewValue,
 		}
-		if d.Type == diff.TypeChanged {
-			jd.OldType = diff.ValueType(d.OldValue)
-			jd.NewType = diff.ValueType(d.NewValue)
+		if d.Type == delta.TypeChanged {
+			jd.OldType = delta.ValueType(d.OldValue)
+			jd.NewType = delta.ValueType(d.NewValue)
 		}
 		result.Diffs = append(result.Diffs, jd)
 	}
@@ -58,7 +58,7 @@ func RenderJSON(diffs []diff.Diff) (string, error) {
 	return string(data) + "\n", nil
 }
 
-func toJSONSummaryPtr(summary diff.Summary) *jsonSummary {
+func toJSONSummaryPtr(summary delta.Summary) *jsonSummary {
 	return &jsonSummary{
 		Added:       summary.Added,
 		Removed:     summary.Removed,

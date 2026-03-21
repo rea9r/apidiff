@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
-func FormatText(diffs []diff.Diff) string {
+func FormatText(diffs []delta.Diff) string {
 	return RenderTextWithOptions(nil, nil, diffs, TextOptions{
 		Color: false,
 	})
@@ -19,14 +19,14 @@ type TextOptions struct {
 	Color bool
 }
 
-func RenderTextWithOptions(oldValue, newValue any, diffs []diff.Diff, opts TextOptions) string {
+func RenderTextWithOptions(oldValue, newValue any, diffs []delta.Diff, opts TextOptions) string {
 	if oldValue == nil && newValue == nil {
 		return renderSemanticDiffSection(diffs, opts.Color)
 	}
 	return renderUnifiedDiffSection(oldValue, newValue, opts.Color)
 }
 
-func renderSemanticDiffSection(diffs []diff.Diff, color bool) string {
+func renderSemanticDiffSection(diffs []delta.Diff, color bool) string {
 	var b strings.Builder
 
 	if len(diffs) == 0 {
@@ -78,15 +78,15 @@ func renderUnifiedText(oldText, newText string, color bool) string {
 	return colorizeUnified(unified, color)
 }
 
-func formatDetail(d diff.Diff) string {
+func formatDetail(d delta.Diff) string {
 	switch d.Type {
-	case diff.Added:
+	case delta.Added:
 		return formatValue(d.NewValue)
-	case diff.Removed:
+	case delta.Removed:
 		return formatValue(d.OldValue)
-	case diff.TypeChanged:
-		return fmt.Sprintf("%s -> %s", diff.ValueType(d.OldValue), diff.ValueType(d.NewValue))
-	case diff.Changed:
+	case delta.TypeChanged:
+		return fmt.Sprintf("%s -> %s", delta.ValueType(d.OldValue), delta.ValueType(d.NewValue))
+	case delta.Changed:
 		return fmt.Sprintf("%s -> %s", formatValue(d.OldValue), formatValue(d.NewValue))
 	default:
 		return ""
@@ -109,15 +109,15 @@ func prettyJSON(v any) string {
 	return string(data) + "\n"
 }
 
-func diffMarker(typ diff.DiffType) string {
+func diffMarker(typ delta.DiffType) string {
 	switch typ {
-	case diff.Added:
+	case delta.Added:
 		return "+"
-	case diff.Removed:
+	case delta.Removed:
 		return "-"
-	case diff.Changed:
+	case delta.Changed:
 		return "~"
-	case diff.TypeChanged:
+	case delta.TypeChanged:
 		return "!"
 	default:
 		return "?"

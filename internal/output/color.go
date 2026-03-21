@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rea9r/xdiff/internal/diff"
+	"github.com/rea9r/xdiff/internal/delta"
 )
 
 const (
@@ -36,7 +36,7 @@ func ShouldUseColor(noColor bool) bool {
 	return fi.Mode()&os.ModeCharDevice != 0
 }
 
-func colorizeAction(action string, typ diff.DiffType, useColor bool) string {
+func colorizeAction(action string, typ delta.DiffType, useColor bool) string {
 	if !useColor {
 		return action
 	}
@@ -48,15 +48,15 @@ func colorizeAction(action string, typ diff.DiffType, useColor bool) string {
 	return colorCode + action + colorReset
 }
 
-func actionColor(typ diff.DiffType) string {
+func actionColor(typ delta.DiffType) string {
 	switch typ {
-	case diff.Added:
+	case delta.Added:
 		return colorGreen
-	case diff.Removed:
+	case delta.Removed:
 		return colorRed
-	case diff.Changed:
+	case delta.Changed:
 		return colorYellow
-	case diff.TypeChanged:
+	case delta.TypeChanged:
 		return colorMagenta
 	default:
 		return ""
