@@ -435,9 +435,13 @@ func TestFilterResolvedChecks_UnknownNameReturnsError(t *testing.T) {
 }
 
 func TestRenderCheckListJSON_StableStructure(t *testing.T) {
-	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindSpec}}
+	scenarioPath := "/tmp/project/scenarios/xdiff.yaml"
+	checks := []ResolvedCheck{
+		{Name: "a", Kind: KindJSON, Old: "/tmp/project/scenarios/data/a-old.json", New: "/tmp/project/scenarios/data/a-new.json"},
+		{Name: "b", Kind: KindSpec, Old: "/tmp/project/scenarios/specs/b-old.yaml", New: "/tmp/project/scenarios/specs/b-new.yaml"},
+	}
 
-	raw, err := RenderCheckListJSON(checks)
+	raw, err := RenderCheckListJSON(checks, scenarioPath)
 	if err != nil {
 		t.Fatalf("RenderCheckListJSON returned error: %v", err)
 	}
@@ -454,6 +458,12 @@ func TestRenderCheckListJSON_StableStructure(t *testing.T) {
 	if got.Checks[0].Name != "a" || got.Checks[1].Name != "b" {
 		t.Fatalf("unexpected checks: %#v", got.Checks)
 	}
+	if got.Checks[0].Old != "data/a-old.json" || got.Checks[0].New != "data/a-new.json" {
+		t.Fatalf("expected relative paths for local checks, got: %#v", got.Checks[0])
+	}
+	if got.Checks[0].Summary != "data/a-old.json -> data/a-new.json" {
+		t.Fatalf("unexpected summary: %q", got.Checks[0].Summary)
+	}
 }
 
 func TestRenderText_IncludesSummaryAndDetails(t *testing.T) {
@@ -466,6 +476,28 @@ func TestRenderText_IncludesSummaryAndDetails(t *testing.T) {
 	mustContain(t, out, "[DIFF] diff (json)")
 	mustContain(t, out, "Summary: total=2 ok=1 diff=1 error=0")
 	mustContain(t, out, "=== diff ===")
+}
+
+func TestRenderCheckListText_IncludesTargetSummary(t *testing.T) {
+	scenarioPath := "/tmp/project/scenarios/xdiff.yaml"
+	checks := []ResolvedCheck{
+		{
+			Name: "local-user-json",
+			Kind: KindJSON,
+			Old:  "/tmp/project/scenarios/snapshots/old-user.json",
+			New:  "/tmp/project/scenarios/snapshots/new-user.json",
+		},
+		{
+			Name: "live-user-url",
+			Kind: KindURL,
+			Old:  "https://old.example.com/api/user",
+			New:  "https://new.example.com/api/user",
+		},
+	}
+
+	out := RenderCheckListText(checks, scenarioPath)
+	mustContain(t, out, "- local-user-json (json) snapshots/old-user.json -> snapshots/new-user.json")
+	mustContain(t, out, "- live-user-url (url) https://old.example.com/api/user -> https://new.example.com/api/user")
 }
 
 func TestLoadFile_StrictUnknownField(t *testing.T) {

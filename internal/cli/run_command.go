@@ -52,7 +52,7 @@ func newRunCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 				case "text":
 					out = scenario.RenderCheckListText(checks, scenarioPath)
 				case "json":
-					rendered, err := scenario.RenderCheckListJSON(checks)
+					rendered, err := scenario.RenderCheckListJSON(checks, scenarioPath)
 					if err != nil {
 						return asRunError(2, err)
 					}

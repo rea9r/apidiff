@@ -440,6 +440,9 @@ checks:
 	if !strings.Contains(stdout.String(), `"checks"`) || !strings.Contains(stdout.String(), `"name": "json-a"`) {
 		t.Fatalf("unexpected json list output: %q", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), `"old": "old.json"`) || !strings.Contains(stdout.String(), `"summary": "old.json -\u003e new.json"`) {
+		t.Fatalf("expected old/new/summary in json list output: %q", stdout.String())
+	}
 }
 
 func TestRunCLI_RunScenario_OnlyRunsSelectedChecks(t *testing.T) {
@@ -491,6 +494,9 @@ checks:
 	}
 	if strings.Contains(stdout.String(), "first") || !strings.Contains(stdout.String(), "second") {
 		t.Fatalf("unexpected filtered list output: %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "second (text) c.txt -> d.txt") {
+		t.Fatalf("expected target summary in filtered list output: %q", stdout.String())
 	}
 }
 

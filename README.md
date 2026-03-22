@@ -236,6 +236,7 @@ Notes:
 - Local file paths are resolved relative to the scenario file directory.
 - `--report-format` controls scenario report output (`text` or `json`).
 - `--list` validates and resolves the scenario, but does not execute checks.
+- `--list` output includes check names, kinds, and targets.
 - `--only` uses exact check names and preserves scenario file order.
 - Each check's `exit_code` follows that check's `fail_on` policy.
 - Scenario `status` and summary still reflect whether diffs actually exist.
