@@ -5,6 +5,7 @@ import type {
   Mode,
   ScenarioCheckListEntry,
   ScenarioListResponse,
+  ScenarioResult,
   ScenarioRunResponse,
 } from './types'
 import './style.css'
@@ -56,6 +57,21 @@ function summarizeResponse(res: unknown): string {
   return parts.join(' ')
 }
 
+function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
+  const results = res.results ?? []
+  if (results.length === 0) return ''
+
+  const firstNonOK = results.find((r) => r.status !== 'ok')
+  if (firstNonOK) return firstNonOK.name
+
+  return results[0].name
+}
+
+function classForStatus(status: string): string {
+  if (status === 'ok' || status === 'diff' || status === 'error') return status
+  return 'error'
+}
+
 export function App() {
   const [mode, setMode] = useState<Mode>('json')
 
@@ -70,6 +86,9 @@ export function App() {
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
   const [scenarioChecks, setScenarioChecks] = useState<ScenarioCheckListEntry[]>([])
   const [selectedChecks, setSelectedChecks] = useState<string[]>([])
+  const [scenarioListStatus, setScenarioListStatus] = useState('')
+  const [scenarioRunResult, setScenarioRunResult] = useState<ScenarioRunResponse | null>(null)
+  const [selectedScenarioResultName, setSelectedScenarioResultName] = useState('')
 
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
@@ -91,6 +110,11 @@ export function App() {
   const setResult = (res: unknown) => {
     setSummaryLine(summarizeResponse(res))
     setOutput(renderResult(res))
+  }
+
+  const setScenarioRunResultView = (res: ScenarioRunResponse) => {
+    setScenarioRunResult(res)
+    setSelectedScenarioResultName(chooseInitialScenarioResult(res))
   }
 
   const browseAndSet = async (
@@ -149,9 +173,16 @@ export function App() {
       only: [],
     })
 
-    setResult(res)
+    if (res.error) {
+      setScenarioChecks([])
+      setSelectedChecks([])
+      setScenarioListStatus(res.error)
+      return
+    }
+
     setScenarioChecks(res.checks ?? [])
     setSelectedChecks([])
+    setScenarioListStatus(`loaded ${res.checks?.length ?? 0} checks`)
   }
 
   const runScenario = async () => {
@@ -163,7 +194,10 @@ export function App() {
       reportFormat,
       only: selectedChecks,
     })
-    setResult(res)
+
+    setScenarioRunResultView(res)
+    setSummaryLine('')
+    setOutput('')
   }
 
   const runByMode = async () => {
@@ -180,14 +214,26 @@ export function App() {
 
   const onRun = async () => {
     setLoading(true)
-    setSummaryLine('')
-    setOutput('')
+
+    if (mode !== 'scenario') {
+      setSummaryLine('')
+      setOutput('')
+    }
 
     try {
       await runByMode()
     } catch (e) {
-      setSummaryLine('error=yes')
-      setOutput(String(e))
+      if (mode === 'scenario') {
+        const errorText = String(e)
+        setScenarioRunResult({
+          exitCode: 2,
+          error: errorText,
+        })
+        setSelectedScenarioResultName('')
+      } else {
+        setSummaryLine('error=yes')
+        setOutput(String(e))
+      }
     } finally {
       setLoading(false)
     }
@@ -195,14 +241,13 @@ export function App() {
 
   const onLoadScenarioChecks = async () => {
     setLoading(true)
-    setSummaryLine('')
-    setOutput('')
 
     try {
       await loadScenarioChecks()
     } catch (e) {
-      setSummaryLine('error=yes')
-      setOutput(String(e))
+      setScenarioChecks([])
+      setSelectedChecks([])
+      setScenarioListStatus(String(e))
     } finally {
       setLoading(false)
     }
@@ -224,6 +269,99 @@ export function App() {
 
   const clearScenarioSelection = () => {
     setSelectedChecks([])
+  }
+
+  const getSelectedScenarioResult = (): ScenarioResult | null => {
+    if (!scenarioRunResult?.results || !selectedScenarioResultName) return null
+    return scenarioRunResult.results.find((r) => r.name === selectedScenarioResultName) ?? null
+  }
+
+  const renderScenarioResultPanel = () => {
+    if (!scenarioRunResult) {
+      return <div className="muted">(no scenario run yet)</div>
+    }
+
+    if (scenarioRunResult.error) {
+      return (
+        <div className="scenario-result-detail">
+          <div className="status-badge error">error</div>
+          <pre>{scenarioRunResult.error}</pre>
+        </div>
+      )
+    }
+
+    const summary = scenarioRunResult.summary
+    const results = scenarioRunResult.results ?? []
+    const selected =
+      getSelectedScenarioResult() ??
+      results.find((r) => r.status !== 'ok') ??
+      results[0] ??
+      null
+
+    return (
+      <div className="scenario-result-shell">
+        {summary ? (
+          <div className="scenario-summary-grid">
+            <div>
+              <strong>exit</strong> {summary.exitCode}
+            </div>
+            <div>
+              <strong>total</strong> {summary.total}
+            </div>
+            <div>
+              <strong>ok</strong> {summary.ok}
+            </div>
+            <div>
+              <strong>diff</strong> {summary.diff}
+            </div>
+            <div>
+              <strong>error</strong> {summary.error}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="scenario-results-layout">
+          <div className="scenario-results-list">
+            {results.map((r) => (
+              <button
+                key={r.name}
+                className={`scenario-result-item ${selected?.name === r.name ? 'active' : ''}`}
+                onClick={() => setSelectedScenarioResultName(r.name)}
+                type="button"
+              >
+                <div className="scenario-result-item-top">
+                  <span>{r.name}</span>
+                  <span className={`status-badge ${classForStatus(r.status)}`}>{r.status}</span>
+                </div>
+                <div className="scenario-result-item-sub">
+                  <span>{r.kind}</span>
+                  <span>exit={r.exitCode}</span>
+                  <span>diff={r.diffFound ? 'yes' : 'no'}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="scenario-result-detail">
+            {selected ? (
+              <>
+                <h3>{selected.name}</h3>
+                <div className="muted">
+                  {selected.kind} · status={selected.status} · exit={selected.exitCode} · diff={selected.diffFound ? 'yes' : 'no'}
+                </div>
+                {selected.errorMessage ? <pre>{selected.errorMessage}</pre> : null}
+                {selected.output ? <pre>{selected.output}</pre> : null}
+                {!selected.errorMessage && !selected.output ? (
+                  <div className="muted">(no detail)</div>
+                ) : null}
+              </>
+            ) : (
+              <div className="muted">(no selected result)</div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -337,6 +475,8 @@ export function App() {
               </button>
             </div>
 
+            {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
+
             <div className="button-row">
               <button onClick={selectAllScenarioChecks} disabled={scenarioChecks.length === 0}>
                 Select all
@@ -373,8 +513,14 @@ export function App() {
 
       <main className="result-panel">
         <h2>Result</h2>
-        {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-        <pre className="result-output">{output || '(no output yet)'}</pre>
+        {mode === 'scenario' ? (
+          renderScenarioResultPanel()
+        ) : (
+          <>
+            {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+            <pre className="result-output">{output || '(no output yet)'}</pre>
+          </>
+        )}
       </main>
     </div>
   )
