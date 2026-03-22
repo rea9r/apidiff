@@ -9,7 +9,7 @@ const defaultCommon = {
   ignorePaths: [] as string[],
   showPaths: false,
   onlyBreaking: false,
-  noColor: false,
+  noColor: true,
 }
 
 export function App() {
@@ -141,6 +141,7 @@ export function App() {
 function renderResult(res: any): string {
   if (typeof res === 'string') return res
   if (!res) return '(no response)'
+  if (res.error) return String(res.error)
   if (res.output) return String(res.output)
   return JSON.stringify(res, null, 2)
 }

@@ -16,6 +16,10 @@ func NewService() *Service {
 	return &Service{}
 }
 
+func guiUseColor() bool {
+	return false
+}
+
 func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, error) {
 	opts := runner.Options{
 		Format:       normalizeOutputFormat(req.Common.OutputFormat),
@@ -25,7 +29,7 @@ func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, er
 		OnlyBreaking: req.Common.OnlyBreaking,
 		TextStyle:    req.Common.TextStyle,
 		IgnoreOrder:  req.IgnoreOrder,
-		UseColor:     !req.Common.NoColor,
+		UseColor:     guiUseColor(),
 		OldPath:      req.OldPath,
 		NewPath:      req.NewPath,
 	}
@@ -57,7 +61,7 @@ func (s *Service) CompareSpecFiles(req CompareSpecRequest) (*CompareResponse, er
 		ShowPaths:     req.Common.ShowPaths,
 		OnlyBreaking:  req.Common.OnlyBreaking,
 		TextStyle:     req.Common.TextStyle,
-		UseColor:      !req.Common.NoColor,
+		UseColor:      guiUseColor(),
 		PathFormatter: openapi.HumanizePath,
 	}
 
