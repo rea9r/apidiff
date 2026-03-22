@@ -341,6 +341,50 @@ func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
 	}
 }
 
+func TestRun_ShowPaths_RespectsIgnorePathFilter(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro","age":20}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":21}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:      "json",
+		ShowPaths:   true,
+		IgnorePaths: []string{"user.name"},
+		OldPath:     oldPath,
+		NewPath:     newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if out != "user.age\n" {
+		t.Fatalf("unexpected output: %q", out)
+	}
+}
+
+func TestRun_ShowPaths_WithOnlyBreaking(t *testing.T) {
+	oldPath := writeTempJSON(t, `{"user":{"name":"Taro","age":"20"}}`, "old.json")
+	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
+
+	code, out, err := RunJSONFiles(Options{
+		Format:       "text",
+		ShowPaths:    true,
+		OnlyBreaking: true,
+		OldPath:      oldPath,
+		NewPath:      newPath,
+	})
+	if err != nil {
+		t.Fatalf("Run returned unexpected error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if out != "user.age\n" {
+		t.Fatalf("unexpected output: %q", out)
+	}
+}
+
 func writeTempJSON(t *testing.T, content string, fileName string) string {
 	t.Helper()
 

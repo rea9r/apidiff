@@ -37,8 +37,10 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 	})
 
 	var out string
-	switch opts.Format {
-	case output.TextFormat:
+	switch {
+	case opts.ShowPaths:
+		out = output.RenderPaths(filtered)
+	case opts.Format == output.TextFormat:
 		style, err := resolveTextDiffStyle(opts)
 		if err != nil {
 			return exitError, "", err
@@ -57,7 +59,7 @@ func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, e
 		} else {
 			out = output.RenderUnifiedTextWithColor(oldText, newText, opts.UseColor)
 		}
-	case output.JSONFormat:
+	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)
 		if err != nil {
 			return exitError, "", err

@@ -128,3 +128,31 @@ func TestRunWithDiffs_SpecIgnorePath_HumanizedPathDoesNotMatch(t *testing.T) {
 		t.Fatalf("expected diff to remain when ignore-path is humanized label, got: %q", out)
 	}
 }
+
+func TestRunWithDiffs_SpecShowPaths_UsesCanonicalPath(t *testing.T) {
+	diffs := []delta.Diff{
+		{
+			Type: delta.Removed,
+			Path: "paths./users.post.requestBody.required",
+		},
+	}
+
+	code, out, err := RunDeltaDiffs(diffs, CompareOptions{
+		Format:        "text",
+		FailOn:        FailOnAny,
+		ShowPaths:     true,
+		PathFormatter: openapi.HumanizePath,
+	})
+	if err != nil {
+		t.Fatalf("RunDeltaDiffs returned error: %v", err)
+	}
+	if code != exitDiffFound {
+		t.Fatalf("exit code mismatch: got=%d want=%d", code, exitDiffFound)
+	}
+	if out != "paths./users.post.requestBody.required\n" {
+		t.Fatalf("expected canonical path output, got: %q", out)
+	}
+	if strings.Contains(out, "POST /users request body required") {
+		t.Fatalf("show-paths must not use humanized path, got: %q", out)
+	}
+}

@@ -13,6 +13,7 @@ type Options struct {
 	OnlyBreaking  bool
 	IgnoreOrder   bool
 	TextStyle     string
+	ShowPaths     bool
 	UseColor      bool
 	PathFormatter func(string) string
 	OldPath       string
@@ -26,6 +27,7 @@ type CompareOptions struct {
 	OnlyBreaking  bool
 	IgnoreOrder   bool
 	TextStyle     string
+	ShowPaths     bool
 	UseColor      bool
 	PathFormatter func(string) string
 }
@@ -38,6 +40,7 @@ func (o Options) CompareOptions() CompareOptions {
 		OnlyBreaking:  o.OnlyBreaking,
 		IgnoreOrder:   o.IgnoreOrder,
 		TextStyle:     o.TextStyle,
+		ShowPaths:     o.ShowPaths,
 		UseColor:      o.UseColor,
 		PathFormatter: o.PathFormatter,
 	}

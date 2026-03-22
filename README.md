@@ -93,6 +93,7 @@ Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 | `--output-format text\|json` | Output format | `text` |
 | `--fail-on none\|breaking\|any` | Exit code policy (`none`: always 0, `breaking`: fail only on breaking changes, `any`: fail on any diff) | `any` |
 | `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
+| `--show-paths` | Print canonical diff paths only (useful with `--ignore-path`) | `false` |
 | `--only-breaking` | Show only breaking changes (`removed`, `type_changed`) | `false` |
 | `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
 | `--no-color` | Disable colored text output | `false` |
@@ -176,6 +177,25 @@ For OpenAPI comparison, `--ignore-path` matches canonical paths such as:
 - `paths./users.get.responses.200.content.application/json.schema.type`
 
 Text output may show human-readable OpenAPI labels, but `--ignore-path` and `--output-format json` use canonical paths.
+`--show-paths` always prints canonical paths.
+
+Show canonical diff paths for local JSON comparison:
+
+```bash
+xdiff --show-paths old.json new.json
+```
+
+Show canonical diff paths for OpenAPI comparison:
+
+```bash
+xdiff spec --show-paths old-openapi.yaml new-openapi.yaml
+```
+
+Show only breaking canonical paths for OpenAPI comparison:
+
+```bash
+xdiff spec --only-breaking --show-paths old-openapi.yaml new-openapi.yaml
+```
 
 Notes for `--ignore-order`:
 - Arrays are compared as unordered normalized values.

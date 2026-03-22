@@ -102,8 +102,10 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 	})
 
 	var out string
-	switch opts.Format {
-	case output.TextFormat:
+	switch {
+	case opts.ShowPaths:
+		out = output.RenderPaths(diffs)
+	case opts.Format == output.TextFormat:
 		style, err := resolveJSONTextStyle(opts)
 		if err != nil {
 			return exitError, "", err
@@ -121,7 +123,7 @@ func RunJSONValues(oldValue, newValue any, opts CompareOptions) (int, string, er
 			break
 		}
 		out = output.RenderUnifiedJSONWithColor(oldValue, newValue, opts.UseColor)
-	case output.JSONFormat:
+	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(diffs)
 		if err != nil {
 			return exitError, "", err
@@ -147,8 +149,10 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 	})
 
 	var out string
-	switch opts.Format {
-	case output.TextFormat:
+	switch {
+	case opts.ShowPaths:
+		out = output.RenderPaths(filtered)
+	case opts.Format == output.TextFormat:
 		if _, err := resolveDeltaTextStyle(opts); err != nil {
 			return exitError, "", err
 		}
@@ -156,7 +160,7 @@ func RunDeltaDiffs(diffs []delta.Diff, opts CompareOptions) (int, string, error)
 			UseColor:      opts.UseColor,
 			PathFormatter: opts.PathFormatter,
 		})
-	case output.JSONFormat:
+	case opts.Format == output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)
 		if err != nil {
 			return exitError, "", err

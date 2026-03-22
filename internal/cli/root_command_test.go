@@ -151,3 +151,39 @@ func TestTextStyleFlagAvailability(t *testing.T) {
 		t.Fatal("spec command should expose --text-style")
 	}
 }
+
+func TestShowPathsFlagAvailability(t *testing.T) {
+	common := newCommonFlags(io.Discard)
+
+	root := newRootCommand(new(int), io.Discard)
+	if root.Flags().Lookup("show-paths") == nil {
+		t.Fatal("root command should expose --show-paths")
+	}
+	if !strings.Contains(root.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("root help should include --show-paths")
+	}
+
+	urlCmd := newURLCommand(common, new(int))
+	if urlCmd.Flags().Lookup("show-paths") == nil {
+		t.Fatal("url command should expose --show-paths")
+	}
+	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("url help should include --show-paths")
+	}
+
+	textCmd := newTextCommand(common, new(int))
+	if textCmd.Flags().Lookup("show-paths") == nil {
+		t.Fatal("text command should expose --show-paths")
+	}
+	if !strings.Contains(textCmd.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("text help should include --show-paths")
+	}
+
+	specCmd := newSpecCommand(common, new(int))
+	if specCmd.Flags().Lookup("show-paths") == nil {
+		t.Fatal("spec command should expose --show-paths")
+	}
+	if !strings.Contains(specCmd.Flags().FlagUsages(), "--show-paths") {
+		t.Fatal("spec help should include --show-paths")
+	}
+}
