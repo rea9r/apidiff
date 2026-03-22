@@ -1,24 +1,77 @@
 import { useMemo, useState } from 'react'
+import type {
+  CompareCommon,
+  CompareResponse,
+  Mode,
+  ScenarioCheckListEntry,
+  ScenarioListResponse,
+  ScenarioRunResponse,
+} from './types'
+import './style.css'
 
-type Mode = 'json' | 'spec' | 'scenario'
-
-const defaultCommon = {
+const defaultCommon: CompareCommon = {
   failOn: 'any',
   outputFormat: 'text',
   textStyle: 'auto',
-  ignorePaths: [] as string[],
+  ignorePaths: [],
   showPaths: false,
   onlyBreaking: false,
   noColor: true,
 }
 
+function renderResult(res: unknown): string {
+  if (typeof res === 'string') return res
+  if (!res) return '(no response)'
+
+  const maybe = res as {
+    error?: string
+    output?: string
+  }
+
+  if (maybe.error) return String(maybe.error)
+  if (maybe.output) return String(maybe.output)
+
+  return JSON.stringify(res, null, 2)
+}
+
+function summarizeResponse(res: unknown): string {
+  if (!res || typeof res !== 'object') return ''
+
+  const r = res as {
+    exitCode?: number
+    diffFound?: boolean
+    error?: string
+    summary?: { total: number; ok: number; diff: number; error: number; exitCode: number }
+  }
+
+  if (r.summary) {
+    return `exit=${r.summary.exitCode} total=${r.summary.total} ok=${r.summary.ok} diff=${r.summary.diff} error=${r.summary.error}`
+  }
+
+  const parts: string[] = []
+  if (typeof r.exitCode === 'number') parts.push(`exit=${r.exitCode}`)
+  if (typeof r.diffFound === 'boolean') parts.push(`diff=${r.diffFound ? 'yes' : 'no'}`)
+  if (r.error) parts.push('error=yes')
+
+  return parts.join(' ')
+}
+
 export function App() {
   const [mode, setMode] = useState<Mode>('json')
-  const [oldPath, setOldPath] = useState('')
-  const [newPath, setNewPath] = useState('')
+
+  const [jsonOldPath, setJSONOldPath] = useState('')
+  const [jsonNewPath, setJSONNewPath] = useState('')
+  const [ignoreOrder, setIgnoreOrder] = useState(false)
+
+  const [specOldPath, setSpecOldPath] = useState('')
+  const [specNewPath, setSpecNewPath] = useState('')
+
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
-  const [ignoreOrder, setIgnoreOrder] = useState(false)
+  const [scenarioChecks, setScenarioChecks] = useState<ScenarioCheckListEntry[]>([])
+  const [selectedChecks, setSelectedChecks] = useState<string[]>([])
+
+  const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -27,121 +80,253 @@ export function App() {
       compareJSON: (window as any).go?.main?.App?.CompareJSONFiles,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
       runScenario: (window as any).go?.main?.App?.RunScenario,
+      listScenarioChecks: (window as any).go?.main?.App?.ListScenarioChecks,
     }),
     [],
   )
 
-  const run = async () => {
+  const setResult = (res: unknown) => {
+    setSummaryLine(summarizeResponse(res))
+    setOutput(renderResult(res))
+  }
+
+  const runJSON = async () => {
+    const fn = api.compareJSON
+    if (!fn) throw new Error('Wails bridge not available (CompareJSONFiles)')
+
+    const res: CompareResponse = await fn({
+      oldPath: jsonOldPath,
+      newPath: jsonNewPath,
+      common: defaultCommon,
+      ignoreOrder,
+    })
+    setResult(res)
+  }
+
+  const runSpec = async () => {
+    const fn = api.compareSpec
+    if (!fn) throw new Error('Wails bridge not available (CompareSpecFiles)')
+
+    const res: CompareResponse = await fn({
+      oldPath: specOldPath,
+      newPath: specNewPath,
+      common: defaultCommon,
+    })
+    setResult(res)
+  }
+
+  const loadScenarioChecks = async () => {
+    const fn = api.listScenarioChecks
+    if (!fn) throw new Error('Wails bridge not available (ListScenarioChecks)')
+
+    const res: ScenarioListResponse = await fn({
+      scenarioPath,
+      reportFormat,
+      only: [],
+    })
+
+    setResult(res)
+    setScenarioChecks(res.checks ?? [])
+    setSelectedChecks([])
+  }
+
+  const runScenario = async () => {
+    const fn = api.runScenario
+    if (!fn) throw new Error('Wails bridge not available (RunScenario)')
+
+    const res: ScenarioRunResponse = await fn({
+      scenarioPath,
+      reportFormat,
+      only: selectedChecks,
+    })
+    setResult(res)
+  }
+
+  const runByMode = async () => {
+    if (mode === 'json') {
+      await runJSON()
+      return
+    }
+    if (mode === 'spec') {
+      await runSpec()
+      return
+    }
+    await runScenario()
+  }
+
+  const onRun = async () => {
     setLoading(true)
+    setSummaryLine('')
     setOutput('')
+
     try {
-      if (mode === 'json') {
-        const fn = api.compareJSON
-        if (!fn) throw new Error('Wails bridge not available (CompareJSONFiles)')
-        const res = await fn({
-          oldPath,
-          newPath,
-          common: defaultCommon,
-          ignoreOrder,
-        })
-        setOutput(renderResult(res))
-        return
-      }
-
-      if (mode === 'spec') {
-        const fn = api.compareSpec
-        if (!fn) throw new Error('Wails bridge not available (CompareSpecFiles)')
-        const res = await fn({
-          oldPath,
-          newPath,
-          common: defaultCommon,
-        })
-        setOutput(renderResult(res))
-        return
-      }
-
-      const fn = api.runScenario
-      if (!fn) throw new Error('Wails bridge not available (RunScenario)')
-      const res = await fn({
-        scenarioPath,
-        reportFormat,
-        only: [],
-      })
-      setOutput(renderResult(res))
+      await runByMode()
     } catch (e) {
+      setSummaryLine('error=yes')
       setOutput(String(e))
     } finally {
       setLoading(false)
     }
   }
 
+  const onLoadScenarioChecks = async () => {
+    setLoading(true)
+    setSummaryLine('')
+    setOutput('')
+
+    try {
+      await loadScenarioChecks()
+    } catch (e) {
+      setSummaryLine('error=yes')
+      setOutput(String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleScenarioCheck = (name: string, checked: boolean) => {
+    setSelectedChecks((prev) => {
+      if (checked) {
+        if (prev.includes(name)) return prev
+        return [...prev, name]
+      }
+      return prev.filter((v) => v !== name)
+    })
+  }
+
+  const selectAllScenarioChecks = () => {
+    setSelectedChecks(scenarioChecks.map((c) => c.name))
+  }
+
+  const clearScenarioSelection = () => {
+    setSelectedChecks([])
+  }
+
   return (
-    <main style={{ fontFamily: 'sans-serif', padding: 20, maxWidth: 960, margin: '0 auto' }}>
-      <h1>xdiff Desktop (Phase 1)</h1>
+    <div className="app-shell">
+      <aside className="control-panel">
+        <h1>xdiff Desktop</h1>
 
-      <label>
-        Mode:
-        <select value={mode} onChange={(e) => setMode(e.target.value as Mode)} style={{ marginLeft: 8 }}>
-          <option value="json">JSON compare</option>
-          <option value="spec">OpenAPI spec compare</option>
-          <option value="scenario">Scenario run</option>
-        </select>
-      </label>
+        <div className="field-block">
+          <label className="field-label">Mode</label>
+          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
+            <option value="json">JSON compare</option>
+            <option value="spec">OpenAPI spec compare</option>
+            <option value="scenario">Scenario run</option>
+          </select>
+        </div>
 
-      {mode !== 'scenario' ? (
-        <section style={{ marginTop: 16 }}>
-          <div style={{ marginBottom: 8 }}>
-            <label>
-              Old path:
-              <input value={oldPath} onChange={(e) => setOldPath(e.target.value)} style={{ width: '100%', marginTop: 4 }} />
-            </label>
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label>
-              New path:
-              <input value={newPath} onChange={(e) => setNewPath(e.target.value)} style={{ width: '100%', marginTop: 4 }} />
-            </label>
-          </div>
-          {mode === 'json' ? (
-            <label>
-              <input type="checkbox" checked={ignoreOrder} onChange={(e) => setIgnoreOrder(e.target.checked)} /> ignore array order
-            </label>
-          ) : null}
-        </section>
-      ) : (
-        <section style={{ marginTop: 16 }}>
-          <div style={{ marginBottom: 8 }}>
-            <label>
-              Scenario path:
-              <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} style={{ width: '100%', marginTop: 4 }} />
-            </label>
-          </div>
-          <label>
-            Report format:
-            <select value={reportFormat} onChange={(e) => setReportFormat(e.target.value as 'text' | 'json')} style={{ marginLeft: 8 }}>
-              <option value="text">text</option>
-              <option value="json">json</option>
-            </select>
-          </label>
-        </section>
-      )}
+        {mode === 'json' && (
+          <section className="mode-panel">
+            <div className="field-block">
+              <label className="field-label">Old path</label>
+              <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
+            </div>
 
-      <div style={{ marginTop: 16 }}>
-        <button onClick={run} disabled={loading}>{loading ? 'Running...' : 'Run'}</button>
-      </div>
+            <div className="field-block">
+              <label className="field-label">New path</label>
+              <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
+            </div>
 
-      <section style={{ marginTop: 20 }}>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={ignoreOrder}
+                onChange={(e) => setIgnoreOrder(e.target.checked)}
+              />
+              ignore array order
+            </label>
+
+            <button onClick={onRun} disabled={loading}>
+              {loading ? 'Running...' : 'Run JSON compare'}
+            </button>
+          </section>
+        )}
+
+        {mode === 'spec' && (
+          <section className="mode-panel">
+            <div className="field-block">
+              <label className="field-label">Old spec path</label>
+              <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+            </div>
+
+            <div className="field-block">
+              <label className="field-label">New spec path</label>
+              <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+            </div>
+
+            <button onClick={onRun} disabled={loading}>
+              {loading ? 'Running...' : 'Run spec compare'}
+            </button>
+          </section>
+        )}
+
+        {mode === 'scenario' && (
+          <section className="mode-panel">
+            <div className="field-block">
+              <label className="field-label">Scenario path</label>
+              <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
+            </div>
+
+            <div className="field-block">
+              <label className="field-label">Report format</label>
+              <select
+                value={reportFormat}
+                onChange={(e) => setReportFormat(e.target.value as 'text' | 'json')}
+              >
+                <option value="text">text</option>
+                <option value="json">json</option>
+              </select>
+            </div>
+
+            <div className="button-row">
+              <button onClick={onLoadScenarioChecks} disabled={loading}>
+                {loading ? 'Loading...' : 'Load checks'}
+              </button>
+              <button onClick={onRun} disabled={loading}>
+                {loading ? 'Running...' : 'Run selected'}
+              </button>
+            </div>
+
+            <div className="button-row">
+              <button onClick={selectAllScenarioChecks} disabled={scenarioChecks.length === 0}>
+                Select all
+              </button>
+              <button onClick={clearScenarioSelection} disabled={selectedChecks.length === 0}>
+                Clear
+              </button>
+            </div>
+
+            <div className="scenario-check-list">
+              {scenarioChecks.length === 0 ? (
+                <div className="muted">No checks loaded yet.</div>
+              ) : (
+                scenarioChecks.map((check) => (
+                  <label key={check.name} className="scenario-check-item">
+                    <input
+                      type="checkbox"
+                      checked={selectedChecks.includes(check.name)}
+                      onChange={(e) => toggleScenarioCheck(check.name, e.target.checked)}
+                    />
+                    <div>
+                      <div className="scenario-check-title">
+                        {check.name} <span className="muted">({check.kind})</span>
+                      </div>
+                      <div className="scenario-check-summary">{check.summary}</div>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+      </aside>
+
+      <main className="result-panel">
         <h2>Result</h2>
-        <pre style={{ background: '#111', color: '#0f0', padding: 12, minHeight: 220, whiteSpace: 'pre-wrap' }}>{output}</pre>
-      </section>
-    </main>
+        {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+        <pre className="result-output">{output || '(no output yet)'}</pre>
+      </main>
+    </div>
   )
-}
-
-function renderResult(res: any): string {
-  if (typeof res === 'string') return res
-  if (!res) return '(no response)'
-  if (res.error) return String(res.error)
-  if (res.output) return String(res.output)
-  return JSON.stringify(res, null, 2)
 }

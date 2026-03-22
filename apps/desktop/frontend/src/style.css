@@ -1,0 +1,130 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 100vh;
+}
+
+.control-panel {
+  border-right: 1px solid #d8d8d8;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result-panel {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+}
+
+input,
+select {
+  padding: 8px 10px;
+}
+
+button {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-check-list {
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.scenario-check-item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+
+.scenario-check-item:hover {
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.scenario-check-title {
+  font-weight: 600;
+}
+
+.scenario-check-summary {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+.result-summary {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.result-output {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d8d8d8;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.muted {
+  opacity: 0.7;
+}

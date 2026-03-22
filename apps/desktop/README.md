@@ -1,18 +1,19 @@
-# xdiff Desktop (Wails, Phase 1)
+# xdiff Desktop (Wails, Phase 2)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 1)
+## Scope (Phase 2)
 
 - JSON file comparison
 - OpenAPI spec comparison
-- Scenario run
+- Scenario checks listing
+- Scenario selected run (`only`)
 
 Not included yet:
 
 - Text compare GUI
 - URL compare GUI
-- File picker polish
+- File picker
 - Packaging/distribution
 
 ## Prerequisites
