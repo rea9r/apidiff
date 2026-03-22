@@ -12,6 +12,9 @@ Try it from the repository root:
 go run ./cmd/xdiff testdata/old.json testdata/new.json
 ```
 
+The root `testdata/old.json` and `testdata/new.json` files are quick-start fixtures.
+Package-specific test fixtures are kept under each package's own `testdata/` directory.
+
 Install once:
 
 ```bash

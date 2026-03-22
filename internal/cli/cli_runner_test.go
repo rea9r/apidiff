@@ -338,5 +338,5 @@ func writeCLIFile(t *testing.T, content string, fileName string) string {
 }
 
 func fixturePath(path string) string {
-	return filepath.Clean(filepath.Join("..", "..", "cmd", "xdiff", path))
+	return filepath.Clean(path)
 }
