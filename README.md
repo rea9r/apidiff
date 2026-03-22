@@ -11,7 +11,7 @@ Data diff tool written in Go.
 Try it from the repository root:
 
 ```bash
-go run ./cmd/xdiff testdata/old.json testdata/new.json
+go run ./cmd/xdiff json testdata/old.json testdata/new.json
 ```
 
 The root `testdata/old.json` and `testdata/new.json` files are quick-start fixtures. Package-specific test fixtures are kept under each package's own `testdata/` directory.
@@ -84,7 +84,7 @@ Arguments:
 
 ## Options
 
-Common options (`xdiff`, `xdiff text`, `xdiff url`, and `xdiff spec`):
+Common options (`xdiff json`, `xdiff text`, `xdiff url`, and `xdiff spec`):
 
 | Option | Description | Default |
 | --- | --- | --- |
