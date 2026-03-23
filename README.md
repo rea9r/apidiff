@@ -245,6 +245,15 @@ Notes:
   - `1`: no execution errors, but at least one check reports differences
   - `0`: all checks are OK
 
+## Runnable examples
+
+Small runnable examples are available under:
+
+- `examples/text`
+- `examples/spec`
+- `examples/scenario`
+- `examples/url`
+
 ## Examples
 
 Compare local JSON files:
