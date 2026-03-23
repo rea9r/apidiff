@@ -43,12 +43,19 @@ const defaultTextCommon: CompareCommon = {
 type TextResultView = 'rich' | 'raw'
 
 type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
+type InlineDiffKind = 'same' | 'add' | 'remove'
+
+type InlineDiffSegment = {
+  kind: InlineDiffKind
+  text: string
+}
 
 type UnifiedDiffRow = {
   kind: UnifiedDiffRowKind
   oldLine: number | null
   newLine: number | null
   content: string
+  inlineSegments?: InlineDiffSegment[]
 }
 
 function renderResult(res: unknown): string {
@@ -112,6 +119,180 @@ function parseIgnorePaths(input: string): string[] {
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+}
+
+function tokenizeInlineDiff(input: string): string[] {
+  if (input.length === 0) {
+    return ['']
+  }
+
+  const tokens = input.match(/(\s+|[^\s]+)/g)
+  return tokens && tokens.length > 0 ? tokens : [input]
+}
+
+function pushInlineSegment(
+  target: InlineDiffSegment[],
+  kind: InlineDiffKind,
+  text: string,
+) {
+  if (text.length === 0) {
+    return
+  }
+
+  const last = target[target.length - 1]
+  if (last && last.kind === kind) {
+    last.text += text
+    return
+  }
+
+  target.push({ kind, text })
+}
+
+function buildLCSTable(a: string[], b: string[]): number[][] {
+  const table = Array.from({ length: a.length + 1 }, () =>
+    Array<number>(b.length + 1).fill(0),
+  )
+
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      if (a[i] === b[j]) {
+        table[i][j] = table[i + 1][j + 1] + 1
+      } else {
+        table[i][j] = Math.max(table[i + 1][j], table[i][j + 1])
+      }
+    }
+  }
+
+  return table
+}
+
+function buildInlineDiffPair(
+  oldText: string,
+  newText: string,
+): { removed: InlineDiffSegment[]; added: InlineDiffSegment[] } | null {
+  if (oldText === newText) {
+    return {
+      removed: [{ kind: 'same', text: oldText }],
+      added: [{ kind: 'same', text: newText }],
+    }
+  }
+
+  if (oldText.length + newText.length > 4000) {
+    return null
+  }
+
+  const oldTokens = tokenizeInlineDiff(oldText)
+  const newTokens = tokenizeInlineDiff(newText)
+
+  if (oldTokens.length * newTokens.length > 40000) {
+    return null
+  }
+
+  const table = buildLCSTable(oldTokens, newTokens)
+  const removed: InlineDiffSegment[] = []
+  const added: InlineDiffSegment[] = []
+
+  let i = 0
+  let j = 0
+
+  while (i < oldTokens.length && j < newTokens.length) {
+    if (oldTokens[i] === newTokens[j]) {
+      pushInlineSegment(removed, 'same', oldTokens[i])
+      pushInlineSegment(added, 'same', newTokens[j])
+      i++
+      j++
+      continue
+    }
+
+    if (table[i + 1][j] >= table[i][j + 1]) {
+      pushInlineSegment(removed, 'remove', oldTokens[i])
+      i++
+      continue
+    }
+
+    pushInlineSegment(added, 'add', newTokens[j])
+    j++
+  }
+
+  while (i < oldTokens.length) {
+    pushInlineSegment(removed, 'remove', oldTokens[i])
+    i++
+  }
+
+  while (j < newTokens.length) {
+    pushInlineSegment(added, 'add', newTokens[j])
+    j++
+  }
+
+  return { removed, added }
+}
+
+function addInlineDiffSegments(rows: UnifiedDiffRow[]): UnifiedDiffRow[] {
+  const enriched = rows.map((row) => ({ ...row }))
+  let index = 0
+
+  while (index < enriched.length) {
+    if (enriched[index].kind !== 'remove' && enriched[index].kind !== 'add') {
+      index++
+      continue
+    }
+
+    const removedIndexes: number[] = []
+    const addedIndexes: number[] = []
+    let end = index
+
+    while (
+      end < enriched.length &&
+      (enriched[end].kind === 'remove' || enriched[end].kind === 'add')
+    ) {
+      if (enriched[end].kind === 'remove') {
+        removedIndexes.push(end)
+      } else {
+        addedIndexes.push(end)
+      }
+      end++
+    }
+
+    const pairCount = Math.min(removedIndexes.length, addedIndexes.length)
+
+    for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
+      const removedRow = enriched[removedIndexes[pairIndex]]
+      const addedRow = enriched[addedIndexes[pairIndex]]
+
+      const pair = buildInlineDiffPair(removedRow.content, addedRow.content)
+      if (!pair) {
+        continue
+      }
+
+      removedRow.inlineSegments = pair.removed
+      addedRow.inlineSegments = pair.added
+    }
+
+    index = end
+  }
+
+  return enriched
+}
+
+function renderInlineDiffContent(row: UnifiedDiffRow, keyBase: string) {
+  if (!row.inlineSegments || row.inlineSegments.length === 0) {
+    return row.content
+  }
+
+  return row.inlineSegments.map((segment, index) => {
+    const className =
+      segment.kind === 'same'
+        ? undefined
+        : segment.kind === 'add'
+          ? 'text-inline-add'
+          : 'text-inline-remove'
+
+    return (
+      <span key={`${keyBase}-${index}`} className={className}>
+        {segment.text}
+      </span>
+    )
+  })
 }
 
 function parseUnifiedDiff(output: string): UnifiedDiffRow[] | null {
@@ -186,7 +367,7 @@ function parseUnifiedDiff(output: string): UnifiedDiffRow[] | null {
     rows.push({ kind: 'meta', oldLine: null, newLine: null, content: line })
   }
 
-  return rows
+  return addInlineDiffSegments(rows)
 }
 
 export function App() {
@@ -571,7 +752,9 @@ export function App() {
           <div key={`${idx}-${row.kind}`} className={`text-diff-row ${row.kind}`}>
             <div className="text-diff-line">{row.oldLine ?? ''}</div>
             <div className="text-diff-line">{row.newLine ?? ''}</div>
-            <pre className="text-diff-content">{row.content}</pre>
+            <pre className="text-diff-content">
+              {renderInlineDiffContent(row, `text-diff-${idx}`)}
+            </pre>
           </div>
         ))}
       </div>

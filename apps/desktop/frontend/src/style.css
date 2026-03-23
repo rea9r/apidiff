@@ -370,3 +370,19 @@ button {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.text-inline-add,
+.text-inline-remove {
+  padding: 0 1px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.text-inline-add {
+  background: rgba(46, 160, 67, 0.32);
+}
+
+.text-inline-remove {
+  background: rgba(207, 34, 46, 0.28);
+}
