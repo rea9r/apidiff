@@ -15,6 +15,7 @@ This app is an experimental desktop GUI for xdiff.
 - JSON/spec advanced options
 - Show paths and breaking-only toggles
 - Output format and text style controls
+- Fail-on and ignore-path controls for JSON/spec
 
 Not included yet:
 

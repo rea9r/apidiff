@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type {
   CompareCommon,
   CompareResponse,
@@ -82,6 +82,17 @@ function classForStatus(status: string): string {
   return 'error'
 }
 
+function ignorePathsToText(paths: string[]): string {
+  return paths.join('\n')
+}
+
+function parseIgnorePaths(input: string): string[] {
+  return input
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+}
+
 export function App() {
   const [mode, setMode] = useState<Mode>('json')
 
@@ -105,6 +116,19 @@ export function App() {
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const jsonPatchBlockedByFilters =
+    ignoreOrder || jsonCommon.onlyBreaking || jsonCommon.ignorePaths.length > 0
+
+  useEffect(() => {
+    if (jsonCommon.textStyle !== 'patch') {
+      return
+    }
+    if (!jsonPatchBlockedByFilters) {
+      return
+    }
+    setJSONCommon((prev) => ({ ...prev, textStyle: 'semantic' }))
+  }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
 
   const api = useMemo(
     () => ({
@@ -162,10 +186,18 @@ export function App() {
     const fn = api.compareJSON
     if (!fn) throw new Error('Wails bridge not available (CompareJSONFiles)')
 
+    const safeJSONCommon = {
+      ...jsonCommon,
+      textStyle:
+        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
+          ? 'semantic'
+          : jsonCommon.textStyle,
+    }
+
     const res: CompareResponse = await fn({
       oldPath: jsonOldPath,
       newPath: jsonNewPath,
-      common: jsonCommon,
+      common: safeJSONCommon,
       ignoreOrder,
     })
     setResult(res)
@@ -441,24 +473,6 @@ export function App() {
             <section className="options-panel">
               <h3>Options</h3>
 
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={jsonCommon.showPaths}
-                  onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
-                />
-                show canonical paths
-              </label>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={jsonCommon.onlyBreaking}
-                  onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
-                />
-                only breaking
-              </label>
-
               <div className="field-block">
                 <label className="field-label">Output format</label>
                 <select
@@ -478,11 +492,63 @@ export function App() {
                   onChange={(e) => updateJSONCommon('textStyle', e.target.value)}
                 >
                   <option value="auto">auto</option>
-                  <option value="patch">patch</option>
+                  <option value="patch" disabled={jsonPatchBlockedByFilters}>
+                    patch
+                  </option>
                   <option value="semantic">semantic</option>
                 </select>
               </div>
             </section>
+
+            <details className="advanced-panel">
+              <summary className="advanced-summary">Advanced options</summary>
+
+              <div className="field-block">
+                <label className="field-label">Fail on</label>
+                <select
+                  value={jsonCommon.failOn}
+                  onChange={(e) => updateJSONCommon('failOn', e.target.value)}
+                >
+                  <option value="none">none</option>
+                  <option value="breaking">breaking</option>
+                  <option value="any">any</option>
+                </select>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label">Ignore paths</label>
+                <textarea
+                  className="ignore-paths-input"
+                  value={ignorePathsToText(jsonCommon.ignorePaths)}
+                  onChange={(e) =>
+                    updateJSONCommon('ignorePaths', parseIgnorePaths(e.target.value))
+                  }
+                  placeholder={'user.updated_at\nmeta.request_id'}
+                />
+                <div className="helper-text">
+                  Enter one canonical path per line (exact match), e.g.{' '}
+                  <code>user.updated_at</code>.
+                </div>
+              </div>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={jsonCommon.showPaths}
+                  onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
+                />
+                show canonical paths
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={jsonCommon.onlyBreaking}
+                  onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
+                />
+                only breaking
+              </label>
+            </details>
 
             <button onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run JSON compare'}
@@ -519,24 +585,6 @@ export function App() {
             <section className="options-panel">
               <h3>Options</h3>
 
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={specCommon.showPaths}
-                  onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
-                />
-                show canonical paths
-              </label>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={specCommon.onlyBreaking}
-                  onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
-                />
-                only breaking
-              </label>
-
               <div className="field-block">
                 <label className="field-label">Output format</label>
                 <select
@@ -560,6 +608,56 @@ export function App() {
                 </select>
               </div>
             </section>
+
+            <details className="advanced-panel">
+              <summary className="advanced-summary">Advanced options</summary>
+
+              <div className="field-block">
+                <label className="field-label">Fail on</label>
+                <select
+                  value={specCommon.failOn}
+                  onChange={(e) => updateSpecCommon('failOn', e.target.value)}
+                >
+                  <option value="none">none</option>
+                  <option value="breaking">breaking</option>
+                  <option value="any">any</option>
+                </select>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label">Ignore paths</label>
+                <textarea
+                  className="ignore-paths-input"
+                  value={ignorePathsToText(specCommon.ignorePaths)}
+                  onChange={(e) =>
+                    updateSpecCommon('ignorePaths', parseIgnorePaths(e.target.value))
+                  }
+                  placeholder={'paths./users.post.requestBody.required'}
+                />
+                <div className="helper-text">
+                  Enter one canonical path per line (exact match), e.g.{' '}
+                  <code>paths./users.post.requestBody.required</code>.
+                </div>
+              </div>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={specCommon.showPaths}
+                  onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
+                />
+                show canonical paths
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={specCommon.onlyBreaking}
+                  onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
+                />
+                only breaking
+              </label>
+            </details>
 
             <button onClick={onRun} disabled={loading}>
               {loading ? 'Running...' : 'Run spec compare'}
