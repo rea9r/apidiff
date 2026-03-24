@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   CompareCommon,
   CompareResponse,
@@ -80,6 +80,11 @@ type RichDiffItem =
     }
 
 type OmittedDiffItem = Extract<RichDiffItem, { kind: 'omitted' }>
+
+type TextSearchMatch = {
+  id: string
+  sectionId: string | null
+}
 
 function renderResult(res: unknown): string {
   if (typeof res === 'string') return res
@@ -563,16 +568,81 @@ function buildRichDiffItems(
   return items
 }
 
+function buildTextSearchRowIDForItem(itemIndex: number): string {
+  return `search-row-${itemIndex}`
+}
+
+function buildTextSearchRowIDForOmitted(sectionId: string, lineIndex: number): string {
+  return `search-omitted-${sectionId}-${lineIndex}`
+}
+
+function normalizeSearchQuery(input: string): string {
+  return input.trim().toLowerCase()
+}
+
+function isSearchableDiffRow(row: UnifiedDiffRow): boolean {
+  return row.kind === 'context' || row.kind === 'add' || row.kind === 'remove'
+}
+
+function contentMatchesSearch(content: string, normalizedQuery: string): boolean {
+  return normalizedQuery.length > 0 && content.toLowerCase().includes(normalizedQuery)
+}
+
+function buildTextSearchMatches(
+  items: RichDiffItem[],
+  normalizedQuery: string,
+): TextSearchMatch[] {
+  if (!normalizedQuery) {
+    return []
+  }
+
+  const matches: TextSearchMatch[] = []
+
+  items.forEach((item, itemIndex) => {
+    if (item.kind === 'row') {
+      if (!isSearchableDiffRow(item.row)) {
+        return
+      }
+
+      if (contentMatchesSearch(item.row.content, normalizedQuery)) {
+        matches.push({
+          id: buildTextSearchRowIDForItem(itemIndex),
+          sectionId: null,
+        })
+      }
+      return
+    }
+
+    item.lines.forEach((line, lineIndex) => {
+      if (!contentMatchesSearch(line, normalizedQuery)) {
+        return
+      }
+
+      matches.push({
+        id: buildTextSearchRowIDForOmitted(item.sectionId, lineIndex),
+        sectionId: item.sectionId,
+      })
+    })
+  })
+
+  return matches
+}
+
 function renderSplitDiffCell(
   row: UnifiedDiffRow | null,
   side: 'left' | 'right',
   keyBase: string,
+  searchClassName = '',
+  rowRef?: (node: HTMLDivElement | null) => void,
 ) {
   const lineNumber = side === 'left' ? row?.oldLine : row?.newLine
   const kindClass = row?.kind ?? 'empty'
 
   return (
-    <div className={`split-diff-cell ${kindClass}`}>
+    <div
+      ref={rowRef}
+      className={['split-diff-cell', kindClass, searchClassName].filter(Boolean).join(' ')}
+    >
       <div className="split-diff-line">{lineNumber ?? ''}</div>
       <pre className="split-diff-content">
         {row ? renderInlineDiffContent(row, keyBase) : ''}
@@ -615,6 +685,9 @@ export function App() {
   const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
     string[]
   >([])
+  const [textSearchQuery, setTextSearchQuery] = useState('')
+  const [textActiveSearchIndex, setTextActiveSearchIndex] = useState(0)
+  const textSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textClipboardStatus, setTextClipboardStatus] = useState('')
@@ -650,6 +723,20 @@ export function App() {
       textRichRows ? buildRichDiffItems(textRichRows, textLastRunOld, textLastRunNew) : null,
     [textRichRows, textLastRunOld, textLastRunNew],
   )
+  const normalizedTextSearchQuery = useMemo(
+    () => normalizeSearchQuery(textSearchQuery),
+    [textSearchQuery],
+  )
+  const textSearchMatches = useMemo(
+    () =>
+      textRichItems ? buildTextSearchMatches(textRichItems, normalizedTextSearchQuery) : [],
+    [textRichItems, normalizedTextSearchQuery],
+  )
+  const textSearchMatchIds = useMemo(
+    () => new Set(textSearchMatches.map((match) => match.id)),
+    [textSearchMatches],
+  )
+  const activeTextSearchMatch = textSearchMatches[textActiveSearchIndex] ?? null
   const omittedSectionIds = useMemo(
     () =>
       textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
@@ -658,6 +745,13 @@ export function App() {
   const allOmittedSectionsExpanded =
     omittedSectionIds.length > 0 &&
     omittedSectionIds.every((id) => textExpandedUnchangedSectionIds.includes(id))
+  const effectiveExpandedSectionIds = useMemo(() => {
+    const ids = new Set(textExpandedUnchangedSectionIds)
+    if (activeTextSearchMatch?.sectionId) {
+      ids.add(activeTextSearchMatch.sectionId)
+    }
+    return [...ids]
+  }, [textExpandedUnchangedSectionIds, activeTextSearchMatch?.sectionId])
   const canRenderTextRich =
     textLastRunOutputFormat === 'text' &&
     !!textResult &&
@@ -686,6 +780,40 @@ export function App() {
       setTextResultView('raw')
     }
   }, [canRenderTextRich, textResult, textResultView])
+
+  useEffect(() => {
+    setTextActiveSearchIndex(0)
+  }, [normalizedTextSearchQuery, textResult?.output])
+
+  useEffect(() => {
+    if (textSearchMatches.length === 0) {
+      if (textActiveSearchIndex !== 0) {
+        setTextActiveSearchIndex(0)
+      }
+      return
+    }
+
+    if (textActiveSearchIndex >= textSearchMatches.length) {
+      setTextActiveSearchIndex(0)
+    }
+  }, [textSearchMatches.length, textActiveSearchIndex])
+
+  useEffect(() => {
+    if (textResultView !== 'rich' || !canRenderTextRich || !activeTextSearchMatch) {
+      return
+    }
+
+    const node = textSearchRowRefs.current[activeTextSearchMatch.id]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [
+    activeTextSearchMatch?.id,
+    canRenderTextRich,
+    textDiffLayout,
+    textResultView,
+    effectiveExpandedSectionIds.join('|'),
+  ])
 
   useEffect(() => {
     setTextExpandedUnchangedSectionIds((prev) =>
@@ -727,7 +855,44 @@ export function App() {
   }
 
   const isTextSectionExpanded = (sectionId: string) =>
-    textExpandedUnchangedSectionIds.includes(sectionId)
+    effectiveExpandedSectionIds.includes(sectionId)
+
+  const isTextSearchMatchId = (matchId: string) => textSearchMatchIds.has(matchId)
+
+  const isActiveTextSearchMatchId = (matchId: string) => activeTextSearchMatch?.id === matchId
+
+  const registerTextSearchRowRef = (matchId: string) => (node: HTMLDivElement | null) => {
+    if (node) {
+      textSearchRowRefs.current[matchId] = node
+      return
+    }
+
+    delete textSearchRowRefs.current[matchId]
+  }
+
+  const getTextSearchClassName = (matchId: string) => {
+    if (!isTextSearchMatchId(matchId)) {
+      return ''
+    }
+
+    return isActiveTextSearchMatchId(matchId) ? 'active-search-hit' : 'search-hit'
+  }
+
+  const moveTextSearch = (direction: 1 | -1) => {
+    if (!canRenderTextRich || textSearchMatches.length === 0) {
+      return
+    }
+
+    if (textResultView !== 'rich') {
+      setTextResultView('rich')
+    }
+
+    setTextActiveSearchIndex((prev) =>
+      direction === 1
+        ? (prev + 1) % textSearchMatches.length
+        : (prev - 1 + textSearchMatches.length) % textSearchMatches.length,
+    )
+  }
 
   const toggleTextUnchangedSection = (sectionId: string) => {
     setTextExpandedUnchangedSectionIds((prev) =>
@@ -1178,20 +1343,26 @@ export function App() {
 
         {expanded
           ? item.lines.map((line, index) => {
-              const row = buildExpandedContextRow(
-                line,
-                item.startOldLine + index,
-                item.startNewLine + index,
-              )
+            const row = buildExpandedContextRow(
+              line,
+              item.startOldLine + index,
+              item.startNewLine + index,
+            )
+            const matchId = buildTextSearchRowIDForOmitted(item.sectionId, index)
+            const searchClassName = getTextSearchClassName(matchId)
 
-              return (
-                <div key={`${item.sectionId}-${index}`} className={`text-diff-row ${row.kind}`}>
-                  <div className="text-diff-line">{row.oldLine ?? ''}</div>
-                  <div className="text-diff-line">{row.newLine ?? ''}</div>
-                  <pre className="text-diff-content">{row.content}</pre>
-                </div>
-              )
-            })
+            return (
+              <div
+                key={`${item.sectionId}-${index}`}
+                ref={isTextSearchMatchId(matchId) ? registerTextSearchRowRef(matchId) : undefined}
+                className={['text-diff-row', row.kind, searchClassName].filter(Boolean).join(' ')}
+              >
+                <div className="text-diff-line">{row.oldLine ?? ''}</div>
+                <div className="text-diff-line">{row.newLine ?? ''}</div>
+                <pre className="text-diff-content">{row.content}</pre>
+              </div>
+            )
+          })
           : null}
       </div>
     )
@@ -1217,27 +1388,32 @@ export function App() {
 
         {expanded
           ? item.lines.map((line, index) => {
-              const row = buildExpandedContextRow(
-                line,
-                item.startOldLine + index,
-                item.startNewLine + index,
-              )
+            const row = buildExpandedContextRow(
+              line,
+              item.startOldLine + index,
+              item.startNewLine + index,
+            )
+            const matchId = buildTextSearchRowIDForOmitted(item.sectionId, index)
+            const searchClassName = getTextSearchClassName(matchId)
 
-              return (
-                <div key={`${item.sectionId}-${index}`} className="split-diff-row">
-                  {renderSplitDiffCell(
-                    row,
-                    'left',
-                    `split-omitted-left-${item.sectionId}-${index}`,
-                  )}
-                  {renderSplitDiffCell(
-                    row,
-                    'right',
-                    `split-omitted-right-${item.sectionId}-${index}`,
-                  )}
-                </div>
-              )
-            })
+            return (
+              <div key={`${item.sectionId}-${index}`} className="split-diff-row">
+                {renderSplitDiffCell(
+                  row,
+                  'left',
+                  `split-omitted-left-${item.sectionId}-${index}`,
+                  searchClassName,
+                  isTextSearchMatchId(matchId) ? registerTextSearchRowRef(matchId) : undefined,
+                )}
+                {renderSplitDiffCell(
+                  row,
+                  'right',
+                  `split-omitted-right-${item.sectionId}-${index}`,
+                  searchClassName,
+                )}
+              </div>
+            )
+          })
           : null}
       </div>
     )
@@ -1252,8 +1428,14 @@ export function App() {
           }
 
           const row = item.row
+          const matchId = buildTextSearchRowIDForItem(idx)
+          const searchClassName = getTextSearchClassName(matchId)
           return (
-            <div key={`${idx}-${row.kind}`} className={`text-diff-row ${row.kind}`}>
+            <div
+              key={`${idx}-${row.kind}`}
+              ref={isTextSearchMatchId(matchId) ? registerTextSearchRowRef(matchId) : undefined}
+              className={['text-diff-row', row.kind, searchClassName].filter(Boolean).join(' ')}
+            >
               <div className="text-diff-line">{row.oldLine ?? ''}</div>
               <div className="text-diff-line">{row.newLine ?? ''}</div>
               <pre className="text-diff-content">
@@ -1292,18 +1474,27 @@ export function App() {
       }
 
       if (row.kind === 'context') {
+        const matchId = buildTextSearchRowIDForItem(index)
+        const searchClassName = getTextSearchClassName(matchId)
+
         splitNodes.push(
           <div key={`split-row-${index}`} className="split-diff-row">
-            {renderSplitDiffCell(row, 'left', `split-left-${index}`)}
-            {renderSplitDiffCell(row, 'right', `split-right-${index}`)}
+            {renderSplitDiffCell(
+              row,
+              'left',
+              `split-left-${index}`,
+              searchClassName,
+              isTextSearchMatchId(matchId) ? registerTextSearchRowRef(matchId) : undefined,
+            )}
+            {renderSplitDiffCell(row, 'right', `split-right-${index}`, searchClassName)}
           </div>,
         )
         index++
         continue
       }
 
-      const removed: UnifiedDiffRow[] = []
-      const added: UnifiedDiffRow[] = []
+      const removed: Array<{ row: UnifiedDiffRow; matchId: string }> = []
+      const added: Array<{ row: UnifiedDiffRow; matchId: string }> = []
       let end = index
 
       while (end < items.length) {
@@ -1315,27 +1506,37 @@ export function App() {
           break
         }
 
+        const matchId = buildTextSearchRowIDForItem(end)
+
         if (candidate.row.kind === 'remove') {
-          removed.push(candidate.row)
+          removed.push({ row: candidate.row, matchId })
         } else {
-          added.push(candidate.row)
+          added.push({ row: candidate.row, matchId })
         }
         end++
       }
 
       const pairCount = Math.max(removed.length, added.length)
       for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
+        const left = removed[pairIndex] ?? null
+        const right = added[pairIndex] ?? null
+
         splitNodes.push(
           <div key={`split-pair-${index}-${pairIndex}`} className="split-diff-row">
             {renderSplitDiffCell(
-              removed[pairIndex] ?? null,
+              left?.row ?? null,
               'left',
               `split-left-${index}-${pairIndex}`,
+              left ? getTextSearchClassName(left.matchId) : '',
+              left && isTextSearchMatchId(left.matchId)
+                ? registerTextSearchRowRef(left.matchId)
+                : undefined,
             )}
             {renderSplitDiffCell(
-              added[pairIndex] ?? null,
+              right?.row ?? null,
               'right',
               `split-right-${index}-${pairIndex}`,
+              right ? getTextSearchClassName(right.matchId) : '',
             )}
           </div>,
         )
@@ -1401,6 +1602,55 @@ export function App() {
                 Unified
               </button>
             </div>
+
+            {showRich ? (
+              <div className="text-search-controls">
+                <input
+                  type="text"
+                  className="text-search-input"
+                  placeholder="Search rich diff"
+                  value={textSearchQuery}
+                  onChange={(e) => setTextSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      moveTextSearch(e.shiftKey ? -1 : 1)
+                      return
+                    }
+
+                    if (e.key === 'Escape') {
+                      setTextSearchQuery('')
+                    }
+                  }}
+                />
+
+                <span className="muted text-search-status">
+                  {normalizedTextSearchQuery
+                    ? textSearchMatches.length > 0
+                      ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length} matching rows`
+                      : '0 matching rows'
+                    : 'Search rich diff'}
+                </span>
+
+                <button
+                  type="button"
+                  className="text-search-action"
+                  onClick={() => moveTextSearch(-1)}
+                  disabled={textSearchMatches.length === 0}
+                >
+                  Prev
+                </button>
+
+                <button
+                  type="button"
+                  className="text-search-action"
+                  onClick={() => moveTextSearch(1)}
+                  disabled={textSearchMatches.length === 0}
+                >
+                  Next
+                </button>
+              </div>
+            ) : null}
 
             {showRich && omittedSectionIds.length > 0 ? (
               <button

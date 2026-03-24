@@ -20,6 +20,7 @@ This app is an experimental desktop GUI for xdiff.
 - Text compare supports dedicated `Load old...` / `Load new...` / `Paste old` / `Paste new` / `Copy raw output` actions, plus `Swap` / `Clear`
 - Text rich diff supports `Unified` / `Split` view toggle
 - Text rich diff keeps omitted unchanged sections collapsed by default, with per-section and global expand/collapse controls
+- Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section
 
 Not included yet:
 
