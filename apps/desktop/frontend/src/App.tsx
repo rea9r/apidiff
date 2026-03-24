@@ -1753,6 +1753,9 @@ export function App() {
               'right',
               `split-right-${index}-${pairIndex}`,
               right ? getTextSearchClassName(right.matchId) : '',
+              right && isTextSearchMatchId(right.matchId)
+                ? registerTextSearchRowRef(right.matchId)
+                : undefined,
             )}
           </div>,
         )
