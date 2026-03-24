@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { notifications } from '@mantine/notifications'
 import type {
   CompareCommon,
   CompareFoldersRequest,
@@ -14,6 +15,9 @@ import type {
   ScenarioRunResponse,
 } from './types'
 import './style.css'
+import { AppChrome } from './ui/AppChrome'
+import { SectionCard } from './ui/SectionCard'
+import { StatusBadge } from './ui/StatusBadge'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -139,6 +143,22 @@ function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
 function classForStatus(status: string): string {
   if (status === 'ok' || status === 'diff' || status === 'error') return status
   return 'error'
+}
+
+function toneForScenarioStatus(status: string): 'success' | 'warning' | 'danger' {
+  if (status === 'ok') return 'success'
+  if (status === 'diff') return 'warning'
+  return 'danger'
+}
+
+function toneForFolderStatus(
+  status: FolderCompareEntry['status'],
+): 'default' | 'success' | 'warning' | 'danger' | 'accent' {
+  if (status === 'same') return 'success'
+  if (status === 'changed') return 'warning'
+  if (status === 'left-only' || status === 'right-only') return 'accent'
+  if (status === 'error' || status === 'type-mismatch') return 'danger'
+  return 'default'
 }
 
 function formatFolderStatusLabel(status: FolderCompareEntry['status']): string {
@@ -966,6 +986,11 @@ export function App() {
     if (!picker) {
       setSummaryLine('error=yes')
       setOutput('Wails bridge not available (file picker)')
+      notifications.show({
+        title: 'File picker unavailable',
+        message: 'Wails bridge not available (file picker)',
+        color: 'red',
+      })
       return
     }
 
@@ -977,6 +1002,11 @@ export function App() {
     } catch (e) {
       setSummaryLine('error=yes')
       setOutput(String(e))
+      notifications.show({
+        title: 'Failed to pick file',
+        message: formatUnknownError(e),
+        color: 'red',
+      })
     }
   }
 
@@ -985,6 +1015,11 @@ export function App() {
 
     if (!picker) {
       setFolderStatus('Folder picker is not available.')
+      notifications.show({
+        title: 'Folder picker unavailable',
+        message: 'Folder picker is not available.',
+        color: 'red',
+      })
       return
     }
 
@@ -1002,7 +1037,13 @@ export function App() {
 
       setFolderStatus('')
     } catch (error) {
-      setFolderStatus(`Failed to pick folder: ${formatUnknownError(error)}`)
+      const message = `Failed to pick folder: ${formatUnknownError(error)}`
+      setFolderStatus(message)
+      notifications.show({
+        title: 'Failed to pick folder',
+        message,
+        color: 'red',
+      })
     }
   }
 
@@ -1136,7 +1177,13 @@ export function App() {
       setMode('text')
       setResult(res)
     } catch (error) {
-      setFolderStatus(`Failed to open diff: ${formatUnknownError(error)}`)
+      const message = `Failed to open diff: ${formatUnknownError(error)}`
+      setFolderStatus(message)
+      notifications.show({
+        title: 'Failed to open child diff',
+        message,
+        color: 'red',
+      })
     } finally {
       setFolderOpenBusyPath('')
     }
@@ -1204,6 +1251,11 @@ export function App() {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
       setTextClipboardStatus('Clipboard runtime is not available.')
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
       return
     }
 
@@ -1223,13 +1275,29 @@ export function App() {
         setTextOld(pasted)
         setTextOldSourcePath('')
         setTextClipboardStatus('Pasted clipboard into Old text. Run again to refresh diff.')
+        notifications.show({
+          title: 'Pasted old text',
+          message: 'Clipboard content was pasted into Old text.',
+          color: 'green',
+        })
       } else {
         setTextNew(pasted)
         setTextNewSourcePath('')
         setTextClipboardStatus('Pasted clipboard into New text. Run again to refresh diff.')
+        notifications.show({
+          title: 'Pasted new text',
+          message: 'Clipboard content was pasted into New text.',
+          color: 'green',
+        })
       }
     } catch (error) {
-      setTextClipboardStatus(`Failed to read clipboard: ${formatUnknownError(error)}`)
+      const message = `Failed to read clipboard: ${formatUnknownError(error)}`
+      setTextClipboardStatus(message)
+      notifications.show({
+        title: 'Failed to paste from clipboard',
+        message,
+        color: 'red',
+      })
     } finally {
       setTextClipboardBusyTarget(null)
     }
@@ -1241,6 +1309,11 @@ export function App() {
 
     if (!picker || !loader) {
       setTextWorkspaceStatus('Text file loader is not available.')
+      notifications.show({
+        title: 'Text loader unavailable',
+        message: 'Text file loader is not available.',
+        color: 'red',
+      })
       return
     }
 
@@ -1269,8 +1342,19 @@ export function App() {
       setTextWorkspaceStatus(
         `Loaded ${loaded.path} into ${target === 'old' ? 'Old text' : 'New text'}. Run again to refresh diff.`,
       )
+      notifications.show({
+        title: target === 'old' ? 'Loaded old text' : 'Loaded new text',
+        message: loaded.path,
+        color: 'green',
+      })
     } catch (error) {
-      setTextWorkspaceStatus(`Failed to load text file: ${formatUnknownError(error)}`)
+      const message = `Failed to load text file: ${formatUnknownError(error)}`
+      setTextWorkspaceStatus(message)
+      notifications.show({
+        title: 'Failed to load text file',
+        message,
+        color: 'red',
+      })
     } finally {
       setTextFileBusyTarget(null)
     }
@@ -1298,6 +1382,11 @@ export function App() {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
       setTextCopyStatus('Clipboard runtime is not available.')
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
       return
     }
 
@@ -1314,12 +1403,28 @@ export function App() {
       const ok = await writeClipboard(raw)
       if (!ok) {
         setTextCopyStatus('Failed to copy raw output.')
+        notifications.show({
+          title: 'Copy failed',
+          message: 'Failed to copy raw output.',
+          color: 'red',
+        })
         return
       }
 
       setTextCopyStatus('Copied raw output to clipboard.')
+      notifications.show({
+        title: 'Copied',
+        message: 'Raw output copied to clipboard.',
+        color: 'green',
+      })
     } catch (error) {
-      setTextCopyStatus(`Failed to copy raw output: ${formatUnknownError(error)}`)
+      const message = `Failed to copy raw output: ${formatUnknownError(error)}`
+      setTextCopyStatus(message)
+      notifications.show({
+        title: 'Copy failed',
+        message,
+        color: 'red',
+      })
     } finally {
       setTextCopyBusy(false)
     }
@@ -1461,7 +1566,7 @@ export function App() {
     if (scenarioRunResult.error) {
       return (
         <div className="scenario-result-detail">
-          <div className="status-badge error">error</div>
+          <StatusBadge tone="danger">error</StatusBadge>
           <pre>{scenarioRunResult.error}</pre>
         </div>
       )
@@ -1508,7 +1613,9 @@ export function App() {
               >
                 <div className="scenario-result-item-top">
                   <span>{r.name}</span>
-                  <span className={`status-badge ${classForStatus(r.status)}`}>{r.status}</span>
+                  <StatusBadge tone={toneForScenarioStatus(classForStatus(r.status))}>
+                    {r.status}
+                  </StatusBadge>
                 </div>
                 <div className="scenario-result-item-sub">
                   <span>{r.kind}</span>
@@ -1913,132 +2020,123 @@ export function App() {
     const res = folderResult
 
     return (
-      <div className="folder-result-shell">
-        <h2>Folder Compare</h2>
+      <SectionCard title="Folder Compare">
+        <div className="folder-result-shell">
 
-        {folderStatus ? <div className="muted">{folderStatus}</div> : null}
+          {folderStatus ? <div className="muted">{folderStatus}</div> : null}
 
-        {res?.error ? (
-          <pre className="result-output">{res.error}</pre>
-        ) : res ? (
-          <>
-            <div className="folder-summary-grid">
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Total</div>
-                <div className="folder-summary-value">{res.summary.total}</div>
+          {res?.error ? (
+            <pre className="result-output">{res.error}</pre>
+          ) : res ? (
+            <>
+              <div className="folder-summary-grid">
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Total</div>
+                  <div className="folder-summary-value">{res.summary.total}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Changed</div>
+                  <div className="folder-summary-value">{res.summary.changed}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Same</div>
+                  <div className="folder-summary-value">{res.summary.same}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Left only</div>
+                  <div className="folder-summary-value">{res.summary.leftOnly}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Right only</div>
+                  <div className="folder-summary-value">{res.summary.rightOnly}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Type mismatch</div>
+                  <div className="folder-summary-value">{res.summary.typeMismatch}</div>
+                </div>
+                <div className="folder-summary-item">
+                  <div className="folder-summary-label">Error</div>
+                  <div className="folder-summary-value">{res.summary.error}</div>
+                </div>
               </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Changed</div>
-                <div className="folder-summary-value">{res.summary.changed}</div>
-              </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Same</div>
-                <div className="folder-summary-value">{res.summary.same}</div>
-              </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Left only</div>
-                <div className="folder-summary-value">{res.summary.leftOnly}</div>
-              </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Right only</div>
-                <div className="folder-summary-value">{res.summary.rightOnly}</div>
-              </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Type mismatch</div>
-                <div className="folder-summary-value">{res.summary.typeMismatch}</div>
-              </div>
-              <div className="folder-summary-item">
-                <div className="folder-summary-label">Error</div>
-                <div className="folder-summary-value">{res.summary.error}</div>
-              </div>
-            </div>
 
-            <div className="folder-table-wrap">
-              <table className="folder-results-table">
-                <thead>
-                  <tr>
-                    <th>Status</th>
-                    <th>Path</th>
-                    <th>Kind</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {res.entries.length === 0 ? (
+              <div className="folder-table-wrap">
+                <table className="folder-results-table">
+                  <thead>
                     <tr>
-                      <td colSpan={4}>
-                        <div className="muted">No entries to show.</div>
-                      </td>
+                      <th>Status</th>
+                      <th>Path</th>
+                      <th>Kind</th>
+                      <th>Action</th>
                     </tr>
-                  ) : (
-                    res.entries.map((entry) => {
-                      const openable = canOpenFolderEntry(entry)
-                      return (
-                        <tr key={entry.relativePath}>
-                          <td>
-                            <span className={`folder-status-badge ${entry.status}`}>
-                              {formatFolderStatusLabel(entry.status)}
-                            </span>
-                          </td>
-                          <td>
-                            <div
-                              className="folder-entry-path"
-                              title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
-                            >
-                              {entry.relativePath}
-                            </div>
-                            {entry.message ? (
-                              <div className="folder-entry-sub muted">{entry.message}</div>
-                            ) : null}
-                          </td>
-                          <td>{formatFolderKindLabel(entry)}</td>
-                          <td>
-                            {openable ? (
-                              <button
-                                type="button"
-                                className="folder-action-button"
-                                onClick={() => void openFolderEntryDiff(entry)}
-                                disabled={folderOpenBusyPath === entry.relativePath}
+                  </thead>
+                  <tbody>
+                    {res.entries.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>
+                          <div className="muted">No entries to show.</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      res.entries.map((entry) => {
+                        const openable = canOpenFolderEntry(entry)
+                        return (
+                          <tr key={entry.relativePath}>
+                            <td>
+                              <StatusBadge tone={toneForFolderStatus(entry.status)}>
+                                {formatFolderStatusLabel(entry.status)}
+                              </StatusBadge>
+                            </td>
+                            <td>
+                              <div
+                                className="folder-entry-path"
+                                title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
                               >
-                                {folderOpenBusyPath === entry.relativePath
-                                  ? 'Opening...'
-                                  : 'Open diff'}
-                              </button>
-                            ) : (
-                              <span className="muted">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <pre className="result-output">(no folder result yet)</pre>
-        )}
-      </div>
+                                {entry.relativePath}
+                              </div>
+                              {entry.message ? (
+                                <div className="folder-entry-sub muted">{entry.message}</div>
+                              ) : null}
+                            </td>
+                            <td>{formatFolderKindLabel(entry)}</td>
+                            <td>
+                              {openable ? (
+                                <button
+                                  type="button"
+                                  className="folder-action-button"
+                                  onClick={() => void openFolderEntryDiff(entry)}
+                                  disabled={folderOpenBusyPath === entry.relativePath}
+                                >
+                                  {folderOpenBusyPath === entry.relativePath
+                                    ? 'Opening...'
+                                    : 'Open diff'}
+                                </button>
+                              ) : (
+                                <span className="muted">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <pre className="result-output">(no folder result yet)</pre>
+          )}
+        </div>
+      </SectionCard>
     )
   }
 
   return (
-    <div className="app-shell">
-      <aside className="control-panel">
-        <h1>xdiff Desktop</h1>
-
-        <div className="field-block">
-          <label className="field-label">Mode</label>
-          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
-            <option value="json">JSON compare</option>
-            <option value="spec">OpenAPI spec compare</option>
-            <option value="text">Text compare</option>
-            <option value="folder">Folder compare</option>
-            <option value="scenario">Scenario run</option>
-          </select>
-        </div>
-
+    <AppChrome
+      mode={mode}
+      onModeChange={setMode}
+      sidebar={
+        <>
         {mode === 'json' && (
           <section className="mode-panel">
             <div className="field-block">
@@ -2433,9 +2531,10 @@ export function App() {
             </div>
           </section>
         )}
-      </aside>
-
-      <main className="result-panel">
+        </>
+      }
+      main={
+        <>
         {mode === 'text' ? (
           <div className="text-workspace">
             <h2>Text Compare</h2>
@@ -2552,7 +2651,8 @@ export function App() {
             )}
           </>
         )}
-      </main>
-    </div>
+        </>
+      }
+    />
   )
 }
