@@ -1,8 +1,8 @@
-# xdiff Desktop (Wails, Phase 6A)
+# xdiff Desktop (Wails, Phase 6B-1)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 6A)
+## Scope (Phase 6B-1)
 
 - JSON file comparison
 - OpenAPI spec comparison
@@ -21,6 +21,7 @@ This app is an experimental desktop GUI for xdiff.
 - Text rich diff supports `Unified` / `Split` view toggle
 - Text rich diff keeps omitted unchanged sections collapsed by default, with per-section and global expand/collapse controls
 - Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section
+- Folder compare MVP with recursive directory scan, flat result list, and child compare launch
 
 Not included yet:
 
@@ -44,6 +45,7 @@ wails dev
 ```
 
 Use Browse... in file-based modes to select local files. Text mode supports both paste-first input and dedicated `Load old...` / `Load new...` actions.
+Folder compare is desktop-only in this phase and does not add a new CLI command yet.
 
 ## Build frontend only
 

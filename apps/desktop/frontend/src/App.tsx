@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   CompareCommon,
+  CompareFoldersRequest,
+  CompareFoldersResponse,
   CompareResponse,
+  FolderCompareEntry,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
@@ -136,6 +139,42 @@ function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
 function classForStatus(status: string): string {
   if (status === 'ok' || status === 'diff' || status === 'error') return status
   return 'error'
+}
+
+function formatFolderStatusLabel(status: FolderCompareEntry['status']): string {
+  switch (status) {
+    case 'same':
+      return 'same'
+    case 'changed':
+      return 'changed'
+    case 'left-only':
+      return 'left only'
+    case 'right-only':
+      return 'right only'
+    case 'type-mismatch':
+      return 'type mismatch'
+    case 'error':
+      return 'error'
+    default:
+      return status
+  }
+}
+
+function formatFolderKindLabel(entry: FolderCompareEntry): string {
+  if (entry.leftKind === entry.rightKind) {
+    return entry.leftKind
+  }
+  return `${entry.leftKind} / ${entry.rightKind}`
+}
+
+function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
+  return (
+    entry.compareModeHint !== 'none' &&
+    entry.leftExists &&
+    entry.rightExists &&
+    entry.leftKind === 'file' &&
+    entry.rightKind === 'file'
+  )
 }
 
 function ignorePathsToText(paths: string[]): string {
@@ -700,6 +739,15 @@ export function App() {
 
   const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
 
+  const [folderLeftRoot, setFolderLeftRoot] = useState('')
+  const [folderRightRoot, setFolderRightRoot] = useState('')
+  const [folderRecursive, setFolderRecursive] = useState(true)
+  const [folderShowSame, setFolderShowSame] = useState(false)
+  const [folderNameFilter, setFolderNameFilter] = useState('')
+  const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
+  const [folderStatus, setFolderStatus] = useState('')
+  const [folderOpenBusyPath, setFolderOpenBusyPath] = useState('')
+
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
   const [scenarioChecks, setScenarioChecks] = useState<ScenarioCheckListEntry[]>([])
@@ -826,12 +874,14 @@ export function App() {
       compareJSON: (window as any).go?.main?.App?.CompareJSONFiles,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
       compareText: (window as any).go?.main?.App?.CompareText,
+      compareFolders: (window as any).go?.main?.App?.CompareFolders,
       runScenario: (window as any).go?.main?.App?.RunScenario,
       listScenarioChecks: (window as any).go?.main?.App?.ListScenarioChecks,
       pickJSONFile: (window as any).go?.main?.App?.PickJSONFile,
       pickSpecFile: (window as any).go?.main?.App?.PickSpecFile,
       pickScenarioFile: (window as any).go?.main?.App?.PickScenarioFile,
       pickTextFile: (window as any).go?.main?.App?.PickTextFile,
+      pickFolderRoot: (window as any).go?.main?.App?.PickFolderRoot,
       loadTextFile: (window as any).go?.main?.App?.LoadTextFile,
     }),
     [],
@@ -927,6 +977,168 @@ export function App() {
     } catch (e) {
       setSummaryLine('error=yes')
       setOutput(String(e))
+    }
+  }
+
+  const browseFolderRoot = async (target: 'left' | 'right') => {
+    const picker = api.pickFolderRoot
+
+    if (!picker) {
+      setFolderStatus('Folder picker is not available.')
+      return
+    }
+
+    try {
+      const selected = await picker()
+      if (!selected) {
+        return
+      }
+
+      if (target === 'left') {
+        setFolderLeftRoot(selected)
+      } else {
+        setFolderRightRoot(selected)
+      }
+
+      setFolderStatus('')
+    } catch (error) {
+      setFolderStatus(`Failed to pick folder: ${formatUnknownError(error)}`)
+    }
+  }
+
+  const runFolderCompare = async () => {
+    const fn = api.compareFolders
+    if (!fn) throw new Error('Wails bridge not available (CompareFolders)')
+
+    setFolderStatus('')
+
+    const res: CompareFoldersResponse = await fn({
+      leftRoot: folderLeftRoot,
+      rightRoot: folderRightRoot,
+      recursive: folderRecursive,
+      showSame: folderShowSame,
+      nameFilter: folderNameFilter,
+    } satisfies CompareFoldersRequest)
+
+    setFolderResult(res)
+
+    if (res.error) {
+      setFolderStatus(res.error)
+      return
+    }
+
+    setFolderStatus(`Showing ${res.entries.length} entries.`)
+  }
+
+  const openFolderEntryDiff = async (entry: FolderCompareEntry) => {
+    if (!canOpenFolderEntry(entry)) {
+      return
+    }
+
+    setFolderOpenBusyPath(entry.relativePath)
+    setFolderStatus('')
+
+    try {
+      if (entry.compareModeHint === 'json') {
+        const fn = api.compareJSON
+        if (!fn) {
+          throw new Error('Wails bridge not available (CompareJSONFiles)')
+        }
+
+        const safeJSONCommon = {
+          ...jsonCommon,
+          ignorePaths: effectiveJSONIgnorePaths,
+          textStyle:
+            jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
+              ? 'semantic'
+              : jsonCommon.textStyle,
+        }
+
+        const oldPath = entry.leftPath
+        const newPath = entry.rightPath
+
+        const res: CompareResponse = await fn({
+          oldPath,
+          newPath,
+          common: safeJSONCommon,
+          ignoreOrder,
+        })
+
+        setJSONOldPath(oldPath)
+        setJSONNewPath(newPath)
+        setMode('json')
+        setResult(res)
+        return
+      }
+
+      if (entry.compareModeHint === 'spec') {
+        const fn = api.compareSpec
+        if (!fn) {
+          throw new Error('Wails bridge not available (CompareSpecFiles)')
+        }
+
+        const safeSpecCommon = {
+          ...specCommon,
+          ignorePaths: effectiveSpecIgnorePaths,
+          textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
+        }
+
+        const oldPath = entry.leftPath
+        const newPath = entry.rightPath
+
+        const res: CompareResponse = await fn({
+          oldPath,
+          newPath,
+          common: safeSpecCommon,
+        })
+
+        setSpecOldPath(oldPath)
+        setSpecNewPath(newPath)
+        setMode('spec')
+        setResult(res)
+        return
+      }
+
+      const loadText = api.loadTextFile
+      const compareText = api.compareText
+      if (!loadText || !compareText) {
+        throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
+      }
+
+      const [leftLoaded, rightLoaded] = await Promise.all([
+        loadText({ path: entry.leftPath } satisfies LoadTextFileRequest),
+        loadText({ path: entry.rightPath } satisfies LoadTextFileRequest),
+      ])
+
+      const oldText = leftLoaded.content
+      const newText = rightLoaded.content
+
+      const res: CompareResponse = await compareText({
+        oldText,
+        newText,
+        common: textCommon,
+      })
+
+      setTextOld(oldText)
+      setTextNew(newText)
+      setTextOldSourcePath(leftLoaded.path)
+      setTextNewSourcePath(rightLoaded.path)
+      setTextResult(res)
+      setTextLastRunOld(oldText)
+      setTextLastRunNew(newText)
+      setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
+      setTextExpandedUnchangedSectionIds([])
+      setTextSearchQuery('')
+      setTextActiveSearchIndex(0)
+      setTextClipboardStatus('')
+      setTextCopyStatus('')
+      setTextWorkspaceStatus(`Opened ${entry.relativePath} from folder compare.`)
+      setMode('text')
+      setResult(res)
+    } catch (error) {
+      setFolderStatus(`Failed to open diff: ${formatUnknownError(error)}`)
+    } finally {
+      setFolderOpenBusyPath('')
     }
   }
 
@@ -1161,6 +1373,10 @@ export function App() {
     }
     if (mode === 'text') {
       await runText()
+      return
+    }
+    if (mode === 'folder') {
+      await runFolderCompare()
       return
     }
     await runScenario()
@@ -1690,6 +1906,120 @@ export function App() {
     )
   }
 
+  const renderFolderResultPanel = () => {
+    const res = folderResult
+
+    return (
+      <div className="folder-result-shell">
+        <h2>Folder Compare</h2>
+
+        {folderStatus ? <div className="muted">{folderStatus}</div> : null}
+
+        {res?.error ? (
+          <pre className="result-output">{res.error}</pre>
+        ) : res ? (
+          <>
+            <div className="folder-summary-grid">
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Total</div>
+                <div className="folder-summary-value">{res.summary.total}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Changed</div>
+                <div className="folder-summary-value">{res.summary.changed}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Same</div>
+                <div className="folder-summary-value">{res.summary.same}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Left only</div>
+                <div className="folder-summary-value">{res.summary.leftOnly}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Right only</div>
+                <div className="folder-summary-value">{res.summary.rightOnly}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Type mismatch</div>
+                <div className="folder-summary-value">{res.summary.typeMismatch}</div>
+              </div>
+              <div className="folder-summary-item">
+                <div className="folder-summary-label">Error</div>
+                <div className="folder-summary-value">{res.summary.error}</div>
+              </div>
+            </div>
+
+            <div className="folder-table-wrap">
+              <table className="folder-results-table">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Path</th>
+                    <th>Kind</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.entries.length === 0 ? (
+                    <tr>
+                      <td colSpan={4}>
+                        <div className="muted">No entries to show.</div>
+                      </td>
+                    </tr>
+                  ) : (
+                    res.entries.map((entry) => {
+                      const openable = canOpenFolderEntry(entry)
+                      return (
+                        <tr key={entry.relativePath}>
+                          <td>
+                            <span className={`folder-status-badge ${entry.status}`}>
+                              {formatFolderStatusLabel(entry.status)}
+                            </span>
+                          </td>
+                          <td>
+                            <div
+                              className="folder-entry-path"
+                              title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
+                            >
+                              {entry.relativePath}
+                            </div>
+                            {entry.message ? (
+                              <div className="folder-entry-sub muted">{entry.message}</div>
+                            ) : null}
+                          </td>
+                          <td>{formatFolderKindLabel(entry)}</td>
+                          <td>
+                            {openable ? (
+                              <button
+                                type="button"
+                                className="folder-action-button"
+                                onClick={() => void openFolderEntryDiff(entry)}
+                                disabled={folderOpenBusyPath === entry.relativePath}
+                              >
+                                {folderOpenBusyPath === entry.relativePath
+                                  ? 'Opening...'
+                                  : 'Open diff'}
+                              </button>
+                            ) : (
+                              <span className="muted">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <pre className="result-output">(no folder result yet)</pre>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
       <aside className="control-panel">
@@ -1701,6 +2031,7 @@ export function App() {
             <option value="json">JSON compare</option>
             <option value="spec">OpenAPI spec compare</option>
             <option value="text">Text compare</option>
+            <option value="folder">Folder compare</option>
             <option value="scenario">Scenario run</option>
           </select>
         </div>
@@ -1972,6 +2303,67 @@ export function App() {
           </section>
         )}
 
+        {mode === 'folder' && (
+          <section className="mode-panel">
+            <div className="field-block">
+              <label className="field-label">Left root</label>
+              <div className="path-row">
+                <input
+                  value={folderLeftRoot}
+                  onChange={(e) => setFolderLeftRoot(e.target.value)}
+                />
+                <button type="button" onClick={() => void browseFolderRoot('left')}>
+                  Browse...
+                </button>
+              </div>
+            </div>
+
+            <div className="field-block">
+              <label className="field-label">Right root</label>
+              <div className="path-row">
+                <input
+                  value={folderRightRoot}
+                  onChange={(e) => setFolderRightRoot(e.target.value)}
+                />
+                <button type="button" onClick={() => void browseFolderRoot('right')}>
+                  Browse...
+                </button>
+              </div>
+            </div>
+
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={folderRecursive}
+                onChange={(e) => setFolderRecursive(e.target.checked)}
+              />
+              recursive
+            </label>
+
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={folderShowSame}
+                onChange={(e) => setFolderShowSame(e.target.checked)}
+              />
+              show same
+            </label>
+
+            <div className="field-block">
+              <label className="field-label">Name filter</label>
+              <input
+                value={folderNameFilter}
+                onChange={(e) => setFolderNameFilter(e.target.value)}
+                placeholder="case-insensitive substring"
+              />
+            </div>
+
+            <button onClick={onRun} disabled={loading || !folderLeftRoot || !folderRightRoot}>
+              {loading ? 'Comparing...' : 'Compare folders'}
+            </button>
+          </section>
+        )}
+
         {mode === 'scenario' && (
           <section className="mode-panel">
             <div className="field-block">
@@ -2142,6 +2534,8 @@ export function App() {
             </div>
             {renderTextResultPanel()}
           </div>
+        ) : mode === 'folder' ? (
+          renderFolderResultPanel()
         ) : (
           <>
             <h2>Result</h2>

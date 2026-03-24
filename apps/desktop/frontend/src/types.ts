@@ -1,4 +1,4 @@
-export type Mode = 'json' | 'spec' | 'text' | 'scenario'
+export type Mode = 'json' | 'spec' | 'text' | 'scenario' | 'folder'
 
 export type CompareCommon = {
   failOn: string
@@ -25,6 +25,45 @@ export type LoadTextFileRequest = {
 export type LoadTextFileResponse = {
   path: string
   content: string
+}
+
+export type CompareFoldersRequest = {
+  leftRoot: string
+  rightRoot: string
+  recursive: boolean
+  showSame: boolean
+  nameFilter: string
+}
+
+export type FolderCompareSummary = {
+  total: number
+  same: number
+  changed: number
+  leftOnly: number
+  rightOnly: number
+  typeMismatch: number
+  error: number
+}
+
+export type FolderCompareEntry = {
+  relativePath: string
+  status: 'same' | 'changed' | 'left-only' | 'right-only' | 'type-mismatch' | 'error'
+  leftPath: string
+  rightPath: string
+  leftExists: boolean
+  rightExists: boolean
+  leftKind: 'file' | 'dir' | 'missing' | 'unknown'
+  rightKind: 'file' | 'dir' | 'missing' | 'unknown'
+  leftSize: number
+  rightSize: number
+  compareModeHint: 'text' | 'json' | 'spec' | 'none'
+  message?: string
+}
+
+export type CompareFoldersResponse = {
+  summary: FolderCompareSummary
+  entries: FolderCompareEntry[]
+  error?: string
 }
 
 export type ScenarioSummary = {
