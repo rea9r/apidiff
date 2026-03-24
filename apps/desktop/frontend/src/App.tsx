@@ -43,6 +43,7 @@ const defaultTextCommon: CompareCommon = {
 }
 
 type TextResultView = 'rich' | 'raw'
+type TextDiffLayout = 'split' | 'unified'
 type TextInputTarget = 'old' | 'new'
 type WailsRuntimeClipboard = {
   ClipboardGetText?: () => Promise<string>
@@ -64,6 +65,17 @@ type UnifiedDiffRow = {
   content: string
   inlineSegments?: InlineDiffSegment[]
 }
+
+type SplitDiffRow =
+  | {
+      kind: 'meta' | 'hunk'
+      content: string
+    }
+  | {
+      kind: 'pair'
+      left: UnifiedDiffRow | null
+      right: UnifiedDiffRow | null
+    }
 
 function renderResult(res: unknown): string {
   if (typeof res === 'string') return res
@@ -401,6 +413,81 @@ function parseUnifiedDiff(output: string): UnifiedDiffRow[] | null {
   return addInlineDiffSegments(rows)
 }
 
+function buildSplitDiffRows(rows: UnifiedDiffRow[]): SplitDiffRow[] {
+  const splitRows: SplitDiffRow[] = []
+  let index = 0
+
+  while (index < rows.length) {
+    const row = rows[index]
+
+    if (row.kind === 'meta' || row.kind === 'hunk') {
+      splitRows.push({
+        kind: row.kind,
+        content: row.content,
+      })
+      index++
+      continue
+    }
+
+    if (row.kind === 'context') {
+      splitRows.push({
+        kind: 'pair',
+        left: row,
+        right: row,
+      })
+      index++
+      continue
+    }
+
+    const removed: UnifiedDiffRow[] = []
+    const added: UnifiedDiffRow[] = []
+    let end = index
+
+    while (
+      end < rows.length &&
+      (rows[end].kind === 'remove' || rows[end].kind === 'add')
+    ) {
+      if (rows[end].kind === 'remove') {
+        removed.push(rows[end])
+      } else {
+        added.push(rows[end])
+      }
+      end++
+    }
+
+    const pairCount = Math.max(removed.length, added.length)
+    for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
+      splitRows.push({
+        kind: 'pair',
+        left: removed[pairIndex] ?? null,
+        right: added[pairIndex] ?? null,
+      })
+    }
+
+    index = end
+  }
+
+  return splitRows
+}
+
+function renderSplitDiffCell(
+  row: UnifiedDiffRow | null,
+  side: 'left' | 'right',
+  keyBase: string,
+) {
+  const lineNumber = side === 'left' ? row?.oldLine : row?.newLine
+  const kindClass = row?.kind ?? 'empty'
+
+  return (
+    <div className={`split-diff-cell ${kindClass}`}>
+      <div className="split-diff-line">{lineNumber ?? ''}</div>
+      <pre className="split-diff-content">
+        {row ? renderInlineDiffContent(row, keyBase) : ''}
+      </pre>
+    </div>
+  )
+}
+
 export function App() {
   const [mode, setMode] = useState<Mode>('json')
 
@@ -425,6 +512,7 @@ export function App() {
   const [textNewSourcePath, setTextNewSourcePath] = useState('')
   const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
   const [textResultView, setTextResultView] = useState<TextResultView>('rich')
+  const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
   const [textLastRunOutputFormat, setTextLastRunOutputFormat] = useState<
     'text' | 'json' | null
@@ -455,6 +543,15 @@ export function App() {
 
   const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
   const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
+  const textRichRows = useMemo(
+    () => (textResult?.output ? parseUnifiedDiff(textResult.output) : null),
+    [textResult?.output],
+  )
+  const canRenderTextRich =
+    textLastRunOutputFormat === 'text' &&
+    !!textResult &&
+    !textResult.error &&
+    !!textRichRows
 
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
@@ -468,6 +565,16 @@ export function App() {
     }
     setJSONCommon((prev) => ({ ...prev, textStyle: 'semantic' }))
   }, [jsonCommon.textStyle, jsonPatchBlockedByFilters])
+
+  useEffect(() => {
+    if (!textResult) {
+      return
+    }
+
+    if (textResultView === 'rich' && !canRenderTextRich) {
+      setTextResultView('raw')
+    }
+  }, [canRenderTextRich, textResult, textResultView])
 
   const api = useMemo(
     () => ({
@@ -933,38 +1040,82 @@ export function App() {
     )
   }
 
+  const renderTextSplitRows = (rows: UnifiedDiffRow[]) => {
+    const splitRows = buildSplitDiffRows(rows)
+
+    return (
+      <div className="split-diff-grid">
+        <div className="split-diff-header">
+          <div className="split-diff-header-cell">Old</div>
+          <div className="split-diff-header-cell">New</div>
+        </div>
+
+        {splitRows.map((row, idx) => {
+          if (row.kind === 'pair') {
+            return (
+              <div key={`split-row-${idx}`} className="split-diff-row">
+                {renderSplitDiffCell(row.left, 'left', `split-left-${idx}`)}
+                {renderSplitDiffCell(row.right, 'right', `split-right-${idx}`)}
+              </div>
+            )
+          }
+
+          return (
+            <div key={`split-banner-${idx}`} className={`split-diff-banner ${row.kind}`}>
+              <pre className="split-diff-banner-content">{row.content}</pre>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
-    const parsed = textResult?.output ? parseUnifiedDiff(textResult.output) : null
-    const canUseRich = textLastRunOutputFormat === 'text'
-    const showRich =
-      textResultView === 'rich' &&
-      canUseRich &&
-      textResult &&
-      !textResult.error &&
-      parsed
+    const showRich = textResultView === 'rich' && canRenderTextRich
 
     return (
       <div className="text-result-shell">
         <div className="result-summary">{summaryLine || '(no result yet)'}</div>
 
         <div className="text-result-toolbar">
-          <div className="text-result-tabs">
-            <button
-              type="button"
-              className={textResultView === 'rich' ? 'active' : ''}
-              onClick={() => setTextResultView('rich')}
-              disabled={!canUseRich}
-            >
-              Rich diff
-            </button>
-            <button
-              type="button"
-              className={textResultView === 'raw' ? 'active' : ''}
-              onClick={() => setTextResultView('raw')}
-            >
-              Raw output
-            </button>
+          <div className="text-result-controls">
+            <div className="text-result-tabs">
+              <button
+                type="button"
+                className={textResultView === 'rich' ? 'active' : ''}
+                onClick={() => setTextResultView('rich')}
+                disabled={!canRenderTextRich}
+              >
+                Rich diff
+              </button>
+              <button
+                type="button"
+                className={textResultView === 'raw' ? 'active' : ''}
+                onClick={() => setTextResultView('raw')}
+              >
+                Raw output
+              </button>
+            </div>
+
+            <div className="text-diff-layout-tabs">
+              <button
+                type="button"
+                className={textDiffLayout === 'split' ? 'active' : ''}
+                onClick={() => setTextDiffLayout('split')}
+                disabled={!canRenderTextRich}
+              >
+                Split
+              </button>
+              <button
+                type="button"
+                className={textDiffLayout === 'unified' ? 'active' : ''}
+                onClick={() => setTextDiffLayout('unified')}
+                disabled={!canRenderTextRich}
+              >
+                Unified
+              </button>
+            </div>
           </div>
 
           <button
@@ -980,8 +1131,12 @@ export function App() {
         {textCopyStatus ? <div className="muted text-copy-status">{textCopyStatus}</div> : null}
 
         <div className="text-result-body">
-          {showRich ? (
-            renderTextDiffRows(parsed)
+          {showRich && textRichRows ? (
+            textDiffLayout === 'split' ? (
+              renderTextSplitRows(textRichRows)
+            ) : (
+              renderTextDiffRows(textRichRows)
+            )
           ) : (
             <pre className="result-output">{raw || '(no output yet)'}</pre>
           )}

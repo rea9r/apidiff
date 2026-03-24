@@ -2,7 +2,7 @@
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 5A)
+## Scope (Phase 6A)
 
 - JSON file comparison
 - OpenAPI spec comparison
@@ -18,6 +18,7 @@ This app is an experimental desktop GUI for xdiff.
 - Fail-on and ignore-path controls for JSON/spec
 - Paste-first text compare workspace with local file load and rich/raw diff views
 - Text compare supports dedicated `Load old...` / `Load new...` / `Paste old` / `Paste new` / `Copy raw output` actions, plus `Swap` / `Clear`
+- Text rich diff supports `Unified` / `Split` view toggle
 
 Not included yet:
 

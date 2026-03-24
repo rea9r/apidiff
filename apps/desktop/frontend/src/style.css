@@ -360,6 +360,18 @@ button {
   gap: 8px;
 }
 
+.text-result-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.text-diff-layout-tabs {
+  display: flex;
+  gap: 8px;
+}
+
 .text-result-toolbar {
   display: flex;
   align-items: center;
@@ -372,7 +384,8 @@ button {
   flex: 0 0 auto;
 }
 
-.text-result-tabs button.active {
+.text-result-tabs button.active,
+.text-diff-layout-tabs button.active {
   border-color: #5b8cff;
   background: rgba(91, 140, 255, 0.08);
 }
@@ -394,6 +407,82 @@ button {
   flex-direction: column;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
+}
+
+.split-diff-grid {
+  display: flex;
+  flex-direction: column;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.split-diff-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.split-diff-header-cell {
+  padding: 6px 8px;
+  font-weight: 600;
+  background: rgba(127, 127, 127, 0.08);
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.split-diff-header-cell:first-child {
+  border-right: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.split-diff-banner {
+  background: rgba(127, 127, 127, 0.08);
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.split-diff-banner-content {
+  margin: 0;
+  padding: 4px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.split-diff-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.split-diff-row > .split-diff-cell:first-child {
+  border-right: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.split-diff-cell {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  min-width: 0;
+}
+
+.split-diff-cell.empty {
+  background: rgba(127, 127, 127, 0.05);
+}
+
+.split-diff-cell.add {
+  background: rgba(60, 179, 113, 0.18);
+}
+
+.split-diff-cell.remove {
+  background: rgba(220, 53, 69, 0.18);
+}
+
+.split-diff-line {
+  padding: 2px 8px;
+  text-align: right;
+  opacity: 0.8;
+  border-right: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.split-diff-content {
+  margin: 0;
+  padding: 2px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .text-diff-row {
