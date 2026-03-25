@@ -10,6 +10,7 @@ This app is an experimental desktop GUI for xdiff.
 - Existing JSON/spec/text/scenario/folder workflows preserved on top of the new visual foundation
 - Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 - Compact density pass and adaptive layout polish for narrower non-fullscreen window sizes
+- Text compare dense controls with icon-based editor actions and resizable desktop sidebar
 
 - JSON file comparison
 - OpenAPI spec comparison

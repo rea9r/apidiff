@@ -337,6 +337,17 @@ button {
   flex: 1;
 }
 
+.text-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--xdiff-toolbar-gap);
+}
+
+.text-workspace-header h2 {
+  margin: 0;
+}
+
 .text-workspace-toolbar {
   display: flex;
   gap: var(--xdiff-toolbar-gap);
@@ -392,7 +403,7 @@ button {
 .text-editor-actions {
   display: flex;
   align-items: center;
-  gap: var(--xdiff-toolbar-gap);
+  gap: 4px;
   flex-wrap: wrap;
 }
 
@@ -782,6 +793,35 @@ button {
   white-space: nowrap;
 }
 
+.mantine-AppShell-navbar {
+  position: relative;
+}
+
+.app-navbar-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+}
+
+.app-navbar-resizer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 2px;
+  height: 100%;
+  background: var(--xdiff-viewer-border);
+  opacity: 0.55;
+}
+
+.app-navbar-resizer:hover::before {
+  opacity: 1;
+}
+
 @media (max-width: 920px) {
   .text-editors-row {
     grid-template-columns: 1fr;
@@ -799,5 +839,11 @@ button {
     display: grid;
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 62em) {
+  .app-navbar-resizer {
+    display: none;
   }
 }

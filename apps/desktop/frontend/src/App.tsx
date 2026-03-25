@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import {
+  IconBackspace,
+  IconChevronDown,
+  IconChevronUp,
+  IconClipboardText,
+  IconCopy,
+  IconFolderOpen,
+  IconSwitchHorizontal,
+} from '@tabler/icons-react'
 import type {
   CompareCommon,
   CompareFoldersRequest,
@@ -203,7 +213,7 @@ function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
 
 function summarizeTextResultForGUI(res: CompareResponse | null): string {
   if (!res) {
-    return '(no result yet)'
+    return ''
   }
 
   if (res.error) {
@@ -1913,11 +1923,15 @@ export function App() {
 
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
-    const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
+    const hasTextResult = !!textResult
+    const showRich =
+      hasTextResult && textResultView === 'rich' && canRenderTextRich && !!textRichItems
 
     return (
       <div className="text-result-shell">
-        <div className="result-summary">{summarizeTextResultForGUI(textResult)}</div>
+        {hasTextResult ? (
+          <div className="result-summary">{summarizeTextResultForGUI(textResult)}</div>
+        ) : null}
 
         <div className="text-result-toolbar">
           <div className="text-result-controls">
@@ -1987,23 +2001,29 @@ export function App() {
                     : 'Search rich diff'}
                 </span>
 
-                <button
-                  type="button"
-                  className="text-search-action button-secondary button-compact"
-                  onClick={() => moveTextSearch(-1)}
-                  disabled={textSearchMatches.length === 0}
-                >
-                  Prev
-                </button>
+                <Tooltip label="Previous match">
+                  <ActionIcon
+                    variant="default"
+                    size="input-sm"
+                    aria-label="Previous match"
+                    onClick={() => moveTextSearch(-1)}
+                    disabled={textSearchMatches.length === 0}
+                  >
+                    <IconChevronUp size={16} />
+                  </ActionIcon>
+                </Tooltip>
 
-                <button
-                  type="button"
-                  className="text-search-action button-secondary button-compact"
-                  onClick={() => moveTextSearch(1)}
-                  disabled={textSearchMatches.length === 0}
-                >
-                  Next
-                </button>
+                <Tooltip label="Next match">
+                  <ActionIcon
+                    variant="default"
+                    size="input-sm"
+                    aria-label="Next match"
+                    onClick={() => moveTextSearch(1)}
+                    disabled={textSearchMatches.length === 0}
+                  >
+                    <IconChevronDown size={16} />
+                  </ActionIcon>
+                </Tooltip>
               </div>
             ) : null}
 
@@ -2018,27 +2038,29 @@ export function App() {
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className="text-result-action button-secondary button-compact"
-            onClick={() => void copyTextResultRawOutput()}
-            disabled={textCopyBusy || !raw}
-          >
-            {textCopyBusy ? 'Copying...' : 'Copy raw output'}
-          </button>
+          <Tooltip label="Copy raw output">
+            <ActionIcon
+              variant="default"
+              size="input-sm"
+              aria-label="Copy raw output"
+              onClick={() => void copyTextResultRawOutput()}
+              disabled={textCopyBusy || !raw}
+              loading={textCopyBusy}
+            >
+              <IconCopy size={16} />
+            </ActionIcon>
+          </Tooltip>
         </div>
 
         {textCopyStatus ? <div className="muted text-copy-status">{textCopyStatus}</div> : null}
 
         <div className="text-result-body">
-          {showRich && textRichItems ? (
-            textDiffLayout === 'split' ? (
-              renderTextSplitRows(textRichItems)
-            ) : (
-              renderTextDiffRows(textRichItems)
-            )
+          {!hasTextResult ? (
+            <pre className="result-output">(no result yet)</pre>
+          ) : showRich && textRichItems ? (
+            textDiffLayout === 'split' ? renderTextSplitRows(textRichItems) : renderTextDiffRows(textRichItems)
           ) : (
-            <pre className="result-output">{raw || '(no output yet)'}</pre>
+            <pre className="result-output">{raw}</pre>
           )}
         </div>
       </div>
@@ -2606,16 +2628,19 @@ export function App() {
         <div className="result-panel">
           {mode === 'text' ? (
             <div className="text-workspace">
-            <h2>Text Compare</h2>
-            <div className="text-workspace-toolbar">
-              <button
-                type="button"
-                className="button-secondary button-compact"
-                onClick={swapTextInputs}
-                disabled={textEditorBusy}
-              >
-                Swap sides
-              </button>
+            <div className="text-workspace-header">
+              <h2>Text Compare</h2>
+              <Tooltip label="Swap old and new texts">
+                <ActionIcon
+                  variant="default"
+                  size="input-sm"
+                  aria-label="Swap sides"
+                  onClick={swapTextInputs}
+                  disabled={textEditorBusy}
+                >
+                  <IconSwitchHorizontal size={16} />
+                </ActionIcon>
+              </Tooltip>
             </div>
 
             {textWorkspaceStatus ? (
@@ -2638,31 +2663,43 @@ export function App() {
                     ) : null}
                   </div>
                   <div className="text-editor-actions">
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => void loadTextFromFile('old')}
-                      disabled={textEditorBusy}
-                      title="Load file into Old text"
-                    >
-                      {textFileBusyTarget === 'old' ? 'Opening...' : 'Open...'}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => void pasteTextFromClipboard('old')}
-                      disabled={textEditorBusy}
-                    >
-                      {textClipboardBusyTarget === 'old' ? 'Pasting...' : 'Paste'}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => clearTextInput('old')}
-                      disabled={textEditorBusy || !textOld}
-                    >
-                      Clear
-                    </button>
+                    <Tooltip label="Open file into Old text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Open file into Old text"
+                        onClick={() => void loadTextFromFile('old')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'old'}
+                      >
+                        <IconFolderOpen size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Paste clipboard into Old text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Paste clipboard into Old text"
+                        onClick={() => void pasteTextFromClipboard('old')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'old'}
+                      >
+                        <IconClipboardText size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Clear Old text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Clear Old text"
+                        onClick={() => clearTextInput('old')}
+                        disabled={textEditorBusy || !textOld}
+                      >
+                        <IconBackspace size={16} />
+                      </ActionIcon>
+                    </Tooltip>
                   </div>
                 </div>
                 <textarea
@@ -2685,31 +2722,43 @@ export function App() {
                     ) : null}
                   </div>
                   <div className="text-editor-actions">
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => void loadTextFromFile('new')}
-                      disabled={textEditorBusy}
-                      title="Load file into New text"
-                    >
-                      {textFileBusyTarget === 'new' ? 'Opening...' : 'Open...'}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => void pasteTextFromClipboard('new')}
-                      disabled={textEditorBusy}
-                    >
-                      {textClipboardBusyTarget === 'new' ? 'Pasting...' : 'Paste'}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-editor-action button-secondary button-compact"
-                      onClick={() => clearTextInput('new')}
-                      disabled={textEditorBusy || !textNew}
-                    >
-                      Clear
-                    </button>
+                    <Tooltip label="Open file into New text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Open file into New text"
+                        onClick={() => void loadTextFromFile('new')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'new'}
+                      >
+                        <IconFolderOpen size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Paste clipboard into New text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Paste clipboard into New text"
+                        onClick={() => void pasteTextFromClipboard('new')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'new'}
+                      >
+                        <IconClipboardText size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Clear New text">
+                      <ActionIcon
+                        variant="default"
+                        size="input-sm"
+                        aria-label="Clear New text"
+                        onClick={() => clearTextInput('new')}
+                        disabled={textEditorBusy || !textNew}
+                      >
+                        <IconBackspace size={16} />
+                      </ActionIcon>
+                    </Tooltip>
                   </div>
                 </div>
                 <textarea
