@@ -1,5 +1,6 @@
 import { AppShell, Box, Burger, Group, ScrollArea } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { IconCheck } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
@@ -20,11 +21,19 @@ type AppChromeProps = {
 }
 
 const MODE_OPTIONS = [
-  { value: 'text', label: 'Text compare' },
-  { value: 'json', label: 'JSON compare' },
-  { value: 'spec', label: 'OpenAPI spec compare' },
-  { value: 'folder', label: 'Folder compare' },
-  { value: 'scenario', label: 'Scenario run' },
+  {
+    group: 'Compare',
+    items: [
+      { value: 'text', label: 'Text compare' },
+      { value: 'json', label: 'JSON compare' },
+      { value: 'spec', label: 'OpenAPI spec compare' },
+      { value: 'folder', label: 'Folder compare' },
+    ],
+  },
+  {
+    group: 'Tools',
+    items: [{ value: 'scenario', label: 'Scenario run' }],
+  },
 ]
 
 const NAVBAR_WIDTH_STORAGE_KEY = 'xdiff.desktop.navbarWidth'
@@ -146,6 +155,15 @@ export function AppChrome({
               w={220}
               className="xdiff-header-mode-select"
               data={MODE_OPTIONS}
+              withCheckIcon={false}
+              renderOption={({ option, checked }: { option: { label: string }; checked: boolean }) => (
+                <div className="mode-option-row">
+                  <span className="mode-option-check-slot" aria-hidden="true">
+                    {checked ? <IconCheck size={14} className="mode-option-check-icon" /> : null}
+                  </span>
+                  <span className="mode-option-label">{option.label}</span>
+                </div>
+              )}
               value={mode}
               onChange={(value: string | null) => {
                 if (!value) {
