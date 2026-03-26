@@ -44,6 +44,12 @@ import {
   type CompareSummaryBadgeItem,
 } from './ui/CompareSummaryBadges'
 import { ViewSettingsMenu } from './ui/ViewSettingsMenu'
+import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
+import { CompareSourceGrid } from './ui/CompareSourceGrid'
+import { CompareSourcePane } from './ui/CompareSourcePane'
+import { CompareResultShell } from './ui/CompareResultShell'
+import { CompareSectionHeader } from './ui/CompareSectionHeader'
+import { CompareValueBlock } from './ui/CompareValueBlock'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -2358,8 +2364,10 @@ export function App() {
       : null
 
     return (
-      <div className="text-result-shell">
-        <CompareResultToolbar
+      <CompareResultShell
+        hasResult={hasTextResult}
+        toolbar={
+          <CompareResultToolbar
           primary={
             <CompareSearchControls
               value={textSearchQuery}
@@ -2461,11 +2469,9 @@ export function App() {
             </>
           }
         />
-
-        <div className="text-result-body">
-          {!hasTextResult ? (
-            <pre className="result-output">(no result yet)</pre>
-          ) : showRich && textRichItems ? (
+        }
+      >
+        {showRich && textRichItems ? (
             textDiffLayout === 'split' ? (
               renderTextSplitRows(textRichItems)
             ) : (
@@ -2474,8 +2480,7 @@ export function App() {
           ) : (
             <pre className="result-output">{raw}</pre>
           )}
-        </div>
-      </div>
+      </CompareResultShell>
     )
   }
 
@@ -2555,13 +2560,13 @@ export function App() {
     }
 
     if (value === null) {
-      return <code className="json-value-inline">null</code>
+      return <CompareValueBlock inline>null</CompareValueBlock>
     }
 
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       const text = String(value)
       return (
-        <code className="json-value-inline">{renderHighlightedText(text, normalizedQuery)}</code>
+        <CompareValueBlock inline>{renderHighlightedText(text, normalizedQuery)}</CompareValueBlock>
       )
     }
 
@@ -2573,9 +2578,7 @@ export function App() {
 
     return (
       <div className="json-value-wrap">
-        <pre className={`json-value-block ${expanded ? 'is-expanded' : ''}`}>
-          {shown.join('\n')}
-        </pre>
+        <CompareValueBlock expanded={expanded}>{shown.join('\n')}</CompareValueBlock>
         {canExpand ? (
           <button
             type="button"
@@ -2624,8 +2627,10 @@ export function App() {
       : null
 
     return (
-      <div className="json-result-shell">
-        <CompareResultToolbar
+      <CompareResultShell
+        hasResult={hasJSONResult}
+        toolbar={
+          <CompareResultToolbar
           primary={
             <CompareSearchControls
               value={jsonSearchQuery}
@@ -2692,11 +2697,9 @@ export function App() {
             </>
           }
         />
-
-        <div className="text-result-body">
-          {!hasJSONResult ? (
-            <pre className="result-output">(no result yet)</pre>
-          ) : showRich ? (
+        }
+      >
+        {showRich ? (
             <div className="json-diff-table-wrap">
               {jsonDiffRows.length === 0 ? (
                 <div className="json-empty-state muted">No differences.</div>
@@ -2717,21 +2720,13 @@ export function App() {
                         <Fragment key={`group-${group.key}`}>
                           <tr key={`group-${group.key}`} className="json-group-row">
                             <td colSpan={4}>
-                              <button
-                                type="button"
-                                className="json-group-header"
-                                onClick={() => toggleJSONGroup(group.key)}
-                              >
-                                <span className="json-group-header-left">
-                                  {expanded ? (
-                                    <IconChevronDown size={14} />
-                                  ) : (
-                                    <IconChevronRight size={14} />
-                                  )}
-                                  <span className="json-group-title">{group.key}</span>
-                                  <span className="json-group-count">{group.items.length} changes</span>
-                                </span>
-                                <span className="json-group-header-right">
+                              <CompareSectionHeader
+                                title={group.key}
+                                countLabel={`${group.items.length} changes`}
+                                collapsed={!expanded}
+                                onToggle={() => toggleJSONGroup(group.key)}
+                                badges={
+                                  <>
                                   {group.summary.added > 0 ? (
                                     <span className="json-group-stat added">+{group.summary.added}</span>
                                   ) : null}
@@ -2751,8 +2746,9 @@ export function App() {
                                       breaking {group.summary.breaking}
                                     </span>
                                   ) : null}
-                                </span>
-                              </button>
+                                  </>
+                                }
+                              />
                             </td>
                           </tr>
 
@@ -2814,8 +2810,7 @@ export function App() {
           ) : (
             <pre className="result-output">{raw}</pre>
           )}
-        </div>
-      </div>
+      </CompareResultShell>
     )
   }
 
@@ -3310,186 +3305,171 @@ export function App() {
 
   const mainContent =
     mode === 'text' ? (
-      <div className="compare-mode-main">
-        <div className="text-workspace">
-          <div className="text-editors-row">
-            <div className="text-editor-panel">
-              <div className="text-editor-header">
-                <div className="text-editor-title">
-                  <label className="field-label">Old text</label>
-                  <div className="text-source-path-slot">
-                    {textOldSourcePath ? (
-                      <div className="muted text-source-path" title={textOldSourcePath}>
-                        {textOldSourcePath}
-                      </div>
-                    ) : (
-                      <div className="text-source-path text-source-path-empty" aria-hidden="true" />
-                    )}
-                  </div>
-                </div>
-                <div className="text-editor-actions">
-                  <Tooltip label="Open file into Old text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Open file into Old text"
-                      className="text-editor-action"
-                      onClick={() => void loadTextFromFile('old')}
-                      disabled={textEditorBusy}
-                      loading={textFileBusyTarget === 'old'}
-                    >
-                      <IconFolderOpen size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Paste clipboard into Old text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Paste clipboard into Old text"
-                      className="text-editor-action"
-                      onClick={() => void pasteTextFromClipboard('old')}
-                      disabled={textEditorBusy}
-                      loading={textClipboardBusyTarget === 'old'}
-                    >
-                      <IconClipboardText size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Copy Old text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Copy Old text"
-                      className="text-editor-action"
-                      onClick={() => void copyTextInput('old')}
-                      disabled={textEditorBusy || !textOld}
-                      loading={textPaneCopyBusyTarget === 'old'}
-                    >
-                      <IconCopy size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Clear Old text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Clear Old text"
-                      className="text-editor-action is-danger"
-                      onClick={() => clearTextInput('old')}
-                      disabled={textEditorBusy || !textOld}
-                    >
-                      <IconBackspace size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Swap old and new texts">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Swap sides"
-                      className="text-editor-action"
-                      onClick={swapTextInputs}
-                      disabled={textEditorBusy}
-                    >
-                      <IconSwitchHorizontal size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                </div>
-              </div>
-              <textarea
-                className="text-editor"
-                value={textOld}
-                onChange={(e) => {
-                  setTextOld(e.target.value)
-                  if (textOldSourcePath) setTextOldSourcePath('')
-                }}
-              />
-            </div>
-            <div className="text-editor-panel">
-              <div className="text-editor-header">
-                <div className="text-editor-title">
-                  <label className="field-label">New text</label>
-                  <div className="text-source-path-slot">
-                    {textNewSourcePath ? (
-                      <div className="muted text-source-path" title={textNewSourcePath}>
-                        {textNewSourcePath}
-                      </div>
-                    ) : (
-                      <div className="text-source-path text-source-path-empty" aria-hidden="true" />
-                    )}
-                  </div>
-                </div>
-                <div className="text-editor-actions">
-                  <Tooltip label="Open file into New text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Open file into New text"
-                      className="text-editor-action"
-                      onClick={() => void loadTextFromFile('new')}
-                      disabled={textEditorBusy}
-                      loading={textFileBusyTarget === 'new'}
-                    >
-                      <IconFolderOpen size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Paste clipboard into New text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Paste clipboard into New text"
-                      className="text-editor-action"
-                      onClick={() => void pasteTextFromClipboard('new')}
-                      disabled={textEditorBusy}
-                      loading={textClipboardBusyTarget === 'new'}
-                    >
-                      <IconClipboardText size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Copy New text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Copy New text"
-                      className="text-editor-action"
-                      onClick={() => void copyTextInput('new')}
-                      disabled={textEditorBusy || !textNew}
-                      loading={textPaneCopyBusyTarget === 'new'}
-                    >
-                      <IconCopy size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Clear New text">
-                    <ActionIcon
-                      variant="default"
-                      size={28}
-                      aria-label="Clear New text"
-                      className="text-editor-action is-danger"
-                      onClick={() => clearTextInput('new')}
-                      disabled={textEditorBusy || !textNew}
-                    >
-                      <IconBackspace size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                </div>
-              </div>
-              <textarea
-                className="text-editor"
-                value={textNew}
-                onChange={(e) => {
-                  setTextNew(e.target.value)
-                  if (textNewSourcePath) setTextNewSourcePath('')
-                }}
-              />
-            </div>
-          </div>
-          {renderTextResultPanel()}
-        </div>
-      </div>
+      <CompareWorkspaceShell
+        source={
+          <CompareSourceGrid
+            left={
+              <CompareSourcePane
+                title="Old text"
+                sourcePath={textOldSourcePath}
+                actions={
+                  <>
+                    <Tooltip label="Open file into Old text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Open file into Old text"
+                        className="text-editor-action"
+                        onClick={() => void loadTextFromFile('old')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'old'}
+                      >
+                        <IconFolderOpen size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Paste clipboard into Old text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Paste clipboard into Old text"
+                        className="text-editor-action"
+                        onClick={() => void pasteTextFromClipboard('old')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'old'}
+                      >
+                        <IconClipboardText size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Copy Old text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Copy Old text"
+                        className="text-editor-action"
+                        onClick={() => void copyTextInput('old')}
+                        disabled={textEditorBusy || !textOld}
+                        loading={textPaneCopyBusyTarget === 'old'}
+                      >
+                        <IconCopy size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Clear Old text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Clear Old text"
+                        className="text-editor-action is-danger"
+                        onClick={() => clearTextInput('old')}
+                        disabled={textEditorBusy || !textOld}
+                      >
+                        <IconBackspace size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Swap old and new texts">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Swap sides"
+                        className="text-editor-action"
+                        onClick={swapTextInputs}
+                        disabled={textEditorBusy}
+                      >
+                        <IconSwitchHorizontal size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </>
+                }
+              >
+                <textarea
+                  className="text-editor"
+                  value={textOld}
+                  onChange={(e) => {
+                    setTextOld(e.target.value)
+                    if (textOldSourcePath) setTextOldSourcePath('')
+                  }}
+                />
+              </CompareSourcePane>
+            }
+            right={
+              <CompareSourcePane
+                title="New text"
+                sourcePath={textNewSourcePath}
+                actions={
+                  <>
+                    <Tooltip label="Open file into New text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Open file into New text"
+                        className="text-editor-action"
+                        onClick={() => void loadTextFromFile('new')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'new'}
+                      >
+                        <IconFolderOpen size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Paste clipboard into New text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Paste clipboard into New text"
+                        className="text-editor-action"
+                        onClick={() => void pasteTextFromClipboard('new')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'new'}
+                      >
+                        <IconClipboardText size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Copy New text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Copy New text"
+                        className="text-editor-action"
+                        onClick={() => void copyTextInput('new')}
+                        disabled={textEditorBusy || !textNew}
+                        loading={textPaneCopyBusyTarget === 'new'}
+                      >
+                        <IconCopy size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Clear New text">
+                      <ActionIcon
+                        variant="default"
+                        size={28}
+                        aria-label="Clear New text"
+                        className="text-editor-action is-danger"
+                        onClick={() => clearTextInput('new')}
+                        disabled={textEditorBusy || !textNew}
+                      >
+                        <IconBackspace size={15} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </>
+                }
+              >
+                <textarea
+                  className="text-editor"
+                  value={textNew}
+                  onChange={(e) => {
+                    setTextNew(e.target.value)
+                    if (textNewSourcePath) setTextNewSourcePath('')
+                  }}
+                />
+              </CompareSourcePane>
+            }
+          />
+        }
+        result={renderTextResultPanel()}
+      />
     ) : mode === 'json' ? (
-      <div className="compare-mode-main">
-        <SectionCard title="JSON sources">
-          <div className="compare-source-panel">
-            <div className="compare-source-grid">
-              <div className="field-block">
-                <label className="field-label">Old path</label>
+      <CompareWorkspaceShell
+        source={
+          <CompareSourceGrid
+            left={
+              <CompareSourcePane title="Old JSON" sourcePath={jsonOldPath}>
                 <div className="path-row">
                   <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
                   <button
@@ -3500,9 +3480,10 @@ export function App() {
                     Browse...
                   </button>
                 </div>
-              </div>
-              <div className="field-block">
-                <label className="field-label">New path</label>
+              </CompareSourcePane>
+            }
+            right={
+              <CompareSourcePane title="New JSON" sourcePath={jsonNewPath}>
                 <div className="path-row">
                   <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
                   <button
@@ -3513,14 +3494,12 @@ export function App() {
                     Browse...
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-        <SectionCard title="Result">
-          {renderJSONResultPanel()}
-        </SectionCard>
-      </div>
+              </CompareSourcePane>
+            }
+          />
+        }
+        result={renderJSONResultPanel()}
+      />
     ) : mode === 'spec' ? (
       <div className="compare-mode-main">
         <SectionCard title="Spec sources">
