@@ -1,14 +1,15 @@
-# xdiff Desktop (Wails, Phase 7B-1)
+# xdiff Desktop (Wails, Phase 7B-2)
 
 This app is an experimental desktop GUI for xdiff.
 
-## Scope (Phase 7B-1)
+## Scope (Phase 7B-2)
 
 - Mantine-based visual foundation with light / dark / system theme support
 - App shell refresh with shared header / sidebar / main layout
 - Shared UI primitives for controls, badges, cards, tables, and notifications
 - Existing JSON/spec/text/scenario/folder workflows preserved on top of the new visual foundation
 - JSON rich viewer with semantic path/value diff table and raw output fallback
+- Path-grouped JSON rich viewer with collapsible sections and compact value rendering
 - Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 - Compact density pass and adaptive layout polish for narrower non-fullscreen window sizes
 - Text compare dense controls with icon-based editor actions and resizable desktop sidebar

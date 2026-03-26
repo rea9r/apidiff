@@ -786,6 +786,9 @@ button {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: 8px;
   background: var(--xdiff-viewer-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .json-diff-table {
@@ -806,6 +809,76 @@ button {
   background: var(--xdiff-viewer-surface-subtle);
   z-index: 1;
   text-align: left;
+}
+
+.json-empty-state {
+  padding: 10px;
+}
+
+.json-group {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--xdiff-viewer-border);
+}
+
+.json-group:last-child {
+  border-bottom: none;
+}
+
+.json-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid var(--xdiff-viewer-border);
+  background: var(--xdiff-viewer-surface-subtle);
+  width: 100%;
+  text-align: left;
+}
+
+.json-group-header-left,
+.json-group-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.json-group-title {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 600;
+}
+
+.json-group-stat {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.json-group-stat.added {
+  background: var(--xdiff-diff-add-bg);
+  color: var(--mantine-color-green-8);
+}
+
+.json-group-stat.removed {
+  background: var(--xdiff-diff-remove-bg);
+  color: var(--mantine-color-red-8);
+}
+
+.json-group-stat.changed {
+  background: var(--xdiff-diff-change-bg);
+  color: var(--mantine-color-yellow-8);
+}
+
+.json-group-stat.type-changed {
+  background: var(--xdiff-diff-breaking-bg);
+  color: var(--mantine-color-pink-8);
 }
 
 .json-diff-row.added {
@@ -838,9 +911,57 @@ button {
   gap: 6px;
 }
 
+.json-type-badge,
+.json-breaking-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.json-type-badge.added {
+  background: var(--xdiff-diff-add-bg);
+  color: var(--mantine-color-green-8);
+}
+
+.json-type-badge.removed {
+  background: var(--xdiff-diff-remove-bg);
+  color: var(--mantine-color-red-8);
+}
+
+.json-type-badge.changed {
+  background: var(--xdiff-diff-change-bg);
+  color: var(--mantine-color-yellow-8);
+}
+
+.json-type-badge.type_changed {
+  background: var(--xdiff-diff-breaking-bg);
+  color: var(--mantine-color-pink-8);
+}
+
+.json-breaking-badge {
+  background: var(--xdiff-diff-breaking-bg);
+  color: var(--mantine-color-pink-8);
+}
+
 .json-path-cell {
   font-family: var(--mantine-font-family-monospace);
   white-space: nowrap;
+}
+
+.json-value-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.json-value-inline {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .json-value-block {
@@ -852,6 +973,16 @@ button {
   border-radius: 6px;
   background: var(--xdiff-viewer-code-bg);
   overflow: auto;
+  max-height: 10.5em;
+}
+
+.json-value-block.is-expanded {
+  max-height: none;
+}
+
+.json-search-hit {
+  background: color-mix(in srgb, var(--mantine-color-yellow-3) 65%, transparent);
+  border-radius: 3px;
 }
 
 .text-diff-grid {

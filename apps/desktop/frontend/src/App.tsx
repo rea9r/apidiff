@@ -5,6 +5,7 @@ import {
   IconAdjustmentsHorizontal,
   IconBackspace,
   IconCheck,
+  IconChevronRight,
   IconChevronDown,
   IconChevronUp,
   IconClipboardText,
@@ -112,6 +113,18 @@ type OmittedDiffItem = Extract<RichDiffItem, { kind: 'omitted' }>
 type TextSearchMatch = {
   id: string
   sectionId: string | null
+}
+
+type JSONDiffGroup = {
+  key: string
+  items: JSONRichDiffItem[]
+  summary: {
+    added: number
+    removed: number
+    changed: number
+    typeChanged: number
+    breaking: number
+  }
 }
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
@@ -229,6 +242,57 @@ function stringifyJSONValue(value: unknown): string {
 
 function summarizeJSONSearchText(item: JSONRichDiffItem): string {
   return `${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
+}
+
+function getJSONDiffGroupKey(path: string): string {
+  if (!path) {
+    return '(root)'
+  }
+
+  const dotIndex = path.indexOf('.')
+  const bracketIndex = path.indexOf('[')
+  const cutIndexes = [dotIndex, bracketIndex].filter((index) => index >= 0)
+  if (cutIndexes.length === 0) {
+    return path
+  }
+
+  const cutAt = Math.min(...cutIndexes)
+  return path.slice(0, cutAt) || '(root)'
+}
+
+function buildJSONDiffGroups(diffs: JSONRichDiffItem[]): JSONDiffGroup[] {
+  const map = new Map<string, JSONDiffGroup>()
+
+  for (const diff of diffs) {
+    const key = getJSONDiffGroupKey(diff.path)
+    const group =
+      map.get(key) ?? {
+        key,
+        items: [],
+        summary: { added: 0, removed: 0, changed: 0, typeChanged: 0, breaking: 0 },
+      }
+
+    group.items.push(diff)
+    if (diff.type === 'added') group.summary.added++
+    else if (diff.type === 'removed') group.summary.removed++
+    else if (diff.type === 'changed') group.summary.changed++
+    else if (diff.type === 'type_changed') group.summary.typeChanged++
+    if (diff.breaking) group.summary.breaking++
+
+    map.set(key, group)
+  }
+
+  return [...map.values()]
+}
+
+function buildJSONMatchGroupKeys(diffs: JSONRichDiffItem[], matchIndexes: number[]): string[] {
+  const keys = new Set<string>()
+  for (const index of matchIndexes) {
+    const diff = diffs[index]
+    if (!diff) continue
+    keys.add(getJSONDiffGroupKey(diff.path))
+  }
+  return [...keys]
 }
 
 function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
@@ -822,6 +886,8 @@ export function App() {
   const [jsonRichResult, setJSONRichResult] = useState<CompareJSONRichResponse | null>(null)
   const [jsonSearchQuery, setJSONSearchQuery] = useState('')
   const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
+  const [jsonExpandedGroups, setJSONExpandedGroups] = useState<string[]>([])
+  const [jsonExpandedValueKeys, setJSONExpandedValueKeys] = useState<string[]>([])
   const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultJSONCommon.ignorePaths),
   )
@@ -934,6 +1000,7 @@ export function App() {
 
   const jsonResult = jsonRichResult?.result ?? null
   const jsonDiffRows = jsonRichResult?.diffs ?? []
+  const jsonDiffGroups = useMemo(() => buildJSONDiffGroups(jsonDiffRows), [jsonDiffRows])
   const canRenderJSONRich = !!jsonRichResult && !jsonRichResult.result.error
   const normalizedJSONSearchQuery = useMemo(
     () => normalizeSearchQuery(jsonSearchQuery),
@@ -951,6 +1018,21 @@ export function App() {
       )
       .map(({ index }) => index)
   }, [jsonDiffRows, normalizedJSONSearchQuery])
+  const jsonSearchMatchIndexSet = useMemo(
+    () => new Set(jsonSearchMatches),
+    [jsonSearchMatches],
+  )
+  const jsonMatchGroupKeys = useMemo(
+    () => buildJSONMatchGroupKeys(jsonDiffRows, jsonSearchMatches),
+    [jsonDiffRows, jsonSearchMatches],
+  )
+  const effectiveJSONExpandedGroups = useMemo(() => {
+    const keys = new Set<string>(jsonExpandedGroups)
+    for (const key of jsonMatchGroupKeys) {
+      keys.add(key)
+    }
+    return keys
+  }, [jsonExpandedGroups, jsonMatchGroupKeys])
 
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
@@ -992,6 +1074,11 @@ export function App() {
       setJSONResultView('raw')
     }
   }, [canRenderJSONRich, jsonRichResult, jsonResultView])
+
+  useEffect(() => {
+    setJSONExpandedGroups(jsonDiffGroups.map((group) => group.key))
+    setJSONExpandedValueKeys([])
+  }, [jsonDiffGroups])
 
   useEffect(() => {
     setTextActiveSearchIndex(0)
@@ -2327,24 +2414,98 @@ export function App() {
     )
   }
 
-  const renderJSONValueBlock = (value: unknown) => {
+  const toggleJSONGroup = (groupKey: string) => {
+    setJSONExpandedGroups((prev) =>
+      prev.includes(groupKey)
+        ? prev.filter((key) => key !== groupKey)
+        : [...prev, groupKey],
+    )
+  }
+
+  const toggleJSONExpandedValue = (valueKey: string) => {
+    setJSONExpandedValueKeys((prev) =>
+      prev.includes(valueKey)
+        ? prev.filter((key) => key !== valueKey)
+        : [...prev, valueKey],
+    )
+  }
+
+  const renderHighlightedText = (value: string, normalizedQuery: string) => {
+    if (!normalizedQuery) {
+      return value
+    }
+
+    const lower = value.toLowerCase()
+    const parts: Array<{ text: string; hit: boolean }> = []
+    let cursor = 0
+
+    while (cursor < value.length) {
+      const found = lower.indexOf(normalizedQuery, cursor)
+      if (found === -1) {
+        parts.push({ text: value.slice(cursor), hit: false })
+        break
+      }
+
+      if (found > cursor) {
+        parts.push({ text: value.slice(cursor, found), hit: false })
+      }
+      parts.push({ text: value.slice(found, found + normalizedQuery.length), hit: true })
+      cursor = found + normalizedQuery.length
+    }
+
+    return parts.map((part, index) =>
+      part.hit ? (
+        <span key={`hit-${index}`} className="json-search-hit">
+          {part.text}
+        </span>
+      ) : (
+        <span key={`plain-${index}`}>{part.text}</span>
+      ),
+    )
+  }
+
+  const renderJSONValueCell = (
+    value: unknown,
+    valueKey: string,
+    normalizedQuery: string,
+  ) => {
     if (value === undefined) {
       return <span className="muted">—</span>
     }
 
     if (value === null) {
-      return <code>null</code>
+      return <code className="json-value-inline">null</code>
     }
 
-    if (typeof value === 'string') {
-      return <code>{value}</code>
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      const text = String(value)
+      return (
+        <code className="json-value-inline">{renderHighlightedText(text, normalizedQuery)}</code>
+      )
     }
 
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return <code>{String(value)}</code>
-    }
+    const rendered = stringifyJSONValue(value)
+    const lines = rendered.split('\n')
+    const canExpand = lines.length > 5
+    const expanded = jsonExpandedValueKeys.includes(valueKey)
+    const shown = canExpand && !expanded ? [...lines.slice(0, 5), '...'] : lines
 
-    return <pre className="json-value-block">{stringifyJSONValue(value)}</pre>
+    return (
+      <div className="json-value-wrap">
+        <pre className={`json-value-block ${expanded ? 'is-expanded' : ''}`}>
+          {shown.join('\n')}
+        </pre>
+        {canExpand ? (
+          <button
+            type="button"
+            className="button-secondary button-compact"
+            onClick={() => toggleJSONExpandedValue(valueKey)}
+          >
+            {expanded ? 'Collapse' : 'Expand'}
+          </button>
+        ) : null}
+      </div>
+    )
   }
 
   const renderJSONTypeLabel = (type: JSONRichDiffItem['type']) => {
@@ -2361,6 +2522,10 @@ export function App() {
     const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
     const hasJSONResult = !!jsonResult
     const summary = jsonRichResult?.summary
+    const jsonDiffRowIndexMap = new Map<JSONRichDiffItem, number>()
+    jsonDiffRows.forEach((diff, index) => {
+      jsonDiffRowIndexMap.set(diff, index)
+    })
     const hasDiffStats =
       !!summary &&
       (summary.added > 0 ||
@@ -2497,55 +2662,110 @@ export function App() {
             <pre className="result-output">(no result yet)</pre>
           ) : showRich ? (
             <div className="json-diff-table-wrap">
-              <table className="json-diff-table">
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Path</th>
-                    <th>Old</th>
-                    <th>New</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jsonDiffRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={4}>
-                        <div className="muted">No differences.</div>
-                      </td>
-                    </tr>
-                  ) : (
-                    jsonDiffRows.map((diff, index) => {
-                      const searchHit = jsonSearchMatches.includes(index)
-                      const activeHit = activeJSONMatch === index
-                      return (
-                        <tr
-                          key={`${diff.type}-${diff.path}-${index}`}
-                          className={[
-                            'json-diff-row',
-                            diff.type,
-                            searchHit ? 'search-hit' : '',
-                            activeHit ? 'active-search-hit' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                        >
-                          <td>
-                            <div className="json-type-cell">
-                              <span>{renderJSONTypeLabel(diff.type)}</span>
-                              {diff.breaking ? (
-                                <span className="text-diff-stat error">breaking</span>
-                              ) : null}
-                            </div>
-                          </td>
-                          <td className="json-path-cell">{diff.path}</td>
-                          <td>{renderJSONValueBlock(diff.oldValue)}</td>
-                          <td>{renderJSONValueBlock(diff.newValue)}</td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+              {jsonDiffRows.length === 0 ? (
+                <div className="json-empty-state muted">No differences.</div>
+              ) : (
+                jsonDiffGroups.map((group) => {
+                  const expanded = effectiveJSONExpandedGroups.has(group.key)
+                  return (
+                    <div key={group.key} className="json-group">
+                      <button
+                        type="button"
+                        className="json-group-header"
+                        onClick={() => toggleJSONGroup(group.key)}
+                      >
+                        <span className="json-group-header-left">
+                          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                          <span className="json-group-title">{group.key}</span>
+                          <span className="muted">{group.items.length} changes</span>
+                        </span>
+                        <span className="json-group-header-right">
+                          {group.summary.added > 0 ? (
+                            <span className="json-group-stat added">+{group.summary.added}</span>
+                          ) : null}
+                          {group.summary.removed > 0 ? (
+                            <span className="json-group-stat removed">-{group.summary.removed}</span>
+                          ) : null}
+                          {group.summary.changed > 0 ? (
+                            <span className="json-group-stat changed">~{group.summary.changed}</span>
+                          ) : null}
+                          {group.summary.typeChanged > 0 ? (
+                            <span className="json-group-stat type-changed">
+                              type {group.summary.typeChanged}
+                            </span>
+                          ) : null}
+                          {group.summary.breaking > 0 ? (
+                            <span className="json-breaking-badge">
+                              breaking {group.summary.breaking}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+
+                      {expanded ? (
+                        <table className="json-diff-table">
+                          <thead>
+                            <tr>
+                              <th>Type</th>
+                              <th>Path</th>
+                              <th>Old</th>
+                              <th>New</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {group.items.map((diff) => {
+                              const index = jsonDiffRowIndexMap.get(diff) ?? -1
+                              const searchHit = jsonSearchMatchIndexSet.has(index)
+                              const activeHit = activeJSONMatch === index
+                              return (
+                                <tr
+                                  key={`${diff.type}-${diff.path}-${index}`}
+                                  className={[
+                                    'json-diff-row',
+                                    diff.type,
+                                    searchHit ? 'search-hit' : '',
+                                    activeHit ? 'active-search-hit' : '',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                >
+                                  <td>
+                                    <div className="json-type-cell">
+                                      <span className={`json-type-badge ${diff.type}`}>
+                                        {renderJSONTypeLabel(diff.type)}
+                                      </span>
+                                      {diff.breaking ? (
+                                        <span className="json-breaking-badge">breaking</span>
+                                      ) : null}
+                                    </div>
+                                  </td>
+                                  <td className="json-path-cell">
+                                    {renderHighlightedText(diff.path, normalizedJSONSearchQuery)}
+                                  </td>
+                                  <td>
+                                    {renderJSONValueCell(
+                                      diff.oldValue,
+                                      `${index}:${diff.path}:old`,
+                                      normalizedJSONSearchQuery,
+                                    )}
+                                  </td>
+                                  <td>
+                                    {renderJSONValueCell(
+                                      diff.newValue,
+                                      `${index}:${diff.path}:new`,
+                                      normalizedJSONSearchQuery,
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      ) : null}
+                    </div>
+                  )
+                })
+              )}
             </div>
           ) : (
             <pre className="result-output">{raw}</pre>
