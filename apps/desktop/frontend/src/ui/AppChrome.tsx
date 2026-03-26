@@ -1,8 +1,9 @@
-import { AppShell, Box, Burger, Group, ScrollArea, Select } from '@mantine/core'
+import { AppShell, Box, Burger, Group, ScrollArea } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
+import { HeaderRailGroup, HeaderRailSelect } from './HeaderRail'
 import { ThemeModeControl } from './ThemeModeControl'
 
 export type AppChromeLayoutMode = 'workspace' | 'sidebar'
@@ -126,7 +127,7 @@ export function AppChrome({
     >
       <AppShell.Header>
         <Group justify="space-between" h="100%" px="md">
-          <Group gap="sm" className="xdiff-header-left-rail">
+          <HeaderRailGroup>
             {isSidebarLayout ? (
               <Burger
                 opened={mobileOpened}
@@ -137,19 +138,12 @@ export function AppChrome({
                 aria-label="Toggle navigation"
               />
             ) : null}
-            <Select
-              w={180}
+            <HeaderRailSelect
+              w={168}
               className="xdiff-header-mode-select"
-              styles={{
-                input: {
-                  height: 'var(--xdiff-header-control-height)',
-                  minHeight: 'var(--xdiff-header-control-height)',
-                  borderRadius: 'var(--xdiff-header-control-radius)',
-                },
-              }}
               data={MODE_OPTIONS}
               value={mode}
-              onChange={(value) => {
+              onChange={(value: string | null) => {
                 if (!value) {
                   return
                 }
@@ -159,11 +153,11 @@ export function AppChrome({
                 }
               }}
             />
-          </Group>
-          <Group gap="xs" className="xdiff-header-right-rail">
+          </HeaderRailGroup>
+          <HeaderRailGroup>
             {headerActions}
             <ThemeModeControl />
-          </Group>
+          </HeaderRailGroup>
         </Group>
       </AppShell.Header>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Button, Drawer, Group, Tooltip } from '@mantine/core'
+import { ActionIcon, Drawer, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconAdjustmentsHorizontal,
@@ -27,6 +27,12 @@ import type {
 } from './types'
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
+import {
+  HEADER_RAIL_ICON_SIZE,
+  HeaderRailAction,
+  HeaderRailGroup,
+  HeaderRailPrimaryButton,
+} from './ui/HeaderRail'
 import { SectionCard } from './ui/SectionCard'
 import { StatusBadge } from './ui/StatusBadge'
 
@@ -2186,30 +2192,19 @@ export function App() {
         : 'Spec compare options'
 
   const compareModeHeaderActions = isCompareCentricMode ? (
-    <Group gap="xs">
-      <Button
-        size="compact-sm"
-        onClick={() => void onRun()}
-        loading={loading}
-        style={{
-          height: 'var(--xdiff-header-control-height)',
-          borderRadius: 'var(--xdiff-header-control-radius)',
-        }}
-      >
+    <HeaderRailGroup>
+      <HeaderRailPrimaryButton onClick={() => void onRun()} loading={loading}>
         Compare
-      </Button>
+      </HeaderRailPrimaryButton>
       <Tooltip label="Show compare options">
-        <ActionIcon
-          variant="default"
-          size={32}
-          radius="md"
+        <HeaderRailAction
           aria-label="Show compare options"
           onClick={() => setCompareOptionsOpened(true)}
         >
-          <IconAdjustmentsHorizontal size={16} />
-        </ActionIcon>
+          <IconAdjustmentsHorizontal size={HEADER_RAIL_ICON_SIZE} />
+        </HeaderRailAction>
       </Tooltip>
-    </Group>
+    </HeaderRailGroup>
   ) : undefined
 
   const compareOptionsContent =

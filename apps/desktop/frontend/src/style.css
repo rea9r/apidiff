@@ -19,7 +19,7 @@
   --xdiff-control-radius: 8px;
   --xdiff-control-font-size: 0.92rem;
   --xdiff-toolbar-gap: 6px;
-  --xdiff-header-control-height: 30px;
+  --xdiff-header-control-height: 28px;
   --xdiff-header-control-radius: 8px;
   --xdiff-header-gap: 4px;
   --xdiff-micro-action-size: 26px;
@@ -51,12 +51,6 @@ body {
   min-height: 100%;
 }
 
-.xdiff-header-left-rail,
-.xdiff-header-right-rail {
-  align-items: center;
-  gap: var(--xdiff-header-gap);
-}
-
 .xdiff-header-burger {
   width: var(--xdiff-header-control-height);
   height: var(--xdiff-header-control-height);
@@ -64,11 +58,7 @@ body {
 }
 
 .xdiff-header-mode-select {
-  min-width: 180px;
-}
-
-.xdiff-header-theme-toggle {
-  min-height: var(--xdiff-header-control-height);
+  min-width: 168px;
 }
 
 .text-editor-action,

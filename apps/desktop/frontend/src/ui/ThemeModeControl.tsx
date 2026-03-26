@@ -1,37 +1,51 @@
-import { SegmentedControl, useMantineColorScheme } from '@mantine/core'
+import { Tooltip, useMantineColorScheme } from '@mantine/core'
+import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react'
+import {
+  HEADER_RAIL_ICON_SIZE,
+  HeaderRailGroup,
+  HeaderRailToggleIcon,
+} from './HeaderRail'
 
 export function ThemeModeControl() {
   const { colorScheme, setColorScheme } = useMantineColorScheme()
 
   return (
-    <SegmentedControl
-      className="xdiff-header-theme-toggle"
-      size="xs"
-      styles={{
-        root: {
-          minHeight: 'var(--xdiff-header-control-height)',
-          height: 'var(--xdiff-header-control-height)',
-          borderRadius: 'var(--xdiff-header-control-radius)',
-          padding: 2,
-        },
-        control: {
-          minHeight: 'calc(var(--xdiff-header-control-height) - 4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        label: {
-          paddingInline: 8,
-          fontSize: 12,
-        },
-      }}
-      value={colorScheme}
-      onChange={(value) => setColorScheme(value as 'light' | 'dark' | 'auto')}
-      data={[
-        { value: 'auto', label: 'Auto' },
-        { value: 'light', label: 'Light' },
-        { value: 'dark', label: 'Dark' },
-      ]}
-    />
+    <HeaderRailGroup>
+      <Tooltip label="Follow system theme">
+        <div>
+          <HeaderRailToggleIcon
+            active={colorScheme === 'auto'}
+            onClick={() => setColorScheme('auto')}
+            label="Follow system theme"
+          >
+            <IconDeviceDesktop size={HEADER_RAIL_ICON_SIZE} />
+          </HeaderRailToggleIcon>
+        </div>
+      </Tooltip>
+
+      <Tooltip label="Light theme">
+        <div>
+          <HeaderRailToggleIcon
+            active={colorScheme === 'light'}
+            onClick={() => setColorScheme('light')}
+            label="Light theme"
+          >
+            <IconSun size={HEADER_RAIL_ICON_SIZE} />
+          </HeaderRailToggleIcon>
+        </div>
+      </Tooltip>
+
+      <Tooltip label="Dark theme">
+        <div>
+          <HeaderRailToggleIcon
+            active={colorScheme === 'dark'}
+            onClick={() => setColorScheme('dark')}
+            label="Dark theme"
+          >
+            <IconMoon size={HEADER_RAIL_ICON_SIZE} />
+          </HeaderRailToggleIcon>
+        </div>
+      </Tooltip>
+    </HeaderRailGroup>
   )
 }
