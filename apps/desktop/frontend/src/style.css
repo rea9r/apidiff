@@ -23,6 +23,7 @@
   --xdiff-header-control-radius: 8px;
   --xdiff-header-gap: 4px;
   --xdiff-micro-action-size: 26px;
+  --xdiff-toolbar-control-height: 26px;
   --xdiff-mono-font-size: 13px;
   --xdiff-mono-line-height: 1.45;
 }
@@ -60,7 +61,7 @@ body {
 }
 
 .xdiff-header-mode-select {
-  min-width: 168px;
+  min-width: 220px;
 }
 
 .menu-check-icon {
@@ -629,6 +630,12 @@ button {
 .text-search-input {
   width: 240px;
   max-width: min(240px, 100%);
+  height: var(--xdiff-toolbar-control-height);
+  min-height: var(--xdiff-toolbar-control-height);
+  font-size: 13px;
+  line-height: 1.2;
+  padding: 0 8px;
+  box-sizing: border-box;
 }
 
 .text-search-status {

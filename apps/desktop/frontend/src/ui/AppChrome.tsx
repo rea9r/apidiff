@@ -117,7 +117,7 @@ export function AppChrome({
 
   return (
     <AppShell
-      header={{ height: 60 }}
+      header={{ height: 52 }}
       navbar={
         isSidebarLayout
           ? {
@@ -130,7 +130,7 @@ export function AppChrome({
       padding="md"
     >
       <AppShell.Header>
-        <Group justify="space-between" h="100%" px="md">
+        <Group justify="space-between" h="100%" px="sm">
           <HeaderRailGroup>
             {isSidebarLayout ? (
               <Burger
@@ -143,7 +143,7 @@ export function AppChrome({
               />
             ) : null}
             <HeaderRailSelect
-              w={168}
+              w={220}
               className="xdiff-header-mode-select"
               data={MODE_OPTIONS}
               value={mode}
