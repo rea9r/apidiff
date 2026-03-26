@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Tooltip } from '@mantine/core'
+import { ActionIcon, Button, Drawer, Group, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
+  IconAdjustmentsHorizontal,
   IconBackspace,
   IconChevronDown,
   IconChevronUp,
@@ -802,6 +803,7 @@ export function App() {
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [compareOptionsOpened, setCompareOptionsOpened] = useState(false)
 
   const effectiveJSONIgnorePaths = parseIgnorePaths(jsonIgnorePathsDraft)
   const effectiveSpecIgnorePaths = parseIgnorePaths(specIgnorePathsDraft)
@@ -2144,606 +2146,634 @@ export function App() {
     )
   }
 
-  return (
-    <AppChrome
-      mode={mode}
-      onModeChange={setMode}
-      sidebar={
-        <>
-        {mode === 'json' && (
-          <section className="mode-panel">
-            <div className="field-block">
-              <h3 className="section-title">Paths</h3>
-            </div>
+  const isCompareCentricMode = mode === 'text' || mode === 'json' || mode === 'spec'
 
-            <div className="field-block">
-              <label className="field-label">Old path</label>
-              <div className="path-row">
-                <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
+  const compareOptionsTitle =
+    mode === 'text'
+      ? 'Text compare options'
+      : mode === 'json'
+        ? 'JSON compare options'
+        : 'Spec compare options'
 
-            <div className="field-block">
-              <label className="field-label">New path</label>
-              <div className="path-row">
-                <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
+  const compareModeHeaderActions = isCompareCentricMode ? (
+    <Group gap="xs">
+      <Button size="compact-sm" onClick={() => void onRun()} loading={loading}>
+        Compare
+      </Button>
+      <Tooltip label="Show compare options">
+        <ActionIcon
+          variant="default"
+          size="input-sm"
+          aria-label="Show compare options"
+          onClick={() => setCompareOptionsOpened(true)}
+        >
+          <IconAdjustmentsHorizontal size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </Group>
+  ) : undefined
 
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={ignoreOrder}
-                onChange={(e) => setIgnoreOrder(e.target.checked)}
-              />
-              ignore array order
-            </label>
+  const compareOptionsContent =
+    mode === 'json' ? (
+      <section className="mode-panel">
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={ignoreOrder}
+            onChange={(e) => setIgnoreOrder(e.target.checked)}
+          />
+          ignore array order
+        </label>
 
-            <section className="options-panel">
-              <h3>Options</h3>
+        <section className="options-panel">
+          <h3>Options</h3>
 
-              <div className="field-block">
-                <label className="field-label">Output format</label>
-                <select
-                  value={jsonCommon.outputFormat}
-                  onChange={(e) => updateJSONCommon('outputFormat', e.target.value)}
-                >
-                  <option value="text">text</option>
-                  <option value="json">json</option>
-                </select>
-              </div>
-
-              <div className="field-block">
-                <label className="field-label">Text style</label>
-                <select
-                  value={jsonCommon.textStyle}
-                  disabled={jsonCommon.outputFormat === 'json'}
-                  onChange={(e) => updateJSONCommon('textStyle', e.target.value)}
-                >
-                  <option value="auto">auto</option>
-                  <option value="patch" disabled={jsonPatchBlockedByFilters}>
-                    patch
-                  </option>
-                  <option value="semantic">semantic</option>
-                </select>
-              </div>
-            </section>
-
-            <details className="advanced-panel">
-              <summary className="advanced-summary">Advanced options</summary>
-
-              <div className="field-block">
-                <label className="field-label">Fail on</label>
-                <select
-                  value={jsonCommon.failOn}
-                  onChange={(e) => updateJSONCommon('failOn', e.target.value)}
-                >
-                  <option value="none">none</option>
-                  <option value="breaking">breaking</option>
-                  <option value="any">any</option>
-                </select>
-              </div>
-
-              <div className="field-block">
-                <label className="field-label">Ignore paths</label>
-                <textarea
-                  className="ignore-paths-input"
-                  value={jsonIgnorePathsDraft}
-                  onChange={(e) => setJSONIgnorePathsDraft(e.target.value)}
-                  onBlur={(e) =>
-                    updateJSONCommon('ignorePaths', parseIgnorePaths(e.target.value))
-                  }
-                  placeholder={'user.updated_at\nmeta.request_id'}
-                />
-                <div className="helper-text">
-                  Enter one canonical path per line (exact match), e.g.{' '}
-                  <code>user.updated_at</code>.
-                </div>
-              </div>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={jsonCommon.showPaths}
-                  onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
-                />
-                show canonical paths
-              </label>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={jsonCommon.onlyBreaking}
-                  onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
-                />
-                only breaking
-              </label>
-            </details>
-
-            <button className="button-primary" onClick={onRun} disabled={loading}>
-              {loading ? 'Running...' : 'Run JSON compare'}
-            </button>
-          </section>
-        )}
-
-        {mode === 'spec' && (
-          <section className="mode-panel">
-            <div className="field-block">
-              <h3 className="section-title">Paths</h3>
-            </div>
-
-            <div className="field-block">
-              <label className="field-label">Old spec path</label>
-              <div className="path-row">
-                <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
-
-            <div className="field-block">
-              <label className="field-label">New spec path</label>
-              <div className="path-row">
-                <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
-
-            <section className="options-panel">
-              <h3>Options</h3>
-
-              <div className="field-block">
-                <label className="field-label">Output format</label>
-                <select
-                  value={specCommon.outputFormat}
-                  onChange={(e) => updateSpecCommon('outputFormat', e.target.value)}
-                >
-                  <option value="text">text</option>
-                  <option value="json">json</option>
-                </select>
-              </div>
-
-              <div className="field-block">
-                <label className="field-label">Text style</label>
-                <select
-                  value={specCommon.textStyle}
-                  disabled={specCommon.outputFormat === 'json'}
-                  onChange={(e) => updateSpecCommon('textStyle', e.target.value)}
-                >
-                  <option value="auto">auto</option>
-                  <option value="semantic">semantic</option>
-                </select>
-              </div>
-            </section>
-
-            <details className="advanced-panel">
-              <summary className="advanced-summary">Advanced options</summary>
-
-              <div className="field-block">
-                <label className="field-label">Fail on</label>
-                <select
-                  value={specCommon.failOn}
-                  onChange={(e) => updateSpecCommon('failOn', e.target.value)}
-                >
-                  <option value="none">none</option>
-                  <option value="breaking">breaking</option>
-                  <option value="any">any</option>
-                </select>
-              </div>
-
-              <div className="field-block">
-                <label className="field-label">Ignore paths</label>
-                <textarea
-                  className="ignore-paths-input"
-                  value={specIgnorePathsDraft}
-                  onChange={(e) => setSpecIgnorePathsDraft(e.target.value)}
-                  onBlur={(e) =>
-                    updateSpecCommon('ignorePaths', parseIgnorePaths(e.target.value))
-                  }
-                  placeholder={'paths./users.post.requestBody.required'}
-                />
-                <div className="helper-text">
-                  Enter one canonical path per line (exact match), e.g.{' '}
-                  <code>paths./users.post.requestBody.required</code>.
-                </div>
-              </div>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={specCommon.showPaths}
-                  onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
-                />
-                show canonical paths
-              </label>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={specCommon.onlyBreaking}
-                  onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
-                />
-                only breaking
-              </label>
-            </details>
-
-            <button className="button-primary" onClick={onRun} disabled={loading}>
-              {loading ? 'Running...' : 'Run spec compare'}
-            </button>
-          </section>
-        )}
-
-        {mode === 'text' && (
-          <section className="mode-panel">
-            <section className="options-panel">
-              <h3>Options</h3>
-
-              <div className="field-block">
-                <label className="field-label">Output format</label>
-                <select
-                  value={textCommon.outputFormat}
-                  onChange={(e) => updateTextCommon('outputFormat', e.target.value)}
-                >
-                  <option value="text">text</option>
-                  <option value="json">json</option>
-                </select>
-              </div>
-
-              <div className="field-block">
-                <label className="field-label">Fail on</label>
-                <select
-                  value={textCommon.failOn}
-                  onChange={(e) => updateTextCommon('failOn', e.target.value)}
-                >
-                  <option value="none">none</option>
-                  <option value="breaking">breaking</option>
-                  <option value="any">any</option>
-                </select>
-              </div>
-            </section>
-
-            <button className="button-primary" onClick={onRun} disabled={loading}>
-              {loading ? 'Running...' : 'Run text compare'}
-            </button>
-          </section>
-        )}
-
-        {mode === 'folder' && (
-          <section className="mode-panel">
-            <div className="field-block">
-              <label className="field-label">Left root</label>
-              <div className="path-row">
-                <input
-                  value={folderLeftRoot}
-                  onChange={(e) => setFolderLeftRoot(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => void browseFolderRoot('left')}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
-
-            <div className="field-block">
-              <label className="field-label">Right root</label>
-              <div className="path-row">
-                <input
-                  value={folderRightRoot}
-                  onChange={(e) => setFolderRightRoot(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => void browseFolderRoot('right')}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
-
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={folderRecursive}
-                onChange={(e) => setFolderRecursive(e.target.checked)}
-              />
-              recursive
-            </label>
-
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={folderShowSame}
-                onChange={(e) => setFolderShowSame(e.target.checked)}
-              />
-              show same
-            </label>
-
-            <div className="field-block">
-              <label className="field-label">Name filter</label>
-              <input
-                value={folderNameFilter}
-                onChange={(e) => setFolderNameFilter(e.target.value)}
-                placeholder="case-insensitive substring"
-              />
-            </div>
-
-            <button
-              className="button-primary"
-              onClick={onRun}
-              disabled={loading || !folderLeftRoot || !folderRightRoot}
+          <div className="field-block">
+            <label className="field-label">Output format</label>
+            <select
+              value={jsonCommon.outputFormat}
+              onChange={(e) => updateJSONCommon('outputFormat', e.target.value)}
             >
-              {loading ? 'Comparing...' : 'Compare folders'}
-            </button>
-          </section>
-        )}
-
-        {mode === 'scenario' && (
-          <section className="mode-panel">
-            <div className="field-block">
-              <label className="field-label">Scenario path</label>
-              <div className="path-row">
-                <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
-                <button
-                  type="button"
-                  className="button-secondary"
-                  onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}
-                >
-                  Browse...
-                </button>
-              </div>
-            </div>
-
-            <div className="field-block">
-              <label className="field-label">Report format</label>
-              <select
-                value={reportFormat}
-                onChange={(e) => setReportFormat(e.target.value as 'text' | 'json')}
-              >
-                <option value="text">text</option>
-                <option value="json">json</option>
-              </select>
-            </div>
-
-            <div className="button-row">
-              <button className="button-secondary" onClick={onLoadScenarioChecks} disabled={loading}>
-                {loading ? 'Loading...' : 'Load checks'}
-              </button>
-              <button className="button-primary" onClick={onRun} disabled={loading}>
-                {loading ? 'Running...' : 'Run selected'}
-              </button>
-            </div>
-
-            {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
-
-            <div className="button-row">
-              <button
-                className="button-secondary button-compact"
-                onClick={selectAllScenarioChecks}
-                disabled={scenarioChecks.length === 0}
-              >
-                Select all
-              </button>
-              <button
-                className="button-secondary button-compact"
-                onClick={clearScenarioSelection}
-                disabled={selectedChecks.length === 0}
-              >
-                Clear
-              </button>
-            </div>
-
-            <div className="scenario-check-list">
-              {scenarioChecks.length === 0 ? (
-                <div className="muted">No checks loaded yet.</div>
-              ) : (
-                scenarioChecks.map((check) => (
-                  <label key={check.name} className="scenario-check-item">
-                    <input
-                      type="checkbox"
-                      checked={selectedChecks.includes(check.name)}
-                      onChange={(e) => toggleScenarioCheck(check.name, e.target.checked)}
-                    />
-                    <div>
-                      <div className="scenario-check-title">
-                        {check.name} <span className="muted">({check.kind})</span>
-                      </div>
-                      <div className="scenario-check-summary">{check.summary}</div>
-                    </div>
-                  </label>
-                ))
-              )}
-            </div>
-          </section>
-        )}
-        </>
-      }
-      main={
-        <div className="result-panel">
-          {mode === 'text' ? (
-            <div className="text-workspace">
-            <h2>Text Compare</h2>
-            <div className="text-editors-row">
-              <div className="text-editor-panel">
-                <div className="text-editor-header">
-                  <div className="text-editor-title">
-                    <label className="field-label">Old text</label>
-                    {textOldSourcePath ? (
-                      <div className="muted text-source-path" title={textOldSourcePath}>
-                        {textOldSourcePath}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="text-editor-actions">
-                    <Tooltip label="Open file into Old text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Open file into Old text"
-                        className="text-editor-action"
-                        onClick={() => void loadTextFromFile('old')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'old'}
-                      >
-                        <IconFolderOpen size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Paste clipboard into Old text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Paste clipboard into Old text"
-                        className="text-editor-action"
-                        onClick={() => void pasteTextFromClipboard('old')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'old'}
-                      >
-                        <IconClipboardText size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Clear Old text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Clear Old text"
-                        className="text-editor-action"
-                        onClick={() => clearTextInput('old')}
-                        disabled={textEditorBusy || !textOld}
-                      >
-                        <IconBackspace size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Swap old and new texts">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Swap sides"
-                        className="text-editor-action"
-                        onClick={swapTextInputs}
-                        disabled={textEditorBusy}
-                      >
-                        <IconSwitchHorizontal size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </div>
-                </div>
-                <textarea
-                  className="text-editor"
-                  value={textOld}
-                  onChange={(e) => {
-                    setTextOld(e.target.value)
-                    if (textOldSourcePath) setTextOldSourcePath('')
-                  }}
-                />
-              </div>
-              <div className="text-editor-panel">
-                <div className="text-editor-header">
-                  <div className="text-editor-title">
-                    <label className="field-label">New text</label>
-                    {textNewSourcePath ? (
-                      <div className="muted text-source-path" title={textNewSourcePath}>
-                        {textNewSourcePath}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="text-editor-actions">
-                    <Tooltip label="Open file into New text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Open file into New text"
-                        className="text-editor-action"
-                        onClick={() => void loadTextFromFile('new')}
-                        disabled={textEditorBusy}
-                        loading={textFileBusyTarget === 'new'}
-                      >
-                        <IconFolderOpen size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Paste clipboard into New text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Paste clipboard into New text"
-                        className="text-editor-action"
-                        onClick={() => void pasteTextFromClipboard('new')}
-                        disabled={textEditorBusy}
-                        loading={textClipboardBusyTarget === 'new'}
-                      >
-                        <IconClipboardText size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Clear New text">
-                      <ActionIcon
-                        variant="default"
-                        size="input-sm"
-                        aria-label="Clear New text"
-                        className="text-editor-action"
-                        onClick={() => clearTextInput('new')}
-                        disabled={textEditorBusy || !textNew}
-                      >
-                        <IconBackspace size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </div>
-                </div>
-                <textarea
-                  className="text-editor"
-                  value={textNew}
-                  onChange={(e) => {
-                    setTextNew(e.target.value)
-                    if (textNewSourcePath) setTextNewSourcePath('')
-                  }}
-                />
-              </div>
-            </div>
-            {renderTextResultPanel()}
+              <option value="text">text</option>
+              <option value="json">json</option>
+            </select>
           </div>
-        ) : mode === 'folder' ? (
-          renderFolderResultPanel()
-        ) : (
-          <>
-            <h2>Result</h2>
-            {mode === 'scenario' ? (
-              renderScenarioResultPanel()
-            ) : (
-              <>
-                {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-                <pre className="result-output">{output || '(no output yet)'}</pre>
-              </>
-            )}
-          </>
-        )}
+
+          <div className="field-block">
+            <label className="field-label">Text style</label>
+            <select
+              value={jsonCommon.textStyle}
+              disabled={jsonCommon.outputFormat === 'json'}
+              onChange={(e) => updateJSONCommon('textStyle', e.target.value)}
+            >
+              <option value="auto">auto</option>
+              <option value="patch" disabled={jsonPatchBlockedByFilters}>
+                patch
+              </option>
+              <option value="semantic">semantic</option>
+            </select>
+          </div>
+        </section>
+
+        <details className="advanced-panel" open>
+          <summary className="advanced-summary">Advanced options</summary>
+
+          <div className="field-block">
+            <label className="field-label">Fail on</label>
+            <select
+              value={jsonCommon.failOn}
+              onChange={(e) => updateJSONCommon('failOn', e.target.value)}
+            >
+              <option value="none">none</option>
+              <option value="breaking">breaking</option>
+              <option value="any">any</option>
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label className="field-label">Ignore paths</label>
+            <textarea
+              className="ignore-paths-input"
+              value={jsonIgnorePathsDraft}
+              onChange={(e) => setJSONIgnorePathsDraft(e.target.value)}
+              onBlur={(e) =>
+                updateJSONCommon('ignorePaths', parseIgnorePaths(e.target.value))
+              }
+              placeholder={'user.updated_at\nmeta.request_id'}
+            />
+            <div className="helper-text">
+              Enter one canonical path per line (exact match), e.g. <code>user.updated_at</code>.
+            </div>
+          </div>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={jsonCommon.showPaths}
+              onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
+            />
+            show canonical paths
+          </label>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={jsonCommon.onlyBreaking}
+              onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
+            />
+            only breaking
+          </label>
+        </details>
+      </section>
+    ) : mode === 'spec' ? (
+      <section className="mode-panel">
+        <section className="options-panel">
+          <h3>Options</h3>
+
+          <div className="field-block">
+            <label className="field-label">Output format</label>
+            <select
+              value={specCommon.outputFormat}
+              onChange={(e) => updateSpecCommon('outputFormat', e.target.value)}
+            >
+              <option value="text">text</option>
+              <option value="json">json</option>
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label className="field-label">Text style</label>
+            <select
+              value={specCommon.textStyle}
+              disabled={specCommon.outputFormat === 'json'}
+              onChange={(e) => updateSpecCommon('textStyle', e.target.value)}
+            >
+              <option value="auto">auto</option>
+              <option value="semantic">semantic</option>
+            </select>
+          </div>
+        </section>
+
+        <details className="advanced-panel" open>
+          <summary className="advanced-summary">Advanced options</summary>
+
+          <div className="field-block">
+            <label className="field-label">Fail on</label>
+            <select
+              value={specCommon.failOn}
+              onChange={(e) => updateSpecCommon('failOn', e.target.value)}
+            >
+              <option value="none">none</option>
+              <option value="breaking">breaking</option>
+              <option value="any">any</option>
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label className="field-label">Ignore paths</label>
+            <textarea
+              className="ignore-paths-input"
+              value={specIgnorePathsDraft}
+              onChange={(e) => setSpecIgnorePathsDraft(e.target.value)}
+              onBlur={(e) =>
+                updateSpecCommon('ignorePaths', parseIgnorePaths(e.target.value))
+              }
+              placeholder={'paths./users.post.requestBody.required'}
+            />
+            <div className="helper-text">
+              Enter one canonical path per line (exact match), e.g.{' '}
+              <code>paths./users.post.requestBody.required</code>.
+            </div>
+          </div>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={specCommon.showPaths}
+              onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
+            />
+            show canonical paths
+          </label>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={specCommon.onlyBreaking}
+              onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
+            />
+            only breaking
+          </label>
+        </details>
+      </section>
+    ) : (
+      <section className="mode-panel">
+        <section className="options-panel">
+          <h3>Options</h3>
+
+          <div className="field-block">
+            <label className="field-label">Output format</label>
+            <select
+              value={textCommon.outputFormat}
+              onChange={(e) => updateTextCommon('outputFormat', e.target.value)}
+            >
+              <option value="text">text</option>
+              <option value="json">json</option>
+            </select>
+          </div>
+
+          <div className="field-block">
+            <label className="field-label">Fail on</label>
+            <select
+              value={textCommon.failOn}
+              onChange={(e) => updateTextCommon('failOn', e.target.value)}
+            >
+              <option value="none">none</option>
+              <option value="breaking">breaking</option>
+              <option value="any">any</option>
+            </select>
+          </div>
+        </section>
+      </section>
+    )
+
+  const sidebarContent =
+    mode === 'folder' ? (
+      <section className="mode-panel">
+        <div className="field-block">
+          <label className="field-label">Left root</label>
+          <div className="path-row">
+            <input value={folderLeftRoot} onChange={(e) => setFolderLeftRoot(e.target.value)} />
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => void browseFolderRoot('left')}
+            >
+              Browse...
+            </button>
+          </div>
         </div>
-      }
-    />
+
+        <div className="field-block">
+          <label className="field-label">Right root</label>
+          <div className="path-row">
+            <input value={folderRightRoot} onChange={(e) => setFolderRightRoot(e.target.value)} />
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => void browseFolderRoot('right')}
+            >
+              Browse...
+            </button>
+          </div>
+        </div>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={folderRecursive}
+            onChange={(e) => setFolderRecursive(e.target.checked)}
+          />
+          recursive
+        </label>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={folderShowSame}
+            onChange={(e) => setFolderShowSame(e.target.checked)}
+          />
+          show same
+        </label>
+
+        <div className="field-block">
+          <label className="field-label">Name filter</label>
+          <input
+            value={folderNameFilter}
+            onChange={(e) => setFolderNameFilter(e.target.value)}
+            placeholder="case-insensitive substring"
+          />
+        </div>
+
+        <button
+          className="button-primary"
+          onClick={onRun}
+          disabled={loading || !folderLeftRoot || !folderRightRoot}
+        >
+          {loading ? 'Comparing...' : 'Compare folders'}
+        </button>
+      </section>
+    ) : mode === 'scenario' ? (
+      <section className="mode-panel">
+        <div className="field-block">
+          <label className="field-label">Scenario path</label>
+          <div className="path-row">
+            <input value={scenarioPath} onChange={(e) => setScenarioPath(e.target.value)} />
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => browseAndSet(api.pickScenarioFile, setScenarioPath)}
+            >
+              Browse...
+            </button>
+          </div>
+        </div>
+
+        <div className="field-block">
+          <label className="field-label">Report format</label>
+          <select
+            value={reportFormat}
+            onChange={(e) => setReportFormat(e.target.value as 'text' | 'json')}
+          >
+            <option value="text">text</option>
+            <option value="json">json</option>
+          </select>
+        </div>
+
+        <div className="button-row">
+          <button className="button-secondary" onClick={onLoadScenarioChecks} disabled={loading}>
+            {loading ? 'Loading...' : 'Load checks'}
+          </button>
+          <button className="button-primary" onClick={onRun} disabled={loading}>
+            {loading ? 'Running...' : 'Run selected'}
+          </button>
+        </div>
+
+        {scenarioListStatus ? <div className="muted">{scenarioListStatus}</div> : null}
+
+        <div className="button-row">
+          <button
+            className="button-secondary button-compact"
+            onClick={selectAllScenarioChecks}
+            disabled={scenarioChecks.length === 0}
+          >
+            Select all
+          </button>
+          <button
+            className="button-secondary button-compact"
+            onClick={clearScenarioSelection}
+            disabled={selectedChecks.length === 0}
+          >
+            Clear
+          </button>
+        </div>
+
+        <div className="scenario-check-list">
+          {scenarioChecks.length === 0 ? (
+            <div className="muted">No checks loaded yet.</div>
+          ) : (
+            scenarioChecks.map((check) => (
+              <label key={check.name} className="scenario-check-item">
+                <input
+                  type="checkbox"
+                  checked={selectedChecks.includes(check.name)}
+                  onChange={(e) => toggleScenarioCheck(check.name, e.target.checked)}
+                />
+                <div>
+                  <div className="scenario-check-title">
+                    {check.name} <span className="muted">({check.kind})</span>
+                  </div>
+                  <div className="scenario-check-summary">{check.summary}</div>
+                </div>
+              </label>
+            ))
+          )}
+        </div>
+      </section>
+    ) : null
+
+  const mainContent =
+    mode === 'text' ? (
+      <div className="compare-mode-main">
+        <div className="text-workspace">
+          <div className="text-editors-row">
+            <div className="text-editor-panel">
+              <div className="text-editor-header">
+                <div className="text-editor-title">
+                  <label className="field-label">Old text</label>
+                  {textOldSourcePath ? (
+                    <div className="muted text-source-path" title={textOldSourcePath}>
+                      {textOldSourcePath}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="text-editor-actions">
+                  <Tooltip label="Open file into Old text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Open file into Old text"
+                      className="text-editor-action"
+                      onClick={() => void loadTextFromFile('old')}
+                      disabled={textEditorBusy}
+                      loading={textFileBusyTarget === 'old'}
+                    >
+                      <IconFolderOpen size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Paste clipboard into Old text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Paste clipboard into Old text"
+                      className="text-editor-action"
+                      onClick={() => void pasteTextFromClipboard('old')}
+                      disabled={textEditorBusy}
+                      loading={textClipboardBusyTarget === 'old'}
+                    >
+                      <IconClipboardText size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Clear Old text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Clear Old text"
+                      className="text-editor-action"
+                      onClick={() => clearTextInput('old')}
+                      disabled={textEditorBusy || !textOld}
+                    >
+                      <IconBackspace size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Swap old and new texts">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Swap sides"
+                      className="text-editor-action"
+                      onClick={swapTextInputs}
+                      disabled={textEditorBusy}
+                    >
+                      <IconSwitchHorizontal size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </div>
+              </div>
+              <textarea
+                className="text-editor"
+                value={textOld}
+                onChange={(e) => {
+                  setTextOld(e.target.value)
+                  if (textOldSourcePath) setTextOldSourcePath('')
+                }}
+              />
+            </div>
+            <div className="text-editor-panel">
+              <div className="text-editor-header">
+                <div className="text-editor-title">
+                  <label className="field-label">New text</label>
+                  {textNewSourcePath ? (
+                    <div className="muted text-source-path" title={textNewSourcePath}>
+                      {textNewSourcePath}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="text-editor-actions">
+                  <Tooltip label="Open file into New text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Open file into New text"
+                      className="text-editor-action"
+                      onClick={() => void loadTextFromFile('new')}
+                      disabled={textEditorBusy}
+                      loading={textFileBusyTarget === 'new'}
+                    >
+                      <IconFolderOpen size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Paste clipboard into New text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Paste clipboard into New text"
+                      className="text-editor-action"
+                      onClick={() => void pasteTextFromClipboard('new')}
+                      disabled={textEditorBusy}
+                      loading={textClipboardBusyTarget === 'new'}
+                    >
+                      <IconClipboardText size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Clear New text">
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label="Clear New text"
+                      className="text-editor-action"
+                      onClick={() => clearTextInput('new')}
+                      disabled={textEditorBusy || !textNew}
+                    >
+                      <IconBackspace size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                </div>
+              </div>
+              <textarea
+                className="text-editor"
+                value={textNew}
+                onChange={(e) => {
+                  setTextNew(e.target.value)
+                  if (textNewSourcePath) setTextNewSourcePath('')
+                }}
+              />
+            </div>
+          </div>
+          {renderTextResultPanel()}
+        </div>
+      </div>
+    ) : mode === 'json' ? (
+      <div className="compare-mode-main">
+        <SectionCard title="JSON sources">
+          <div className="compare-source-panel">
+            <div className="compare-source-grid">
+              <div className="field-block">
+                <label className="field-label">Old path</label>
+                <div className="path-row">
+                  <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
+                  >
+                    Browse...
+                  </button>
+                </div>
+              </div>
+              <div className="field-block">
+                <label className="field-label">New path</label>
+                <div className="path-row">
+                  <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
+                  >
+                    Browse...
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard title="Result">
+          {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+          <pre className="result-output">{output || '(no output yet)'}</pre>
+        </SectionCard>
+      </div>
+    ) : mode === 'spec' ? (
+      <div className="compare-mode-main">
+        <SectionCard title="Spec sources">
+          <div className="compare-source-panel">
+            <div className="compare-source-grid">
+              <div className="field-block">
+                <label className="field-label">Old spec path</label>
+                <div className="path-row">
+                  <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
+                  >
+                    Browse...
+                  </button>
+                </div>
+              </div>
+              <div className="field-block">
+                <label className="field-label">New spec path</label>
+                <div className="path-row">
+                  <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
+                  >
+                    Browse...
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard title="Result">
+          {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+          <pre className="result-output">{output || '(no output yet)'}</pre>
+        </SectionCard>
+      </div>
+    ) : mode === 'folder' ? (
+      <div className="result-panel">{renderFolderResultPanel()}</div>
+    ) : (
+      <div className="result-panel">
+        <h2>Result</h2>
+        {renderScenarioResultPanel()}
+      </div>
+    )
+
+  return (
+    <>
+      <AppChrome
+        mode={mode}
+        onModeChange={(nextMode) => {
+          setMode(nextMode)
+          if (nextMode === 'folder' || nextMode === 'scenario') {
+            setCompareOptionsOpened(false)
+          }
+        }}
+        layoutMode={isCompareCentricMode ? 'workspace' : 'sidebar'}
+        sidebar={isCompareCentricMode ? undefined : sidebarContent}
+        headerActions={isCompareCentricMode ? compareModeHeaderActions : undefined}
+        main={mainContent}
+      />
+
+      <Drawer
+        opened={isCompareCentricMode && compareOptionsOpened}
+        onClose={() => setCompareOptionsOpened(false)}
+        position="right"
+        size={360}
+        title={compareOptionsTitle}
+      >
+        {compareOptionsContent}
+      </Drawer>
+    </>
   )
 }

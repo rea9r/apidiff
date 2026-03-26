@@ -11,6 +11,7 @@ This app is an experimental desktop GUI for xdiff.
 - Theme-aware viewer tokens and responsive sidebar toggle for narrower window widths
 - Compact density pass and adaptive layout polish for narrower non-fullscreen window sizes
 - Text compare dense controls with icon-based editor actions and resizable desktop sidebar
+- Mode-aware layout: compare-centric modes use main-first workspace layout, while folder/scenario keep sidebar-driven workflow layout
 
 - JSON file comparison
 - OpenAPI spec comparison

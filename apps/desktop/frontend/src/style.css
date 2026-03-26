@@ -340,6 +340,32 @@ button {
   container-name: text-workspace;
 }
 
+.compare-mode-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.compare-source-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compare-source-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .compare-source-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .text-editors-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

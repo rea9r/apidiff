@@ -5,11 +5,15 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
 import { ThemeModeControl } from './ThemeModeControl'
 
+export type AppChromeLayoutMode = 'workspace' | 'sidebar'
+
 type AppChromeProps = {
   mode: Mode
   onModeChange: (mode: Mode) => void
-  sidebar: ReactNode
+  layoutMode: AppChromeLayoutMode
+  sidebar?: ReactNode
   main: ReactNode
+  headerActions?: ReactNode
 }
 
 const MODE_OPTIONS = [
@@ -29,7 +33,15 @@ function clampNavbarWidth(width: number): number {
   return Math.max(MIN_NAVBAR_WIDTH, Math.min(MAX_NAVBAR_WIDTH, width))
 }
 
-export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps) {
+export function AppChrome({
+  mode,
+  onModeChange,
+  layoutMode,
+  sidebar,
+  main,
+  headerActions,
+}: AppChromeProps) {
+  const isSidebarLayout = layoutMode === 'sidebar'
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false)
   const [navbarWidth, setNavbarWidth] = useState(DEFAULT_NAVBAR_WIDTH)
   const resizeStartXRef = useRef(0)
@@ -37,6 +49,10 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
   const isResizingRef = useRef(false)
 
   useEffect(() => {
+    if (!isSidebarLayout) {
+      return
+    }
+
     const raw = window.localStorage.getItem(NAVBAR_WIDTH_STORAGE_KEY)
     if (!raw) {
       return
@@ -46,11 +62,15 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
     if (Number.isFinite(parsed)) {
       setNavbarWidth(clampNavbarWidth(parsed))
     }
-  }, [])
+  }, [isSidebarLayout])
 
   useEffect(() => {
+    if (!isSidebarLayout) {
+      return
+    }
+
     window.localStorage.setItem(NAVBAR_WIDTH_STORAGE_KEY, String(navbarWidth))
-  }, [navbarWidth])
+  }, [isSidebarLayout, navbarWidth])
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -93,23 +113,29 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{
-        width: navbarWidth,
-        breakpoint: 'md',
-        collapsed: { mobile: !mobileOpened },
-      }}
+      navbar={
+        isSidebarLayout
+          ? {
+            width: navbarWidth,
+            breakpoint: 'md',
+            collapsed: { mobile: !mobileOpened },
+          }
+          : undefined
+      }
       padding="md"
     >
       <AppShell.Header>
         <Group justify="space-between" h="100%" px="md">
           <Group gap="sm">
-            <Burger
-              opened={mobileOpened}
-              onClick={toggleMobile}
-              hiddenFrom="sm"
-              size="sm"
-              aria-label="Toggle navigation"
-            />
+            {isSidebarLayout ? (
+              <Burger
+                opened={mobileOpened}
+                onClick={toggleMobile}
+                hiddenFrom="md"
+                size="sm"
+                aria-label="Toggle navigation"
+              />
+            ) : null}
             <Text fw={700}>xdiff Desktop</Text>
             <Select
               w={200}
@@ -120,27 +146,34 @@ export function AppChrome({ mode, onModeChange, sidebar, main }: AppChromeProps)
                   return
                 }
                 onModeChange(value as Mode)
-                closeMobile()
+                if (isSidebarLayout) {
+                  closeMobile()
+                }
               }}
             />
           </Group>
-          <ThemeModeControl />
+          <Group gap="xs">
+            {headerActions}
+            <ThemeModeControl />
+          </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
-        <AppShell.Section grow component={ScrollArea}>
-          <Box pr="xs" className="control-panel">
-            {sidebar}
-          </Box>
-        </AppShell.Section>
-        <div
-          className="app-navbar-resizer"
-          onPointerDown={startResize}
-          onDoubleClick={resetNavbarWidth}
-          aria-hidden="true"
-        />
-      </AppShell.Navbar>
+      {isSidebarLayout ? (
+        <AppShell.Navbar p="md">
+          <AppShell.Section grow component={ScrollArea}>
+            <Box pr="xs" className="control-panel">
+              {sidebar}
+            </Box>
+          </AppShell.Section>
+          <div
+            className="app-navbar-resizer"
+            onPointerDown={startResize}
+            onDoubleClick={resetNavbarWidth}
+            aria-hidden="true"
+          />
+        </AppShell.Navbar>
+      ) : null}
 
       <AppShell.Main>{main}</AppShell.Main>
     </AppShell>
