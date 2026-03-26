@@ -104,6 +104,28 @@ type TextSearchMatch = {
   sectionId: string | null
 }
 
+const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
+const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
+
+function isMode(value: string): value is Mode {
+  return APP_MODES.includes(value as Mode)
+}
+
+function getInitialMode(): Mode {
+  const fallback: Mode = 'json'
+
+  try {
+    const raw = window.localStorage.getItem(LAST_USED_MODE_STORAGE_KEY)
+    if (!raw) {
+      return fallback
+    }
+
+    return isMode(raw) ? raw : fallback
+  } catch {
+    return fallback
+  }
+}
+
 function renderResult(res: unknown): string {
   if (typeof res === 'string') return res
   if (!res) return '(no response)'
@@ -738,7 +760,7 @@ function renderSplitDiffCell(
 }
 
 export function App() {
-  const [mode, setMode] = useState<Mode>('json')
+  const [mode, setMode] = useState<Mode>(() => getInitialMode())
 
   const [jsonOldPath, setJSONOldPath] = useState('')
   const [jsonNewPath, setJSONNewPath] = useState('')
@@ -853,6 +875,14 @@ export function App() {
 
   const jsonPatchBlockedByFilters =
     ignoreOrder || jsonCommon.onlyBreaking || effectiveJSONIgnorePaths.length > 0
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LAST_USED_MODE_STORAGE_KEY, mode)
+    } catch {
+      // ignore storage errors
+    }
+  }, [mode])
 
   useEffect(() => {
     if (jsonCommon.textStyle !== 'patch') {
