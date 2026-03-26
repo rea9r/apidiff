@@ -335,13 +335,17 @@ button {
   gap: 8px;
   min-height: 0;
   flex: 1;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: text-workspace;
 }
 
 .text-editors-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+  min-width: 0;
 }
 
 .text-editor-panel {
@@ -363,6 +367,7 @@ button {
 
 .text-editor-title {
   min-width: 0;
+  flex: 1 1 180px;
 }
 
 .text-editor-header .field-label {
@@ -384,8 +389,16 @@ button {
 .text-editor-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--xdiff-toolbar-gap);
   flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+@container text-workspace (max-width: 760px) {
+  .text-editors-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .text-editor {
