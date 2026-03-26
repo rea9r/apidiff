@@ -2023,6 +2023,20 @@ export function App() {
           </div>
 
           <div className="text-result-secondary-controls">
+            <Tooltip label="Copy raw output">
+              <ActionIcon
+                variant="default"
+                size={28}
+                aria-label="Copy raw output"
+                className="text-result-action"
+                onClick={() => void copyTextResultRawOutput()}
+                disabled={textCopyBusy || !raw}
+                loading={textCopyBusy}
+              >
+                <IconCopy size={15} />
+              </ActionIcon>
+            </Tooltip>
+
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
                 <Tooltip label="View settings">
@@ -2080,20 +2094,6 @@ export function App() {
                 ) : null}
               </Menu.Dropdown>
             </Menu>
-
-            <Tooltip label="Copy raw output">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Copy raw output"
-                className="text-result-action"
-                onClick={() => void copyTextResultRawOutput()}
-                disabled={textCopyBusy || !raw}
-                loading={textCopyBusy}
-              >
-                <IconCopy size={15} />
-              </ActionIcon>
-            </Tooltip>
           </div>
         </div>
 

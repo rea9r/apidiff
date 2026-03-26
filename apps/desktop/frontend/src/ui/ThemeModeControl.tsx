@@ -10,13 +10,15 @@ export function ThemeModeControl() {
   const { colorScheme, setColorScheme } = useMantineColorScheme()
 
   return (
-    <HeaderRailGroup>
+    <HeaderRailGroup className="xdiff-theme-toggle-group">
       <Tooltip label="Follow system theme">
         <div>
           <HeaderRailToggleIcon
             active={colorScheme === 'auto'}
             onClick={() => setColorScheme('auto')}
             label="Follow system theme"
+            activeVariant="light"
+            activeColor="gray"
           >
             <IconDeviceDesktop size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>
@@ -29,6 +31,8 @@ export function ThemeModeControl() {
             active={colorScheme === 'light'}
             onClick={() => setColorScheme('light')}
             label="Light theme"
+            activeVariant="light"
+            activeColor="gray"
           >
             <IconSun size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>
@@ -41,6 +45,8 @@ export function ThemeModeControl() {
             active={colorScheme === 'dark'}
             onClick={() => setColorScheme('dark')}
             label="Dark theme"
+            activeVariant="light"
+            activeColor="gray"
           >
             <IconMoon size={HEADER_RAIL_ICON_SIZE} />
           </HeaderRailToggleIcon>

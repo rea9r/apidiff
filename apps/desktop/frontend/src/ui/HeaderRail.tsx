@@ -9,9 +9,15 @@ import type { ReactNode } from 'react'
 export const HEADER_RAIL_HEIGHT = 28
 export const HEADER_RAIL_ICON_SIZE = 14
 
-export function HeaderRailGroup({ children }: { children: ReactNode }) {
+export function HeaderRailGroup({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <Group gap="var(--xdiff-header-gap)" align="center">
+    <Group gap="var(--xdiff-header-gap)" align="center" className={className}>
       {children}
     </Group>
   )
@@ -64,16 +70,21 @@ export function HeaderRailToggleIcon({
   onClick,
   label,
   children,
+  activeVariant = 'filled',
+  activeColor,
 }: {
   active: boolean
   onClick: () => void
   label: string
   children: ReactNode
+  activeVariant?: 'filled' | 'light' | 'outline' | 'default'
+  activeColor?: string
 }) {
   return (
     <HeaderRailAction
       aria-label={label}
-      variant={active ? 'filled' : 'default'}
+      variant={active ? activeVariant : 'default'}
+      color={active ? activeColor : undefined}
       onClick={onClick}
     >
       {children}

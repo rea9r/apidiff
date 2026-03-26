@@ -64,6 +64,10 @@ body {
   min-width: 220px;
 }
 
+.xdiff-theme-toggle-group {
+  gap: 3px;
+}
+
 .menu-check-icon {
   display: block;
   color: var(--mantine-color-green-6);
