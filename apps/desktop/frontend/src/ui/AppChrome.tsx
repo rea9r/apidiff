@@ -1,4 +1,4 @@
-import { AppShell, Box, Burger, Group, ScrollArea, Select, Text } from '@mantine/core'
+import { AppShell, Box, Burger, Group, ScrollArea, Select } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
@@ -137,9 +137,8 @@ export function AppChrome({
                 aria-label="Toggle navigation"
               />
             ) : null}
-            <Text fw={700}>xdiff Desktop</Text>
             <Select
-              w={200}
+              w={180}
               className="xdiff-header-mode-select"
               styles={{
                 input: {

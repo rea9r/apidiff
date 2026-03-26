@@ -19,10 +19,10 @@
   --xdiff-control-radius: 8px;
   --xdiff-control-font-size: 0.92rem;
   --xdiff-toolbar-gap: 6px;
-  --xdiff-header-control-height: 32px;
+  --xdiff-header-control-height: 30px;
   --xdiff-header-control-radius: 8px;
-  --xdiff-header-gap: 6px;
-  --xdiff-micro-action-size: 28px;
+  --xdiff-header-gap: 4px;
+  --xdiff-micro-action-size: 26px;
 }
 
 [data-mantine-color-scheme='dark'] {
@@ -64,11 +64,27 @@ body {
 }
 
 .xdiff-header-mode-select {
-  min-width: 200px;
+  min-width: 180px;
 }
 
 .xdiff-header-theme-toggle {
   min-height: var(--xdiff-header-control-height);
+}
+
+.text-editor-action,
+.text-search-action,
+.text-result-action {
+  width: var(--xdiff-micro-action-size) !important;
+  min-width: var(--xdiff-micro-action-size) !important;
+  height: var(--xdiff-micro-action-size) !important;
+  min-height: var(--xdiff-micro-action-size) !important;
+}
+
+.text-editor-action svg,
+.text-search-action svg,
+.text-result-action svg {
+  width: 14px;
+  height: 14px;
 }
 
 .control-panel {
