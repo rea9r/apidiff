@@ -9,10 +9,10 @@
   --xdiff-viewer-text-dimmed: var(--mantine-color-dimmed);
   --xdiff-search-hit-border: var(--mantine-color-blue-4);
   --xdiff-search-hit-active-border: var(--mantine-color-blue-6);
-  --xdiff-diff-add-bg: var(--mantine-color-diffAdd-0);
-  --xdiff-diff-remove-bg: var(--mantine-color-diffRemove-0);
-  --xdiff-diff-change-bg: var(--mantine-color-diffChange-0);
-  --xdiff-diff-breaking-bg: var(--mantine-color-diffBreaking-0);
+  --xdiff-diff-add-bg: var(--mantine-color-diffAdd-1);
+  --xdiff-diff-remove-bg: var(--mantine-color-diffRemove-1);
+  --xdiff-diff-change-bg: var(--mantine-color-diffChange-1);
+  --xdiff-diff-breaking-bg: var(--mantine-color-diffBreaking-1);
   --xdiff-control-padding-y: 6px;
   --xdiff-control-padding-x: 10px;
   --xdiff-control-padding-x-tight: 8px;

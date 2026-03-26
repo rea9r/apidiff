@@ -117,7 +117,7 @@ export function AppChrome({
 
   return (
     <AppShell
-      header={{ height: 52 }}
+      header={{ height: 44 }}
       navbar={
         isSidebarLayout
           ? {
@@ -130,7 +130,7 @@ export function AppChrome({
       padding="md"
     >
       <AppShell.Header>
-        <Group justify="space-between" h="100%" px="sm">
+        <Group justify="space-between" h="100%" px={6}>
           <HeaderRailGroup>
             {isSidebarLayout ? (
               <Burger
