@@ -5,7 +5,17 @@ export function ThemeModeControl() {
 
   return (
     <SegmentedControl
-      size="xs"
+      className="xdiff-header-theme-toggle"
+      size="sm"
+      styles={{
+        root: {
+          minHeight: 'var(--xdiff-header-control-height)',
+          borderRadius: 'var(--xdiff-header-control-radius)',
+        },
+        control: {
+          minHeight: 'var(--xdiff-header-control-height)',
+        },
+      }}
       value={colorScheme}
       onChange={(value) => setColorScheme(value as 'light' | 'dark' | 'auto')}
       data={[

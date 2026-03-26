@@ -1993,26 +1993,26 @@ export function App() {
                 <Tooltip label="Previous match">
                   <ActionIcon
                     variant="default"
-                    size="input-sm"
+                    size={28}
                     aria-label="Previous match"
                     className="text-search-action"
                     onClick={() => moveTextSearch(-1)}
                     disabled={textSearchMatches.length === 0}
                   >
-                    <IconChevronUp size={16} />
+                    <IconChevronUp size={15} />
                   </ActionIcon>
                 </Tooltip>
 
                 <Tooltip label="Next match">
                   <ActionIcon
                     variant="default"
-                    size="input-sm"
+                    size={28}
                     aria-label="Next match"
                     className="text-search-action"
                     onClick={() => moveTextSearch(1)}
                     disabled={textSearchMatches.length === 0}
                   >
-                    <IconChevronDown size={16} />
+                    <IconChevronDown size={15} />
                   </ActionIcon>
                 </Tooltip>
               </div>
@@ -2032,14 +2032,14 @@ export function App() {
           <Tooltip label="Copy raw output">
             <ActionIcon
               variant="default"
-              size="input-sm"
+              size={28}
               aria-label="Copy raw output"
               className="text-result-action"
               onClick={() => void copyTextResultRawOutput()}
               disabled={textCopyBusy || !raw}
               loading={textCopyBusy}
             >
-              <IconCopy size={16} />
+              <IconCopy size={15} />
             </ActionIcon>
           </Tooltip>
         </div>
@@ -2187,13 +2187,22 @@ export function App() {
 
   const compareModeHeaderActions = isCompareCentricMode ? (
     <Group gap="xs">
-      <Button size="compact-sm" onClick={() => void onRun()} loading={loading}>
+      <Button
+        size="compact-sm"
+        onClick={() => void onRun()}
+        loading={loading}
+        style={{
+          height: 'var(--xdiff-header-control-height)',
+          borderRadius: 'var(--xdiff-header-control-radius)',
+        }}
+      >
         Compare
       </Button>
       <Tooltip label="Show compare options">
         <ActionIcon
           variant="default"
-          size="input-sm"
+          size={32}
+          radius="md"
           aria-label="Show compare options"
           onClick={() => setCompareOptionsOpened(true)}
         >
@@ -2570,51 +2579,51 @@ export function App() {
                   <Tooltip label="Open file into Old text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Open file into Old text"
                       className="text-editor-action"
                       onClick={() => void loadTextFromFile('old')}
                       disabled={textEditorBusy}
                       loading={textFileBusyTarget === 'old'}
                     >
-                      <IconFolderOpen size={16} />
+                      <IconFolderOpen size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Paste clipboard into Old text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Paste clipboard into Old text"
                       className="text-editor-action"
                       onClick={() => void pasteTextFromClipboard('old')}
                       disabled={textEditorBusy}
                       loading={textClipboardBusyTarget === 'old'}
                     >
-                      <IconClipboardText size={16} />
+                      <IconClipboardText size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Clear Old text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Clear Old text"
                       className="text-editor-action"
                       onClick={() => clearTextInput('old')}
                       disabled={textEditorBusy || !textOld}
                     >
-                      <IconBackspace size={16} />
+                      <IconBackspace size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Swap old and new texts">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Swap sides"
                       className="text-editor-action"
                       onClick={swapTextInputs}
                       disabled={textEditorBusy}
                     >
-                      <IconSwitchHorizontal size={16} />
+                      <IconSwitchHorizontal size={15} />
                     </ActionIcon>
                   </Tooltip>
                 </div>
@@ -2642,39 +2651,39 @@ export function App() {
                   <Tooltip label="Open file into New text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Open file into New text"
                       className="text-editor-action"
                       onClick={() => void loadTextFromFile('new')}
                       disabled={textEditorBusy}
                       loading={textFileBusyTarget === 'new'}
                     >
-                      <IconFolderOpen size={16} />
+                      <IconFolderOpen size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Paste clipboard into New text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Paste clipboard into New text"
                       className="text-editor-action"
                       onClick={() => void pasteTextFromClipboard('new')}
                       disabled={textEditorBusy}
                       loading={textClipboardBusyTarget === 'new'}
                     >
-                      <IconClipboardText size={16} />
+                      <IconClipboardText size={15} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Clear New text">
                     <ActionIcon
                       variant="default"
-                      size="input-sm"
+                      size={28}
                       aria-label="Clear New text"
                       className="text-editor-action"
                       onClick={() => clearTextInput('new')}
                       disabled={textEditorBusy || !textNew}
                     >
-                      <IconBackspace size={16} />
+                      <IconBackspace size={15} />
                     </ActionIcon>
                   </Tooltip>
                 </div>

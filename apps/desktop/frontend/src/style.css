@@ -19,6 +19,10 @@
   --xdiff-control-radius: 8px;
   --xdiff-control-font-size: 0.92rem;
   --xdiff-toolbar-gap: 6px;
+  --xdiff-header-control-height: 32px;
+  --xdiff-header-control-radius: 8px;
+  --xdiff-header-gap: 6px;
+  --xdiff-micro-action-size: 28px;
 }
 
 [data-mantine-color-scheme='dark'] {
@@ -45,6 +49,26 @@ body {
 
 #root {
   min-height: 100%;
+}
+
+.xdiff-header-left-rail,
+.xdiff-header-right-rail {
+  align-items: center;
+  gap: var(--xdiff-header-gap);
+}
+
+.xdiff-header-burger {
+  width: var(--xdiff-header-control-height);
+  height: var(--xdiff-header-control-height);
+  min-width: var(--xdiff-header-control-height);
+}
+
+.xdiff-header-mode-select {
+  min-width: 200px;
+}
+
+.xdiff-header-theme-toggle {
+  min-height: var(--xdiff-header-control-height);
 }
 
 .control-panel {

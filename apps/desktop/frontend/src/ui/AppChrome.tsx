@@ -126,19 +126,28 @@ export function AppChrome({
     >
       <AppShell.Header>
         <Group justify="space-between" h="100%" px="md">
-          <Group gap="sm">
+          <Group gap="sm" className="xdiff-header-left-rail">
             {isSidebarLayout ? (
               <Burger
                 opened={mobileOpened}
                 onClick={toggleMobile}
                 hiddenFrom="md"
                 size="sm"
+                className="xdiff-header-burger"
                 aria-label="Toggle navigation"
               />
             ) : null}
             <Text fw={700}>xdiff Desktop</Text>
             <Select
               w={200}
+              className="xdiff-header-mode-select"
+              styles={{
+                input: {
+                  height: 'var(--xdiff-header-control-height)',
+                  minHeight: 'var(--xdiff-header-control-height)',
+                  borderRadius: 'var(--xdiff-header-control-radius)',
+                },
+              }}
               data={MODE_OPTIONS}
               value={mode}
               onChange={(value) => {
@@ -152,7 +161,7 @@ export function AppChrome({
               }}
             />
           </Group>
-          <Group gap="xs">
+          <Group gap="xs" className="xdiff-header-right-rail">
             {headerActions}
             <ThemeModeControl />
           </Group>
