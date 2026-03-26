@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActionIcon, Menu, Tooltip } from '@mantine/core'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconAdjustmentsHorizontal,
   IconBackspace,
-  IconCheck,
   IconChevronRight,
   IconChevronDown,
-  IconChevronUp,
   IconClipboardText,
   IconCopy,
   IconFolderOpen,
@@ -39,6 +37,13 @@ import {
 } from './ui/HeaderRail'
 import { SectionCard } from './ui/SectionCard'
 import { StatusBadge } from './ui/StatusBadge'
+import { CompareResultToolbar } from './ui/CompareResultToolbar'
+import { CompareSearchControls } from './ui/CompareSearchControls'
+import {
+  CompareSummaryBadges,
+  type CompareSummaryBadgeItem,
+} from './ui/CompareSummaryBadges'
+import { ViewSettingsMenu } from './ui/ViewSettingsMenu'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -220,12 +225,78 @@ function summarizeTextDiffCounts(rows: UnifiedDiffRow[] | null): {
   return { added, removed }
 }
 
-function renderMenuCheck(active: boolean) {
-  return active ? (
-    <IconCheck size={14} className="menu-check-icon is-active" />
-  ) : (
-    <span className="menu-check-slot" aria-hidden="true" />
-  )
+function buildTextSummaryBadgeItems(params: {
+  hasResult: boolean
+  hasError: boolean
+  diffFound: boolean
+  added: number
+  removed: number
+}): CompareSummaryBadgeItem[] {
+  if (!params.hasResult) {
+    return []
+  }
+
+  if (params.hasError) {
+    return [{ key: 'error', label: 'Execution error', tone: 'error' }]
+  }
+
+  if (!params.diffFound) {
+    return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
+  }
+
+  const items: CompareSummaryBadgeItem[] = []
+  if (params.added > 0) {
+    items.push({ key: 'added', label: `+${params.added}`, tone: 'added' })
+  }
+  if (params.removed > 0) {
+    items.push({ key: 'removed', label: `-${params.removed}`, tone: 'removed' })
+  }
+  return items
+}
+
+function buildJSONSummaryBadgeItems(params: {
+  hasResult: boolean
+  hasError: boolean
+  diffFound: boolean
+  added: number
+  removed: number
+  changed: number
+  typeChanged: number
+  breaking: number
+}): CompareSummaryBadgeItem[] {
+  if (!params.hasResult) {
+    return []
+  }
+
+  if (params.hasError) {
+    return [{ key: 'error', label: 'Execution error', tone: 'error' }]
+  }
+
+  if (!params.diffFound) {
+    return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
+  }
+
+  const items: CompareSummaryBadgeItem[] = []
+  if (params.added > 0) {
+    items.push({ key: 'added', label: `+${params.added}`, tone: 'added' })
+  }
+  if (params.removed > 0) {
+    items.push({ key: 'removed', label: `-${params.removed}`, tone: 'removed' })
+  }
+  if (params.changed > 0) {
+    items.push({ key: 'changed', label: `~${params.changed}`, tone: 'changed' })
+  }
+  if (params.typeChanged > 0) {
+    items.push({
+      key: 'typeChanged',
+      label: `type ${params.typeChanged}`,
+      tone: 'breaking',
+    })
+  }
+  if (params.breaking > 0) {
+    items.push({ key: 'breaking', label: `breaking ${params.breaking}`, tone: 'breaking' })
+  }
+  return items
 }
 
 function stringifyJSONValue(value: unknown): string {
@@ -888,6 +959,7 @@ export function App() {
   const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
   const [jsonExpandedGroups, setJSONExpandedGroups] = useState<string[]>([])
   const [jsonExpandedValueKeys, setJSONExpandedValueKeys] = useState<string[]>([])
+  const [jsonCopyBusy, setJSONCopyBusy] = useState(false)
   const [jsonIgnorePathsDraft, setJSONIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultJSONCommon.ignorePaths),
   )
@@ -1704,6 +1776,52 @@ export function App() {
     }
   }
 
+  const copyJSONResultRawOutput = async () => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    const raw = jsonResult ? renderResult(jsonResult) : ''
+    if (!raw) {
+      return
+    }
+
+    setJSONCopyBusy(true)
+
+    try {
+      const ok = await writeClipboard(raw)
+      if (!ok) {
+        notifications.show({
+          title: 'Copy failed',
+          message: 'Failed to copy raw output.',
+          color: 'red',
+        })
+        return
+      }
+
+      notifications.show({
+        title: 'Copied',
+        message: 'Raw output copied to clipboard.',
+        color: 'green',
+      })
+    } catch (error) {
+      const message = `Failed to copy raw output: ${formatUnknownError(error)}`
+      notifications.show({
+        title: 'Copy failed',
+        message,
+        color: 'red',
+      })
+    } finally {
+      setJSONCopyBusy(false)
+    }
+  }
+
   const copyTextInput = async (target: TextInputTarget) => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
@@ -2226,23 +2344,33 @@ export function App() {
     const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
     const canSearchRich = showRich
     const diffCounts = summarizeTextDiffCounts(textRichRows)
-    const showDiffStats =
-      hasTextResult &&
-      !textResult?.error &&
-      !!textResult?.diffFound &&
-      (diffCounts.added > 0 || diffCounts.removed > 0)
+    const textSummaryItems = buildTextSummaryBadgeItems({
+      hasResult: hasTextResult,
+      hasError: !!textResult?.error,
+      diffFound: !!textResult?.diffFound,
+      added: diffCounts.added,
+      removed: diffCounts.removed,
+    })
+    const textSearchStatus = normalizedTextSearchQuery
+      ? textSearchMatches.length > 0
+        ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length}`
+        : '0 matches'
+      : null
 
     return (
       <div className="text-result-shell">
-        <div className="text-result-toolbar">
-          <div className="text-result-primary-controls">
-            <input
-              type="text"
-              className="text-search-input"
-              placeholder="Search rich diff"
+        <CompareResultToolbar
+          primary={
+            <CompareSearchControls
               value={textSearchQuery}
+              placeholder="Search rich diff"
+              statusText={textSearchStatus}
               disabled={!canSearchRich}
-              onChange={(e) => setTextSearchQuery(e.target.value)}
+              onChange={setTextSearchQuery}
+              onPrev={() => moveTextSearch(-1)}
+              onNext={() => moveTextSearch(1)}
+              prevDisabled={!canSearchRich || textSearchMatches.length === 0}
+              nextDisabled={!canSearchRich || textSearchMatches.length === 0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -2255,131 +2383,84 @@ export function App() {
                 }
               }}
             />
-
-            {normalizedTextSearchQuery ? (
-              <span className="muted text-search-status">
-                {textSearchMatches.length > 0
-                  ? `${textActiveSearchIndex + 1} / ${textSearchMatches.length}`
-                  : '0 matches'}
-              </span>
-            ) : null}
-
-            <Tooltip label="Previous match">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Previous match"
-                className="text-search-action"
-                onClick={() => moveTextSearch(-1)}
-                disabled={!canSearchRich || textSearchMatches.length === 0}
-              >
-                <IconChevronUp size={15} />
-              </ActionIcon>
-            </Tooltip>
-
-            <Tooltip label="Next match">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Next match"
-                className="text-search-action"
-                onClick={() => moveTextSearch(1)}
-                disabled={!canSearchRich || textSearchMatches.length === 0}
-              >
-                <IconChevronDown size={15} />
-              </ActionIcon>
-            </Tooltip>
-
-            {hasTextResult ? (
-              <div className="text-result-summary-inline">
-                {textResult?.error ? (
-                  <span className="text-diff-stat error">Execution error</span>
-                ) : showDiffStats ? (
-                  <>
-                    <span className="text-diff-stat added">+{diffCounts.added}</span>
-                    <span className="text-diff-stat removed">-{diffCounts.removed}</span>
-                  </>
-                ) : textResult?.diffFound ? null : (
-                  <span className="text-diff-stat neutral">No differences</span>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="text-result-secondary-controls">
-            <Tooltip label="Copy raw output">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Copy raw output"
-                className="text-result-action"
-                onClick={() => void copyTextResultRawOutput()}
-                disabled={textCopyBusy || !raw}
-                loading={textCopyBusy}
-              >
-                <IconCopy size={15} />
-              </ActionIcon>
-            </Tooltip>
-
-            <Menu position="bottom-end" withinPortal>
-              <Menu.Target>
-                <Tooltip label="View settings">
-                  <ActionIcon
-                    variant="default"
-                    size={28}
-                    aria-label="View settings"
-                    className="text-result-action"
-                  >
-                    <IconAdjustmentsHorizontal size={15} />
-                  </ActionIcon>
-                </Tooltip>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>Display</Menu.Label>
-                <Menu.Item
-                  leftSection={renderMenuCheck(textResultView === 'rich')}
-                  onClick={() => setTextResultView('rich')}
-                  disabled={!canRenderTextRich}
+          }
+          summary={<CompareSummaryBadges items={textSummaryItems} />}
+          secondary={
+            <>
+              <Tooltip label="Copy raw output">
+                <ActionIcon
+                  variant="default"
+                  size={28}
+                  aria-label="Copy raw output"
+                  className="text-result-action"
+                  onClick={() => void copyTextResultRawOutput()}
+                  disabled={textCopyBusy || !raw}
+                  loading={textCopyBusy}
                 >
-                  Rich diff
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={renderMenuCheck(textResultView === 'raw')}
-                  onClick={() => setTextResultView('raw')}
-                >
-                  Raw output
-                </Menu.Item>
-
-                <Menu.Divider />
-                <Menu.Label>Layout</Menu.Label>
-                <Menu.Item
-                  leftSection={renderMenuCheck(textDiffLayout === 'split')}
-                  onClick={() => setTextDiffLayout('split')}
-                  disabled={!canRenderTextRich}
-                >
-                  Split
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={renderMenuCheck(textDiffLayout === 'unified')}
-                  onClick={() => setTextDiffLayout('unified')}
-                  disabled={!canRenderTextRich}
-                >
-                  Unified
-                </Menu.Item>
-
-                {showRich && omittedSectionIds.length > 0 ? (
-                  <>
-                    <Menu.Divider />
-                    <Menu.Item onClick={toggleAllTextUnchangedSections}>
-                      {allOmittedSectionsExpanded ? 'Collapse unchanged' : 'Expand unchanged'}
-                    </Menu.Item>
-                  </>
-                ) : null}
-              </Menu.Dropdown>
-            </Menu>
-          </div>
-        </div>
+                  <IconCopy size={15} />
+                </ActionIcon>
+              </Tooltip>
+              <ViewSettingsMenu
+                tooltip="View settings"
+                sections={[
+                  {
+                    title: 'Display',
+                    items: [
+                      {
+                        key: 'text-display-rich',
+                        label: 'Rich diff',
+                        active: textResultView === 'rich',
+                        disabled: !canRenderTextRich,
+                        onSelect: () => setTextResultView('rich'),
+                      },
+                      {
+                        key: 'text-display-raw',
+                        label: 'Raw output',
+                        active: textResultView === 'raw',
+                        onSelect: () => setTextResultView('raw'),
+                      },
+                    ],
+                  },
+                  {
+                    title: 'Layout',
+                    items: [
+                      {
+                        key: 'text-layout-split',
+                        label: 'Split',
+                        active: textDiffLayout === 'split',
+                        disabled: !canRenderTextRich,
+                        onSelect: () => setTextDiffLayout('split'),
+                      },
+                      {
+                        key: 'text-layout-unified',
+                        label: 'Unified',
+                        active: textDiffLayout === 'unified',
+                        disabled: !canRenderTextRich,
+                        onSelect: () => setTextDiffLayout('unified'),
+                      },
+                    ],
+                  },
+                  {
+                    title: 'Sections',
+                    items:
+                      showRich && omittedSectionIds.length > 0
+                        ? [
+                            {
+                              key: 'text-sections-toggle',
+                              label: allOmittedSectionsExpanded
+                                ? 'Collapse unchanged'
+                                : 'Expand unchanged',
+                              active: false,
+                              onSelect: toggleAllTextUnchangedSections,
+                            },
+                          ]
+                        : [],
+                  },
+                ]}
+              />
+            </>
+          }
+        />
 
         <div className="text-result-body">
           {!hasTextResult ? (
@@ -2498,7 +2579,7 @@ export function App() {
         {canExpand ? (
           <button
             type="button"
-            className="button-secondary button-compact"
+            className="button-secondary button-compact json-value-toggle"
             onClick={() => toggleJSONExpandedValue(valueKey)}
           >
             {expanded ? 'Collapse' : 'Expand'}
@@ -2526,24 +2607,36 @@ export function App() {
     jsonDiffRows.forEach((diff, index) => {
       jsonDiffRowIndexMap.set(diff, index)
     })
-    const hasDiffStats =
-      !!summary &&
-      (summary.added > 0 ||
-        summary.removed > 0 ||
-        summary.changed > 0 ||
-        summary.typeChanged > 0)
+    const jsonSummaryItems = buildJSONSummaryBadgeItems({
+      hasResult: hasJSONResult,
+      hasError: !!jsonResult?.error,
+      diffFound: !!jsonResult?.diffFound,
+      added: summary?.added ?? 0,
+      removed: summary?.removed ?? 0,
+      changed: summary?.changed ?? 0,
+      typeChanged: summary?.typeChanged ?? 0,
+      breaking: summary?.breaking ?? 0,
+    })
+    const jsonSearchStatus = normalizedJSONSearchQuery
+      ? jsonSearchMatches.length > 0
+        ? `${jsonActiveSearchIndex + 1} / ${jsonSearchMatches.length}`
+        : '0 matches'
+      : null
 
     return (
       <div className="json-result-shell">
-        <div className="json-result-toolbar">
-          <div className="json-result-primary-controls">
-            <input
-              type="text"
-              className="text-search-input"
-              placeholder="Search paths or values"
+        <CompareResultToolbar
+          primary={
+            <CompareSearchControls
               value={jsonSearchQuery}
+              placeholder="Search paths or values"
+              statusText={jsonSearchStatus}
               disabled={!canSearchRich}
-              onChange={(e) => setJSONSearchQuery(e.target.value)}
+              onChange={setJSONSearchQuery}
+              onPrev={() => moveJSONSearch(-1)}
+              onNext={() => moveJSONSearch(1)}
+              prevDisabled={!canSearchRich || jsonSearchMatches.length === 0}
+              nextDisabled={!canSearchRich || jsonSearchMatches.length === 0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -2556,106 +2649,49 @@ export function App() {
                 }
               }}
             />
-
-            {normalizedJSONSearchQuery ? (
-              <span className="muted text-search-status">
-                {jsonSearchMatches.length > 0
-                  ? `${jsonActiveSearchIndex + 1} / ${jsonSearchMatches.length}`
-                  : '0 matches'}
-              </span>
-            ) : null}
-
-            <Tooltip label="Previous match">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Previous match"
-                className="text-search-action"
-                onClick={() => moveJSONSearch(-1)}
-                disabled={!canSearchRich || jsonSearchMatches.length === 0}
-              >
-                <IconChevronUp size={15} />
-              </ActionIcon>
-            </Tooltip>
-
-            <Tooltip label="Next match">
-              <ActionIcon
-                variant="default"
-                size={28}
-                aria-label="Next match"
-                className="text-search-action"
-                onClick={() => moveJSONSearch(1)}
-                disabled={!canSearchRich || jsonSearchMatches.length === 0}
-              >
-                <IconChevronDown size={15} />
-              </ActionIcon>
-            </Tooltip>
-
-            {hasJSONResult ? (
-              <div className="text-result-summary-inline">
-                {jsonResult?.error ? (
-                  <span className="text-diff-stat error">Execution error</span>
-                ) : hasDiffStats && summary ? (
-                  <>
-                    {summary.added > 0 ? (
-                      <span className="text-diff-stat added">+{summary.added}</span>
-                    ) : null}
-                    {summary.removed > 0 ? (
-                      <span className="text-diff-stat removed">-{summary.removed}</span>
-                    ) : null}
-                    {summary.changed > 0 ? (
-                      <span className="text-diff-stat neutral">~{summary.changed}</span>
-                    ) : null}
-                    {summary.typeChanged > 0 ? (
-                      <span className="text-diff-stat neutral">
-                        type {summary.typeChanged}
-                      </span>
-                    ) : null}
-                    {summary.breaking > 0 ? (
-                      <span className="text-diff-stat error">breaking {summary.breaking}</span>
-                    ) : null}
-                  </>
-                ) : jsonResult?.diffFound ? null : (
-                  <span className="text-diff-stat neutral">No differences</span>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="json-result-secondary-controls">
-            <Menu position="bottom-end" withinPortal>
-              <Menu.Target>
-                <Tooltip label="View settings">
-                  <ActionIcon
-                    variant="default"
-                    size={28}
-                    aria-label="View settings"
-                    className="text-result-action"
-                  >
-                    <IconAdjustmentsHorizontal size={15} />
-                  </ActionIcon>
-                </Tooltip>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>Display</Menu.Label>
-                <Menu.Item
-                  leftSection={renderMenuCheck(jsonResultView === 'rich')}
-                  onClick={() => setJSONResultView('rich')}
-                  disabled={!canRenderJSONRich}
+          }
+          summary={<CompareSummaryBadges items={jsonSummaryItems} />}
+          secondary={
+            <>
+              <Tooltip label="Copy raw output">
+                <ActionIcon
+                  variant="default"
+                  size={28}
+                  aria-label="Copy raw output"
+                  className="text-result-action"
+                  onClick={() => void copyJSONResultRawOutput()}
+                  disabled={jsonCopyBusy || !raw}
+                  loading={jsonCopyBusy}
                 >
-                  Rich diff
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={renderMenuCheck(jsonResultView === 'raw')}
-                  onClick={() => setJSONResultView('raw')}
-                >
-                  Raw output
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </div>
-        </div>
+                  <IconCopy size={15} />
+                </ActionIcon>
+              </Tooltip>
+              <ViewSettingsMenu
+                tooltip="View settings"
+                sections={[
+                  {
+                    title: 'Display',
+                    items: [
+                      {
+                        key: 'json-display-rich',
+                        label: 'Rich diff',
+                        active: jsonResultView === 'rich',
+                        disabled: !canRenderJSONRich,
+                        onSelect: () => setJSONResultView('rich'),
+                      },
+                      {
+                        key: 'json-display-raw',
+                        label: 'Raw output',
+                        active: jsonResultView === 'raw',
+                        onSelect: () => setJSONResultView('raw'),
+                      },
+                    ],
+                  },
+                ]}
+              />
+            </>
+          }
+        />
 
         <div className="text-result-body">
           {!hasJSONResult ? (
@@ -2665,55 +2701,63 @@ export function App() {
               {jsonDiffRows.length === 0 ? (
                 <div className="json-empty-state muted">No differences.</div>
               ) : (
-                jsonDiffGroups.map((group) => {
-                  const expanded = effectiveJSONExpandedGroups.has(group.key)
-                  return (
-                    <div key={group.key} className="json-group">
-                      <button
-                        type="button"
-                        className="json-group-header"
-                        onClick={() => toggleJSONGroup(group.key)}
-                      >
-                        <span className="json-group-header-left">
-                          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
-                          <span className="json-group-title">{group.key}</span>
-                          <span className="muted">{group.items.length} changes</span>
-                        </span>
-                        <span className="json-group-header-right">
-                          {group.summary.added > 0 ? (
-                            <span className="json-group-stat added">+{group.summary.added}</span>
-                          ) : null}
-                          {group.summary.removed > 0 ? (
-                            <span className="json-group-stat removed">-{group.summary.removed}</span>
-                          ) : null}
-                          {group.summary.changed > 0 ? (
-                            <span className="json-group-stat changed">~{group.summary.changed}</span>
-                          ) : null}
-                          {group.summary.typeChanged > 0 ? (
-                            <span className="json-group-stat type-changed">
-                              type {group.summary.typeChanged}
-                            </span>
-                          ) : null}
-                          {group.summary.breaking > 0 ? (
-                            <span className="json-breaking-badge">
-                              breaking {group.summary.breaking}
-                            </span>
-                          ) : null}
-                        </span>
-                      </button>
+                <table className="json-diff-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Path</th>
+                      <th>Old</th>
+                      <th>New</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jsonDiffGroups.map((group) => {
+                      const expanded = effectiveJSONExpandedGroups.has(group.key)
+                      return (
+                        <Fragment key={`group-${group.key}`}>
+                          <tr key={`group-${group.key}`} className="json-group-row">
+                            <td colSpan={4}>
+                              <button
+                                type="button"
+                                className="json-group-header"
+                                onClick={() => toggleJSONGroup(group.key)}
+                              >
+                                <span className="json-group-header-left">
+                                  {expanded ? (
+                                    <IconChevronDown size={14} />
+                                  ) : (
+                                    <IconChevronRight size={14} />
+                                  )}
+                                  <span className="json-group-title">{group.key}</span>
+                                  <span className="json-group-count">{group.items.length} changes</span>
+                                </span>
+                                <span className="json-group-header-right">
+                                  {group.summary.added > 0 ? (
+                                    <span className="json-group-stat added">+{group.summary.added}</span>
+                                  ) : null}
+                                  {group.summary.removed > 0 ? (
+                                    <span className="json-group-stat removed">-{group.summary.removed}</span>
+                                  ) : null}
+                                  {group.summary.changed > 0 ? (
+                                    <span className="json-group-stat changed">~{group.summary.changed}</span>
+                                  ) : null}
+                                  {group.summary.typeChanged > 0 ? (
+                                    <span className="json-group-stat type-changed">
+                                      type {group.summary.typeChanged}
+                                    </span>
+                                  ) : null}
+                                  {group.summary.breaking > 0 ? (
+                                    <span className="json-breaking-badge">
+                                      breaking {group.summary.breaking}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </button>
+                            </td>
+                          </tr>
 
-                      {expanded ? (
-                        <table className="json-diff-table">
-                          <thead>
-                            <tr>
-                              <th>Type</th>
-                              <th>Path</th>
-                              <th>Old</th>
-                              <th>New</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.items.map((diff) => {
+                          {expanded
+                            ? group.items.map((diff) => {
                               const index = jsonDiffRowIndexMap.get(diff) ?? -1
                               const searchHit = jsonSearchMatchIndexSet.has(index)
                               const activeHit = activeJSONMatch === index
@@ -2758,13 +2802,13 @@ export function App() {
                                   </td>
                                 </tr>
                               )
-                            })}
-                          </tbody>
-                        </table>
-                      ) : null}
-                    </div>
-                  )
-                })
+                            })
+                            : null}
+                        </Fragment>
+                      )
+                    })}
+                  </tbody>
+                </table>
               )}
             </div>
           ) : (
