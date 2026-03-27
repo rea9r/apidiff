@@ -8,7 +8,11 @@ type CompareValueBlockProps = {
 
 export function CompareValueBlock({ inline = false, expanded = false, children }: CompareValueBlockProps) {
   if (inline) {
-    return <code className="compare-value-inline">{children}</code>
+    return (
+      <span className="compare-value-inline-shell">
+        <code className="compare-value-inline">{children}</code>
+      </span>
+    )
   }
 
   return (

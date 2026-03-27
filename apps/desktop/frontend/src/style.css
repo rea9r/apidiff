@@ -1214,11 +1214,21 @@ button {
   gap: 6px;
 }
 
+.compare-value-inline-shell {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--xdiff-json-row-line-height) * 1em);
+  vertical-align: middle;
+}
+
 .json-value-inline,
 .compare-value-inline {
   font-family: var(--mantine-font-family-monospace);
   font-size: var(--xdiff-json-row-font-size);
-  line-height: var(--xdiff-json-row-line-height);
+  line-height: 1.15;
+  display: block;
+  margin: 0;
+  padding: 0;
 }
 
 .json-value-block,
