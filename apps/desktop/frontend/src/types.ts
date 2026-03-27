@@ -47,6 +47,37 @@ export type CompareJSONValuesRequest = {
   ignoreOrder: boolean
 }
 
+export type CompareSpecValuesRequest = {
+  oldValue: string
+  newValue: string
+  common: CompareCommon
+}
+
+export type SpecRichDiffItem = {
+  type: 'added' | 'removed' | 'changed' | 'type_changed'
+  path: string
+  label: string
+  groupKey: string
+  groupKind: 'operation' | 'component' | 'path' | 'other'
+  breaking: boolean
+  oldValue?: unknown
+  newValue?: unknown
+}
+
+export type SpecRichSummary = {
+  added: number
+  removed: number
+  changed: number
+  typeChanged: number
+  breaking: number
+}
+
+export type CompareSpecRichResponse = {
+  result: CompareResponse
+  summary: SpecRichSummary
+  diffs: SpecRichDiffItem[]
+}
+
 export type LoadTextFileRequest = {
   path: string
 }

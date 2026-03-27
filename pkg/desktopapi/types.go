@@ -30,6 +30,12 @@ type CompareSpecRequest struct {
 	Common  CompareCommon `json:"common"`
 }
 
+type CompareSpecValuesRequest struct {
+	OldValue string        `json:"oldValue"`
+	NewValue string        `json:"newValue"`
+	Common   CompareCommon `json:"common"`
+}
+
 type CompareTextRequest struct {
 	OldText string        `json:"oldText"`
 	NewText string        `json:"newText"`
@@ -124,6 +130,31 @@ type CompareJSONRichResponse struct {
 	Result  CompareResponse    `json:"result"`
 	Summary JSONRichSummary    `json:"summary"`
 	Diffs   []JSONRichDiffItem `json:"diffs"`
+}
+
+type SpecRichDiffItem struct {
+	Type      string `json:"type"` // added | removed | changed | type_changed
+	Path      string `json:"path"` // canonical diff path
+	Label     string `json:"label"`
+	GroupKey  string `json:"groupKey"` // e.g. POST /users
+	GroupKind string `json:"groupKind"`
+	Breaking  bool   `json:"breaking"`
+	OldValue  any    `json:"oldValue,omitempty"`
+	NewValue  any    `json:"newValue,omitempty"`
+}
+
+type SpecRichSummary struct {
+	Added       int `json:"added"`
+	Removed     int `json:"removed"`
+	Changed     int `json:"changed"`
+	TypeChanged int `json:"typeChanged"`
+	Breaking    int `json:"breaking"`
+}
+
+type CompareSpecRichResponse struct {
+	Result  CompareResponse    `json:"result"`
+	Summary SpecRichSummary    `json:"summary"`
+	Diffs   []SpecRichDiffItem `json:"diffs"`
 }
 
 type ScenarioSummary struct {

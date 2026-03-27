@@ -43,6 +43,14 @@ func (a *App) CompareSpecFiles(req desktopapi.CompareSpecRequest) (*desktopapi.C
 	return a.api.CompareSpecFiles(req)
 }
 
+func (a *App) CompareSpecRich(req desktopapi.CompareSpecRequest) (*desktopapi.CompareSpecRichResponse, error) {
+	return a.api.CompareSpecRich(req)
+}
+
+func (a *App) CompareSpecValuesRich(req desktopapi.CompareSpecValuesRequest) (*desktopapi.CompareSpecRichResponse, error) {
+	return a.api.CompareSpecValuesRich(req)
+}
+
 func (a *App) CompareText(req desktopapi.CompareTextRequest) (*desktopapi.CompareResponse, error) {
 	return a.api.CompareText(req)
 }

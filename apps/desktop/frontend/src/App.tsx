@@ -15,6 +15,8 @@ import type {
   CompareFoldersResponse,
   CompareJSONRichResponse,
   CompareJSONValuesRequest,
+  CompareSpecRichResponse,
+  CompareSpecValuesRequest,
   CompareResponse,
   FolderCompareEntry,
   JSONRichDiffItem,
@@ -23,6 +25,7 @@ import type {
   Mode,
   ScenarioCheckListEntry,
   ScenarioListResponse,
+  SpecRichDiffItem,
   ScenarioResult,
   ScenarioRunResponse,
 } from './types'
@@ -49,9 +52,9 @@ import {
 } from './ui/CompareSourceActions'
 import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
-import { ComparePathInputBody } from './ui/ComparePathInputBody'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
 import { CompareJsonInputBody } from './ui/CompareJsonInputBody'
+import { SpecRichDiffViewer } from './ui/SpecRichDiffViewer'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -311,6 +314,11 @@ function buildSpecSummaryBadgeItems(params: {
   hasResult: boolean
   hasError: boolean
   diffFound: boolean
+  added: number
+  removed: number
+  changed: number
+  typeChanged: number
+  breaking: number
 }): CompareStatusBadgeItem[] {
   if (!params.hasResult) {
     return []
@@ -324,7 +332,27 @@ function buildSpecSummaryBadgeItems(params: {
     return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
   }
 
-  return []
+  const items: CompareStatusBadgeItem[] = []
+  if (params.added > 0) {
+    items.push({ key: 'added', label: `+${params.added}`, tone: 'added' })
+  }
+  if (params.removed > 0) {
+    items.push({ key: 'removed', label: `-${params.removed}`, tone: 'removed' })
+  }
+  if (params.changed > 0) {
+    items.push({ key: 'changed', label: `~${params.changed}`, tone: 'changed' })
+  }
+  if (params.typeChanged > 0) {
+    items.push({
+      key: 'typeChanged',
+      label: `type ${params.typeChanged}`,
+      tone: 'breaking',
+    })
+  }
+  if (params.breaking > 0) {
+    items.push({ key: 'breaking', label: `breaking ${params.breaking}`, tone: 'breaking' })
+  }
+  return items
 }
 
 function stringifyJSONValue(value: unknown): string {
@@ -354,6 +382,10 @@ function getJSONParseError(input: string): string | null {
 
 function summarizeJSONSearchText(item: JSONRichDiffItem): string {
   return `${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
+}
+
+function summarizeSpecSearchText(item: SpecRichDiffItem): string {
+  return `${item.label}\n${item.path}\n${stringifyJSONValue(item.oldValue)}\n${stringifyJSONValue(item.newValue)}`
 }
 
 function getJSONDiffGroupKey(path: string): string {
@@ -1011,10 +1043,20 @@ export function App() {
     ignorePathsToText(defaultJSONCommon.ignorePaths),
   )
 
-  const [specOldPath, setSpecOldPath] = useState('')
-  const [specNewPath, setSpecNewPath] = useState('')
+  const [specOldText, setSpecOldText] = useState('')
+  const [specNewText, setSpecNewText] = useState('')
+  const [specOldSourcePath, setSpecOldSourcePath] = useState('')
+  const [specNewSourcePath, setSpecNewSourcePath] = useState('')
   const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
-  const [specResult, setSpecResult] = useState<CompareResponse | null>(null)
+  const [specResultView, setSpecResultView] = useState<'rich' | 'raw'>('rich')
+  const [specRichResult, setSpecRichResult] = useState<CompareSpecRichResponse | null>(null)
+  const [specSearchQuery, setSpecSearchQuery] = useState('')
+  const [specActiveSearchIndex, setSpecActiveSearchIndex] = useState(0)
+  const [specClipboardBusyTarget, setSpecClipboardBusyTarget] =
+    useState<TextInputTarget | null>(null)
+  const [specFileBusyTarget, setSpecFileBusyTarget] = useState<TextInputTarget | null>(null)
+  const [specCopyBusyTarget, setSpecCopyBusyTarget] = useState<TextInputTarget | null>(null)
+  const [specCopyBusy, setSpecCopyBusy] = useState(false)
   const [specIgnorePathsDraft, setSpecIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultSpecCommon.ignorePaths),
   )
@@ -1161,6 +1203,30 @@ export function App() {
   const jsonInputInvalid = !!jsonOldParseError || !!jsonNewParseError
   const jsonInputEmpty = !jsonOldText.trim() || !jsonNewText.trim()
   const jsonEditorBusy = jsonClipboardBusyTarget !== null || jsonFileBusyTarget !== null
+  const specResult = specRichResult?.result ?? null
+  const specDiffRows = specRichResult?.diffs ?? []
+  const normalizedSpecSearchQuery = useMemo(
+    () => normalizeSearchQuery(specSearchQuery),
+    [specSearchQuery],
+  )
+  const specSearchMatches = useMemo(() => {
+    if (!normalizedSpecSearchQuery) {
+      return []
+    }
+
+    return specDiffRows
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) =>
+        summarizeSpecSearchText(item).toLowerCase().includes(normalizedSpecSearchQuery),
+      )
+      .map(({ index }) => index)
+  }, [specDiffRows, normalizedSpecSearchQuery])
+  const specSearchMatchIndexSet = useMemo(
+    () => new Set(specSearchMatches),
+    [specSearchMatches],
+  )
+  const specInputEmpty = !specOldText.trim() || !specNewText.trim()
+  const specEditorBusy = specClipboardBusyTarget !== null || specFileBusyTarget !== null
 
   useEffect(() => {
     try {
@@ -1201,6 +1267,16 @@ export function App() {
   }, [canRenderJSONRich, jsonRichResult, jsonResultView])
 
   useEffect(() => {
+    if (!specRichResult) {
+      return
+    }
+
+    if (specResultView === 'rich' && !!specResult?.error) {
+      setSpecResultView('raw')
+    }
+  }, [specRichResult, specResult?.error, specResultView])
+
+  useEffect(() => {
     setJSONExpandedGroups(jsonDiffGroups.map((group) => group.key))
     setJSONExpandedValueKeys([])
   }, [jsonDiffGroups])
@@ -1212,6 +1288,10 @@ export function App() {
   useEffect(() => {
     setJSONActiveSearchIndex(0)
   }, [normalizedJSONSearchQuery, jsonRichResult?.result.output])
+
+  useEffect(() => {
+    setSpecActiveSearchIndex(0)
+  }, [normalizedSpecSearchQuery, specRichResult?.result.output])
 
   useEffect(() => {
     if (textSearchMatches.length === 0) {
@@ -1240,6 +1320,19 @@ export function App() {
   }, [jsonSearchMatches.length, jsonActiveSearchIndex])
 
   useEffect(() => {
+    if (specSearchMatches.length === 0) {
+      if (specActiveSearchIndex !== 0) {
+        setSpecActiveSearchIndex(0)
+      }
+      return
+    }
+
+    if (specActiveSearchIndex >= specSearchMatches.length) {
+      setSpecActiveSearchIndex(0)
+    }
+  }, [specSearchMatches.length, specActiveSearchIndex])
+
+  useEffect(() => {
     if (textResultView !== 'rich' || !canRenderTextRich || !activeTextSearchMatch) {
       return
     }
@@ -1266,6 +1359,8 @@ export function App() {
     () => ({
       compareJSONValuesRich: (window as any).go?.main?.App?.CompareJSONValuesRich,
       compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
+      compareSpecRich: (window as any).go?.main?.App?.CompareSpecRich,
+      compareSpecValuesRich: (window as any).go?.main?.App?.CompareSpecValuesRich,
       compareText: (window as any).go?.main?.App?.CompareText,
       compareFolders: (window as any).go?.main?.App?.CompareFolders,
       runScenario: (window as any).go?.main?.App?.RunScenario,
@@ -1497,9 +1592,10 @@ export function App() {
       }
 
       if (entry.compareModeHint === 'spec') {
-        const fn = api.compareSpec
-        if (!fn) {
-          throw new Error('Wails bridge not available (CompareSpecFiles)')
+        const richFn = api.compareSpecValuesRich
+        const loader = api.loadTextFile
+        if (!richFn || !loader) {
+          throw new Error('Wails bridge not available (CompareSpecValuesRich/LoadTextFile)')
         }
 
         const safeSpecCommon = {
@@ -1508,20 +1604,29 @@ export function App() {
           textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
         }
 
-        const oldPath = entry.leftPath
-        const newPath = entry.rightPath
+        const oldLoaded: LoadTextFileResponse = await loader({
+          path: entry.leftPath,
+        } satisfies LoadTextFileRequest)
+        const newLoaded: LoadTextFileResponse = await loader({
+          path: entry.rightPath,
+        } satisfies LoadTextFileRequest)
 
-        const res: CompareResponse = await fn({
-          oldPath,
-          newPath,
+        const richRes: CompareSpecRichResponse = await richFn({
+          oldValue: oldLoaded.content,
+          newValue: newLoaded.content,
           common: safeSpecCommon,
-        })
+        } satisfies CompareSpecValuesRequest)
 
-        setSpecOldPath(oldPath)
-        setSpecNewPath(newPath)
-        setSpecResult(res)
+        setSpecOldText(oldLoaded.content)
+        setSpecNewText(newLoaded.content)
+        setSpecOldSourcePath(oldLoaded.path)
+        setSpecNewSourcePath(newLoaded.path)
+        setSpecRichResult(richRes)
+        setSpecSearchQuery('')
+        setSpecActiveSearchIndex(0)
+        setSpecResultView('rich')
         setMode('spec')
-        setResult(res)
+        setResult(richRes.result)
         return
       }
 
@@ -1598,8 +1703,8 @@ export function App() {
   }
 
   const runSpec = async () => {
-    const fn = api.compareSpec
-    if (!fn) throw new Error('Wails bridge not available (CompareSpecFiles)')
+    const richFn = api.compareSpecValuesRich
+    if (!richFn) throw new Error('Wails bridge not available (CompareSpecValuesRich)')
 
     const safeSpecCommon = {
       ...specCommon,
@@ -1607,13 +1712,16 @@ export function App() {
       textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
     }
 
-    const res: CompareResponse = await fn({
-      oldPath: specOldPath,
-      newPath: specNewPath,
+    const richRes: CompareSpecRichResponse = await richFn({
+      oldValue: specOldText,
+      newValue: specNewText,
       common: safeSpecCommon,
-    })
-    setSpecResult(res)
-    setResult(res)
+    } satisfies CompareSpecValuesRequest)
+    setSpecRichResult(richRes)
+    setSpecSearchQuery('')
+    setSpecActiveSearchIndex(0)
+    setSpecResultView('rich')
+    setResult(richRes.result)
   }
 
   const runText = async () => {
@@ -1871,6 +1979,143 @@ export function App() {
     setJSONNewSourcePath('')
   }
 
+  const pasteSpecFromClipboard = async (target: TextInputTarget) => {
+    const readClipboard = getRuntimeClipboardRead()
+    if (!readClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    setSpecClipboardBusyTarget(target)
+    try {
+      const pasted = await readClipboard()
+      if (!pasted) {
+        notifications.show({
+          title: 'Clipboard is empty',
+          message: 'Nothing to paste.',
+          color: 'yellow',
+        })
+        return
+      }
+
+      if (target === 'old') {
+        setSpecOldText(pasted)
+        setSpecOldSourcePath('')
+      } else {
+        setSpecNewText(pasted)
+        setSpecNewSourcePath('')
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Failed to paste from clipboard',
+        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setSpecClipboardBusyTarget(null)
+    }
+  }
+
+  const loadSpecFromFile = async (target: TextInputTarget) => {
+    const picker = api.pickSpecFile
+    const loader = api.loadTextFile
+    if (!picker || !loader) {
+      notifications.show({
+        title: 'Spec loader unavailable',
+        message: 'Spec file loader is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    setSpecFileBusyTarget(target)
+    try {
+      const selected = await picker()
+      if (!selected) {
+        return
+      }
+
+      const loaded: LoadTextFileResponse = await loader({
+        path: selected,
+      } satisfies LoadTextFileRequest)
+
+      if (target === 'old') {
+        setSpecOldText(loaded.content)
+        setSpecOldSourcePath(loaded.path)
+      } else {
+        setSpecNewText(loaded.content)
+        setSpecNewSourcePath(loaded.path)
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Failed to load spec file',
+        message: `Failed to load spec file: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setSpecFileBusyTarget(null)
+    }
+  }
+
+  const copySpecInput = async (target: TextInputTarget) => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    const value = target === 'old' ? specOldText : specNewText
+    if (!value) {
+      return
+    }
+
+    setSpecCopyBusyTarget(target)
+    try {
+      const ok = await writeClipboard(value)
+      if (!ok) {
+        notifications.show({
+          title: 'Copy failed',
+          message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} spec.`,
+          color: 'red',
+        })
+        return
+      }
+
+      notifications.show({
+        title: 'Copied',
+        message: `${target === 'old' ? 'Old' : 'New'} spec copied to clipboard.`,
+        color: 'green',
+      })
+    } catch (error) {
+      notifications.show({
+        title: 'Copy failed',
+        message: `Failed to copy spec: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setSpecCopyBusyTarget(null)
+    }
+  }
+
+  const clearSpecInput = (target: TextInputTarget) => {
+    if (target === 'old') {
+      setSpecOldText('')
+      setSpecOldSourcePath('')
+      return
+    }
+
+    setSpecNewText('')
+    setSpecNewSourcePath('')
+  }
+
   const copyTextResultRawOutput = async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
@@ -1960,6 +2205,50 @@ export function App() {
       })
     } finally {
       setJSONCopyBusy(false)
+    }
+  }
+
+  const copySpecResultRawOutput = async () => {
+    const writeClipboard = getRuntimeClipboardWrite()
+    if (!writeClipboard) {
+      notifications.show({
+        title: 'Clipboard unavailable',
+        message: 'Clipboard runtime is not available.',
+        color: 'red',
+      })
+      return
+    }
+
+    const raw = specResult ? renderResult(specResult) : ''
+    if (!raw) {
+      return
+    }
+
+    setSpecCopyBusy(true)
+    try {
+      const ok = await writeClipboard(raw)
+      if (!ok) {
+        notifications.show({
+          title: 'Copy failed',
+          message: 'Failed to copy raw output.',
+          color: 'red',
+        })
+        return
+      }
+
+      notifications.show({
+        title: 'Copied',
+        message: 'Raw output copied to clipboard.',
+        color: 'green',
+      })
+    } catch (error) {
+      notifications.show({
+        title: 'Copy failed',
+        message: `Failed to copy raw output: ${formatUnknownError(error)}`,
+        color: 'red',
+      })
+    } finally {
+      setSpecCopyBusy(false)
     }
   }
 
@@ -2080,7 +2369,7 @@ export function App() {
       setTextExpandedUnchangedSectionIds([])
     }
     if (mode === 'spec') {
-      setSpecResult(null)
+      setSpecRichResult(null)
     }
 
     try {
@@ -2119,11 +2408,21 @@ export function App() {
             diffs: [],
           })
         } else if (mode === 'spec') {
-          setSpecResult({
-            exitCode: 2,
-            diffFound: false,
-            output: '',
-            error: String(e),
+          setSpecRichResult({
+            result: {
+              exitCode: 2,
+              diffFound: false,
+              output: '',
+              error: String(e),
+            },
+            summary: {
+              added: 0,
+              removed: 0,
+              changed: 0,
+              typeChanged: 0,
+              breaking: 0,
+            },
+            diffs: [],
           })
         }
         setSummaryLine('error=yes')
@@ -2988,23 +3287,123 @@ export function App() {
 
   const renderSpecResultPanel = () => {
     const raw = specResult ? renderResult(specResult) : ''
+    const showRich = specResultView === 'rich' && !!specRichResult && !specResult?.error
+    const canSearchRich = showRich
+    const activeSpecMatch = specSearchMatches[specActiveSearchIndex] ?? -1
+    const summary = specRichResult?.summary
     const specSummaryItems = buildSpecSummaryBadgeItems({
       hasResult: !!specResult,
       hasError: !!specResult?.error,
       diffFound: !!specResult?.diffFound,
+      added: summary?.added ?? 0,
+      removed: summary?.removed ?? 0,
+      changed: summary?.changed ?? 0,
+      typeChanged: summary?.typeChanged ?? 0,
+      breaking: summary?.breaking ?? 0,
     })
+    const specSearchStatus = normalizedSpecSearchQuery
+      ? specSearchMatches.length > 0
+        ? `${specActiveSearchIndex + 1} / ${specSearchMatches.length}`
+        : '0 matches'
+      : null
+
+    const moveSpecSearch = (direction: 1 | -1) => {
+      if (!canSearchRich || specSearchMatches.length === 0) {
+        return
+      }
+      if (specResultView !== 'rich') {
+        setSpecResultView('rich')
+      }
+      setSpecActiveSearchIndex((prev) =>
+        direction === 1
+          ? (prev + 1) % specSearchMatches.length
+          : (prev - 1 + specSearchMatches.length) % specSearchMatches.length,
+      )
+    }
 
     return (
       <CompareResultShell
         hasResult={!!specResult}
         toolbar={
           <CompareResultToolbar
-            primary={<div />}
+            primary={
+              <CompareSearchControls
+                value={specSearchQuery}
+                placeholder="Search paths or labels"
+                statusText={specSearchStatus}
+                disabled={!canSearchRich}
+                onChange={setSpecSearchQuery}
+                onPrev={() => moveSpecSearch(-1)}
+                onNext={() => moveSpecSearch(1)}
+                prevDisabled={!canSearchRich || specSearchMatches.length === 0}
+                nextDisabled={!canSearchRich || specSearchMatches.length === 0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    moveSpecSearch(e.shiftKey ? -1 : 1)
+                    return
+                  }
+
+                  if (e.key === 'Escape') {
+                    setSpecSearchQuery('')
+                  }
+                }}
+              />
+            }
             summary={<CompareStatusBadges items={specSummaryItems} />}
+            secondary={
+              <>
+                <Tooltip label="Copy raw output">
+                  <ActionIcon
+                    variant="default"
+                    size={28}
+                    aria-label="Copy raw output"
+                    className="text-result-action"
+                    onClick={() => void copySpecResultRawOutput()}
+                    disabled={specCopyBusy || !raw}
+                    loading={specCopyBusy}
+                  >
+                    <IconCopy size={15} />
+                  </ActionIcon>
+                </Tooltip>
+                <ViewSettingsMenu
+                  tooltip="View settings"
+                  sections={[
+                    {
+                      title: 'Display',
+                      items: [
+                        {
+                          key: 'spec-display-rich',
+                          label: 'Rich diff',
+                          active: specResultView === 'rich',
+                          disabled: !specRichResult || !!specResult?.error,
+                          onSelect: () => setSpecResultView('rich'),
+                        },
+                        {
+                          key: 'spec-display-raw',
+                          label: 'Raw output',
+                          active: specResultView === 'raw',
+                          onSelect: () => setSpecResultView('raw'),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </>
+            }
           />
         }
       >
-        <pre className="result-output">{raw}</pre>
+        {showRich && specRichResult ? (
+          <SpecRichDiffViewer
+            diffs={specRichResult.diffs}
+            searchQuery={specSearchQuery}
+            searchMatchIndexSet={specSearchMatchIndexSet}
+            activeMatchIndex={activeSpecMatch}
+          />
+        ) : (
+          <pre className="result-output">{raw}</pre>
+        )}
       </CompareResultShell>
     )
   }
@@ -3133,11 +3532,14 @@ export function App() {
         ? 'JSON compare options'
         : 'Spec compare options'
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
+  const specCompareDisabled = specEditorBusy || specInputEmpty
 
   const compareModeHeaderActions = isCompareCentricMode ? (
     <CompareModeHeaderActions
       loading={loading}
-      compareDisabled={mode === 'json' ? jsonCompareDisabled : false}
+      compareDisabled={
+        mode === 'json' ? jsonCompareDisabled : mode === 'spec' ? specCompareDisabled : false
+      }
       onCompare={() => void onRun()}
       optionsOpen={compareOptionsOpened}
       onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
@@ -3718,32 +4120,100 @@ export function App() {
             left={
               <CompareSourcePane
                 title="Old Spec"
-                sourcePath={specOldPath}
+                sourcePath={specOldSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into Old Spec"
+                      onClick={() => void loadSpecFromFile('old')}
+                      disabled={specEditorBusy}
+                      loading={specFileBusyTarget === 'old'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into Old Spec"
+                      onClick={() => void pasteSpecFromClipboard('old')}
+                      disabled={specEditorBusy}
+                      loading={specClipboardBusyTarget === 'old'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy Old Spec"
+                      onClick={() => void copySpecInput('old')}
+                      disabled={specEditorBusy || !specOldText}
+                      loading={specCopyBusyTarget === 'old'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear Old Spec"
+                      onClick={() => clearSpecInput('old')}
+                      disabled={specEditorBusy || !specOldText}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
               >
-                <ComparePathInputBody
-                  value={specOldPath}
-                  onChange={setSpecOldPath}
-                  onBrowse={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
-                  onClear={() => setSpecOldPath('')}
-                  clearDisabled={!specOldPath}
-                  browseLabel="Browse old spec file"
-                  clearLabel="Clear old spec path"
+                <CompareTextInputBody
+                  value={specOldText}
+                  onChange={(value) => {
+                    setSpecOldText(value)
+                    if (specOldSourcePath) setSpecOldSourcePath('')
+                  }}
                 />
               </CompareSourcePane>
             }
             right={
               <CompareSourcePane
                 title="New Spec"
-                sourcePath={specNewPath}
+                sourcePath={specNewSourcePath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Open file into New Spec"
+                      onClick={() => void loadSpecFromFile('new')}
+                      disabled={specEditorBusy}
+                      loading={specFileBusyTarget === 'new'}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Paste clipboard into New Spec"
+                      onClick={() => void pasteSpecFromClipboard('new')}
+                      disabled={specEditorBusy}
+                      loading={specClipboardBusyTarget === 'new'}
+                    >
+                      <IconClipboardText size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Copy New Spec"
+                      onClick={() => void copySpecInput('new')}
+                      disabled={specEditorBusy || !specNewText}
+                      loading={specCopyBusyTarget === 'new'}
+                    >
+                      <IconCopy size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear New Spec"
+                      onClick={() => clearSpecInput('new')}
+                      disabled={specEditorBusy || !specNewText}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
               >
-                <ComparePathInputBody
-                  value={specNewPath}
-                  onChange={setSpecNewPath}
-                  onBrowse={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
-                  onClear={() => setSpecNewPath('')}
-                  clearDisabled={!specNewPath}
-                  browseLabel="Browse new spec file"
-                  clearLabel="Clear new spec path"
+                <CompareTextInputBody
+                  value={specNewText}
+                  onChange={(value) => {
+                    setSpecNewText(value)
+                    if (specNewSourcePath) setSpecNewSourcePath('')
+                  }}
                 />
               </CompareSourcePane>
             }

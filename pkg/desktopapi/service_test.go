@@ -337,6 +337,313 @@ func TestCompareJSONValuesRich_IgnorePaths(t *testing.T) {
 	}
 }
 
+func TestCompareSpecRich_PathMethodAddedRemoved(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.yaml")
+	newPath := filepath.Join(tmp, "new.yaml")
+
+	writeFile(t, oldPath, `paths:
+  /users:
+    get: {}
+`)
+	writeFile(t, newPath, `paths:
+  /users:
+    post: {}
+`)
+
+	svc := NewService()
+	rawRes, err := svc.CompareSpecFiles(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecFiles returned error: %v", err)
+	}
+
+	richRes, err := svc.CompareSpecRich(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecRich returned error: %v", err)
+	}
+	if richRes.Result.ExitCode != rawRes.ExitCode || richRes.Result.DiffFound != rawRes.DiffFound {
+		t.Fatalf("raw compare result mismatch: got %+v want %+v", richRes.Result, *rawRes)
+	}
+	if len(richRes.Diffs) == 0 {
+		t.Fatal("expected rich diffs")
+	}
+
+	seenRemoved := false
+	seenAdded := false
+	for _, diff := range richRes.Diffs {
+		if diff.Path == "paths./users.get" {
+			seenRemoved = true
+			if diff.GroupKey != "GET /users" || diff.GroupKind != "operation" {
+				t.Fatalf("unexpected group for removed op: %+v", diff)
+			}
+			if !diff.Breaking {
+				t.Fatalf("removed operation should be breaking: %+v", diff)
+			}
+		}
+		if diff.Path == "paths./users.post" {
+			seenAdded = true
+			if diff.GroupKey != "POST /users" || diff.GroupKind != "operation" {
+				t.Fatalf("unexpected group for added op: %+v", diff)
+			}
+		}
+		if strings.TrimSpace(diff.Label) == "" {
+			t.Fatalf("expected non-empty label: %+v", diff)
+		}
+	}
+	if !seenRemoved || !seenAdded {
+		t.Fatalf("expected added+removed operation diffs, got %+v", richRes.Diffs)
+	}
+}
+
+func TestCompareSpecRich_RequestBodyRequired(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.yaml")
+	newPath := filepath.Join(tmp, "new.yaml")
+
+	writeFile(t, oldPath, `paths:
+  /users:
+    post:
+      requestBody:
+        required: false
+`)
+	writeFile(t, newPath, `paths:
+  /users:
+    post:
+      requestBody:
+        required: true
+`)
+
+	svc := NewService()
+	richRes, err := svc.CompareSpecRich(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecRich returned error: %v", err)
+	}
+	if len(richRes.Diffs) != 1 {
+		t.Fatalf("expected one diff, got %+v", richRes.Diffs)
+	}
+	diff := richRes.Diffs[0]
+	if diff.Path != "paths./users.post.requestBody.required" {
+		t.Fatalf("unexpected path: %+v", diff)
+	}
+	if diff.GroupKey != "POST /users" || diff.GroupKind != "operation" {
+		t.Fatalf("unexpected group: %+v", diff)
+	}
+	if !diff.Breaking {
+		t.Fatalf("requestBody.required regression should be breaking: %+v", diff)
+	}
+	if !strings.Contains(strings.ToLower(diff.Label), "request body required") {
+		t.Fatalf("unexpected label: %s", diff.Label)
+	}
+}
+
+func TestCompareSpecRich_ResponseSchemaType(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.yaml")
+	newPath := filepath.Join(tmp, "new.yaml")
+
+	writeFile(t, oldPath, `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+`)
+	writeFile(t, newPath, `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: integer
+`)
+
+	svc := NewService()
+	richRes, err := svc.CompareSpecRich(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecRich returned error: %v", err)
+	}
+	if len(richRes.Diffs) != 1 {
+		t.Fatalf("expected one diff, got %+v", richRes.Diffs)
+	}
+	diff := richRes.Diffs[0]
+	if diff.Type != "type_changed" {
+		t.Fatalf("expected type_changed, got %+v", diff)
+	}
+	if !diff.Breaking {
+		t.Fatalf("expected type_changed to be breaking, got %+v", diff)
+	}
+	if diff.GroupKey != "GET /users" || diff.GroupKind != "operation" {
+		t.Fatalf("unexpected group: %+v", diff)
+	}
+	if !strings.Contains(strings.ToLower(diff.Label), "response schema type changed") {
+		t.Fatalf("unexpected label: %s", diff.Label)
+	}
+}
+
+func TestCompareSpecRich_OnlyBreaking(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.yaml")
+	newPath := filepath.Join(tmp, "new.yaml")
+
+	writeFile(t, oldPath, `paths:
+  /users:
+    get: {}
+`)
+	writeFile(t, newPath, `paths:
+  /users:
+    get: {}
+  /health:
+    get: {}
+`)
+
+	svc := NewService()
+	richRes, err := svc.CompareSpecRich(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+			OnlyBreaking: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecRich returned error: %v", err)
+	}
+	if richRes.Result.DiffFound {
+		t.Fatalf("expected no breaking diff for operation add, got %+v", richRes.Result)
+	}
+	if len(richRes.Diffs) != 0 {
+		t.Fatalf("expected no rich diffs, got %+v", richRes.Diffs)
+	}
+}
+
+func TestCompareSpecRich_IgnorePaths(t *testing.T) {
+	tmp := t.TempDir()
+	oldPath := filepath.Join(tmp, "old.yaml")
+	newPath := filepath.Join(tmp, "new.yaml")
+
+	writeFile(t, oldPath, `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+`)
+	writeFile(t, newPath, `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: integer
+`)
+
+	ignorePath := "paths./users.get.responses.200.content.application/json.schema.type"
+	svc := NewService()
+	richRes, err := svc.CompareSpecRich(CompareSpecRequest{
+		OldPath: oldPath,
+		NewPath: newPath,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+			IgnorePaths:  []string{ignorePath},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecRich returned error: %v", err)
+	}
+	if richRes.Result.DiffFound {
+		t.Fatalf("expected ignored path to suppress diff, got %+v", richRes.Result)
+	}
+	if len(richRes.Diffs) != 0 {
+		t.Fatalf("expected no diffs, got %+v", richRes.Diffs)
+	}
+}
+
+func TestCompareSpecValuesRich_Basic(t *testing.T) {
+	svc := NewService()
+	res, err := svc.CompareSpecValuesRich(CompareSpecValuesRequest{
+		OldValue: `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+`,
+		NewValue: `paths:
+  /users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: integer
+`,
+		Common: CompareCommon{
+			FailOn:       "any",
+			OutputFormat: "text",
+			TextStyle:    "semantic",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CompareSpecValuesRich returned error: %v", err)
+	}
+	if !res.Result.DiffFound {
+		t.Fatalf("expected diffFound=true, got %+v", res.Result)
+	}
+	if len(res.Diffs) == 0 {
+		t.Fatal("expected rich diffs")
+	}
+}
+
 func TestCompareSpecFiles_MissingFile(t *testing.T) {
 	svc := NewService()
 	res, err := svc.CompareSpecFiles(CompareSpecRequest{
