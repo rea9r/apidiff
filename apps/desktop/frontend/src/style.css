@@ -26,6 +26,12 @@
   --xdiff-toolbar-control-height: 26px;
   --xdiff-mono-font-size: 13px;
   --xdiff-mono-line-height: 1.45;
+  --xdiff-json-path-font-size: 12px;
+  --xdiff-json-path-line-height: 1.3;
+  --xdiff-json-row-font-size: 12px;
+  --xdiff-json-row-line-height: 1.35;
+  --xdiff-json-cell-padding-y: 5px;
+  --xdiff-json-cell-padding-x: 8px;
   --xdiff-compare-pane-gap: 8px;
   --xdiff-compare-pane-padding: 8px;
   --xdiff-compare-pane-header-gap: 6px;
@@ -878,8 +884,9 @@ button {
 
 .compare-summary-badge.removed,
 .compare-status-badge.removed {
-  background: var(--xdiff-diff-remove-bg);
+  background: var(--xdiff-viewer-surface);
   color: var(--mantine-color-red-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-red-6) 38%, transparent);
 }
 
 .compare-summary-badge.changed,
@@ -890,8 +897,9 @@ button {
 
 .compare-summary-badge.breaking,
 .compare-status-badge.breaking {
-  background: var(--xdiff-diff-breaking-bg);
-  color: var(--mantine-color-pink-8);
+  background: var(--xdiff-viewer-surface);
+  color: var(--mantine-color-violet-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-violet-6) 38%, transparent);
 }
 
 .compare-summary-badge.neutral,
@@ -983,9 +991,11 @@ button {
 
 .json-diff-table th,
 .json-diff-table td {
-  padding: 7px 9px;
+  padding: var(--xdiff-json-cell-padding-y) var(--xdiff-json-cell-padding-x);
   border-bottom: 1px solid var(--xdiff-viewer-border);
   vertical-align: top;
+  font-size: var(--xdiff-json-row-font-size);
+  line-height: var(--xdiff-json-row-line-height);
 }
 
 .json-diff-table th {
@@ -994,8 +1004,9 @@ button {
   background: var(--xdiff-viewer-surface-subtle);
   z-index: 1;
   text-align: left;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .json-empty-state {
@@ -1020,6 +1031,14 @@ button {
   background: var(--xdiff-viewer-surface-subtle);
 }
 
+.json-group-row .compare-section-header {
+  padding: 5px 8px;
+}
+
+.json-group-row .compare-section-header-right {
+  gap: 4px;
+}
+
 .compare-section-header-left,
 .compare-section-header-right {
   display: flex;
@@ -1031,6 +1050,11 @@ button {
 .compare-section-title {
   font-family: var(--mantine-font-family-monospace);
   font-weight: 600;
+}
+
+.json-group-row .compare-section-title {
+  font-size: 0.82rem;
+  line-height: 1.2;
 }
 
 .compare-section-count {
@@ -1054,8 +1078,9 @@ button {
 }
 
 .json-group-stat.removed {
-  background: var(--xdiff-diff-remove-bg);
+  background: var(--xdiff-viewer-surface);
   color: var(--mantine-color-red-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-red-6) 38%, transparent);
 }
 
 .json-group-stat.changed {
@@ -1064,8 +1089,9 @@ button {
 }
 
 .json-group-stat.type-changed {
-  background: var(--xdiff-diff-breaking-bg);
-  color: var(--mantine-color-pink-8);
+  background: var(--xdiff-viewer-surface);
+  color: var(--mantine-color-violet-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-violet-6) 38%, transparent);
 }
 
 .json-diff-row.added {
@@ -1115,8 +1141,9 @@ button {
 }
 
 .json-type-badge.removed {
-  background: var(--xdiff-diff-remove-bg);
+  background: var(--xdiff-viewer-surface);
   color: var(--mantine-color-red-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-red-6) 38%, transparent);
 }
 
 .json-type-badge.changed {
@@ -1125,17 +1152,21 @@ button {
 }
 
 .json-type-badge.type_changed {
-  background: var(--xdiff-diff-breaking-bg);
-  color: var(--mantine-color-pink-8);
+  background: var(--xdiff-viewer-surface);
+  color: var(--mantine-color-violet-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-violet-6) 38%, transparent);
 }
 
 .json-breaking-badge {
-  background: var(--xdiff-diff-breaking-bg);
-  color: var(--mantine-color-pink-8);
+  background: var(--xdiff-viewer-surface);
+  color: var(--mantine-color-violet-8);
+  border: 1px solid color-mix(in srgb, var(--mantine-color-violet-6) 38%, transparent);
 }
 
 .json-path-cell {
   font-family: var(--mantine-font-family-monospace);
+  font-size: var(--xdiff-json-path-font-size);
+  line-height: var(--xdiff-json-path-line-height);
   white-space: nowrap;
 }
 
@@ -1145,18 +1176,20 @@ button {
   gap: 6px;
 }
 
+.json-value-inline,
 .compare-value-inline {
   font-family: var(--mantine-font-family-monospace);
-  font-size: var(--xdiff-mono-font-size);
-  line-height: var(--xdiff-mono-line-height);
+  font-size: var(--xdiff-json-row-font-size);
+  line-height: var(--xdiff-json-row-line-height);
 }
 
+.json-value-block,
 .compare-value-block {
   font-family: var(--mantine-font-family-monospace);
-  font-size: var(--xdiff-mono-font-size);
-  line-height: var(--xdiff-mono-line-height);
+  font-size: var(--xdiff-json-row-font-size);
+  line-height: var(--xdiff-json-row-line-height);
   margin: 0;
-  padding: 8px;
+  padding: 5px 7px;
   border-radius: 6px;
   background: var(--xdiff-viewer-code-bg);
   overflow: auto;
