@@ -30,6 +30,8 @@
   --xdiff-json-path-line-height: 1.15;
   --xdiff-json-row-font-size: 12.5px;
   --xdiff-json-row-line-height: 1.3;
+  --xdiff-json-simple-cell-line-height: 1.1;
+  --xdiff-json-simple-cell-padding-y: 3px;
   --xdiff-json-cell-padding-y: 5px;
   --xdiff-json-cell-padding-x: 8px;
   --xdiff-json-row-added-bg: var(--mantine-color-diffAdd-2);
@@ -1193,8 +1195,8 @@ button {
 .json-diff-cell-type,
 .json-diff-cell-path {
   vertical-align: middle;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: var(--xdiff-json-simple-cell-padding-y);
+  padding-bottom: var(--xdiff-json-simple-cell-padding-y);
 }
 
 .json-diff-cell-path {
@@ -1205,7 +1207,7 @@ button {
 .json-cell-inline {
   display: inline-flex;
   align-items: center;
-  line-height: 1.15;
+  line-height: var(--xdiff-json-simple-cell-line-height);
 }
 
 .json-value-wrap {
