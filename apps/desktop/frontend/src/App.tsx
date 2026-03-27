@@ -2,7 +2,6 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
-  IconAdjustmentsHorizontal,
   IconBackspace,
   IconChevronRight,
   IconChevronDown,
@@ -29,20 +28,14 @@ import type {
 } from './types'
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
-import {
-  HEADER_RAIL_ICON_SIZE,
-  HeaderRailAction,
-  HeaderRailGroup,
-  HeaderRailPrimaryButton,
-} from './ui/HeaderRail'
 import { SectionCard } from './ui/SectionCard'
 import { StatusBadge } from './ui/StatusBadge'
 import { CompareResultToolbar } from './ui/CompareResultToolbar'
 import { CompareSearchControls } from './ui/CompareSearchControls'
 import {
-  CompareSummaryBadges,
-  type CompareSummaryBadgeItem,
-} from './ui/CompareSummaryBadges'
+  CompareStatusBadges,
+  type CompareStatusBadgeItem,
+} from './ui/CompareStatusBadges'
 import { ViewSettingsMenu } from './ui/ViewSettingsMenu'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareSourceGrid } from './ui/CompareSourceGrid'
@@ -55,6 +48,9 @@ import {
   ComparePaneActions,
 } from './ui/CompareSourceActions'
 import { CompareStatusState } from './ui/CompareStatusState'
+import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
+import { ComparePathInputBody } from './ui/ComparePathInputBody'
+import { CompareTextInputBody } from './ui/CompareTextInputBody'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -242,7 +238,7 @@ function buildTextSummaryBadgeItems(params: {
   diffFound: boolean
   added: number
   removed: number
-}): CompareSummaryBadgeItem[] {
+}): CompareStatusBadgeItem[] {
   if (!params.hasResult) {
     return []
   }
@@ -255,7 +251,7 @@ function buildTextSummaryBadgeItems(params: {
     return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
   }
 
-  const items: CompareSummaryBadgeItem[] = []
+  const items: CompareStatusBadgeItem[] = []
   if (params.added > 0) {
     items.push({ key: 'added', label: `+${params.added}`, tone: 'added' })
   }
@@ -274,7 +270,7 @@ function buildJSONSummaryBadgeItems(params: {
   changed: number
   typeChanged: number
   breaking: number
-}): CompareSummaryBadgeItem[] {
+}): CompareStatusBadgeItem[] {
   if (!params.hasResult) {
     return []
   }
@@ -287,7 +283,7 @@ function buildJSONSummaryBadgeItems(params: {
     return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
   }
 
-  const items: CompareSummaryBadgeItem[] = []
+  const items: CompareStatusBadgeItem[] = []
   if (params.added > 0) {
     items.push({ key: 'added', label: `+${params.added}`, tone: 'added' })
   }
@@ -308,6 +304,26 @@ function buildJSONSummaryBadgeItems(params: {
     items.push({ key: 'breaking', label: `breaking ${params.breaking}`, tone: 'breaking' })
   }
   return items
+}
+
+function buildSpecSummaryBadgeItems(params: {
+  hasResult: boolean
+  hasError: boolean
+  diffFound: boolean
+}): CompareStatusBadgeItem[] {
+  if (!params.hasResult) {
+    return []
+  }
+
+  if (params.hasError) {
+    return [{ key: 'error', label: 'Execution error', tone: 'error' }]
+  }
+
+  if (!params.diffFound) {
+    return [{ key: 'none', label: 'No differences', tone: 'neutral' }]
+  }
+
+  return []
 }
 
 function stringifyJSONValue(value: unknown): string {
@@ -978,6 +994,7 @@ export function App() {
   const [specOldPath, setSpecOldPath] = useState('')
   const [specNewPath, setSpecNewPath] = useState('')
   const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
+  const [specResult, setSpecResult] = useState<CompareResponse | null>(null)
   const [specIgnorePathsDraft, setSpecIgnorePathsDraft] = useState(() =>
     ignorePathsToText(defaultSpecCommon.ignorePaths),
   )
@@ -1497,6 +1514,7 @@ export function App() {
 
         setSpecOldPath(oldPath)
         setSpecNewPath(newPath)
+        setSpecResult(res)
         setMode('spec')
         setResult(res)
         return
@@ -1615,6 +1633,7 @@ export function App() {
       newPath: specNewPath,
       common: safeSpecCommon,
     })
+    setSpecResult(res)
     setResult(res)
   }
 
@@ -1949,6 +1968,9 @@ export function App() {
       setTextLastRunOutputFormat(null)
       setTextExpandedUnchangedSectionIds([])
     }
+    if (mode === 'spec') {
+      setSpecResult(null)
+    }
 
     try {
       await runByMode()
@@ -1961,6 +1983,38 @@ export function App() {
         })
         setSelectedScenarioResultName('')
       } else {
+        if (mode === 'text') {
+          setTextResult({
+            exitCode: 2,
+            diffFound: false,
+            output: '',
+            error: String(e),
+          })
+        } else if (mode === 'json') {
+          setJSONRichResult({
+            result: {
+              exitCode: 2,
+              diffFound: false,
+              output: '',
+              error: String(e),
+            },
+            summary: {
+              added: 0,
+              removed: 0,
+              changed: 0,
+              typeChanged: 0,
+              breaking: 0,
+            },
+            diffs: [],
+          })
+        } else if (mode === 'spec') {
+          setSpecResult({
+            exitCode: 2,
+            diffFound: false,
+            output: '',
+            error: String(e),
+          })
+        }
         setSummaryLine('error=yes')
         setOutput(String(e))
       }
@@ -2397,7 +2451,7 @@ export function App() {
               }}
             />
           }
-          summary={<CompareSummaryBadges items={textSummaryItems} />}
+          summary={<CompareStatusBadges items={textSummaryItems} />}
           secondary={
             <>
               <Tooltip label="Copy raw output">
@@ -2660,7 +2714,7 @@ export function App() {
               }}
             />
           }
-          summary={<CompareSummaryBadges items={jsonSummaryItems} />}
+          summary={<CompareStatusBadges items={jsonSummaryItems} />}
           secondary={
             <>
               <Tooltip label="Copy raw output">
@@ -2819,6 +2873,29 @@ export function App() {
     )
   }
 
+  const renderSpecResultPanel = () => {
+    const raw = specResult ? renderResult(specResult) : ''
+    const specSummaryItems = buildSpecSummaryBadgeItems({
+      hasResult: !!specResult,
+      hasError: !!specResult?.error,
+      diffFound: !!specResult?.diffFound,
+    })
+
+    return (
+      <CompareResultShell
+        hasResult={!!specResult}
+        toolbar={
+          <CompareResultToolbar
+            primary={<div />}
+            summary={<CompareStatusBadges items={specSummaryItems} />}
+          />
+        }
+      >
+        <pre className="result-output">{raw}</pre>
+      </CompareResultShell>
+    )
+  }
+
   const renderFolderResultPanel = () => {
     const res = folderResult
 
@@ -2944,20 +3021,12 @@ export function App() {
         : 'Spec compare options'
 
   const compareModeHeaderActions = isCompareCentricMode ? (
-    <HeaderRailGroup>
-      <HeaderRailPrimaryButton onClick={() => void onRun()} loading={loading}>
-        Compare
-      </HeaderRailPrimaryButton>
-      <Tooltip label={compareOptionsOpened ? 'Hide compare options' : 'Show compare options'}>
-        <HeaderRailAction
-          variant={compareOptionsOpened ? 'filled' : 'default'}
-          aria-label="Show compare options"
-          onClick={() => setCompareOptionsOpened((prev) => !prev)}
-        >
-          <IconAdjustmentsHorizontal size={HEADER_RAIL_ICON_SIZE} />
-        </HeaderRailAction>
-      </Tooltip>
-    </HeaderRailGroup>
+    <CompareModeHeaderActions
+      loading={loading}
+      onCompare={() => void onRun()}
+      optionsOpen={compareOptionsOpened}
+      onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
+    />
   ) : undefined
 
   const compareOptionsContent =
@@ -3364,11 +3433,10 @@ export function App() {
                     </ComparePaneActions>
                   }
                 >
-                  <textarea
-                    className="text-editor"
+                  <CompareTextInputBody
                     value={textOld}
-                    onChange={(e) => {
-                      setTextOld(e.target.value)
+                    onChange={(value) => {
+                      setTextOld(value)
                       if (textOldSourcePath) setTextOldSourcePath('')
                     }}
                   />
@@ -3415,11 +3483,10 @@ export function App() {
                     </ComparePaneActions>
                   }
                 >
-                  <textarea
-                    className="text-editor"
+                  <CompareTextInputBody
                     value={textNew}
-                    onChange={(e) => {
-                      setTextNew(e.target.value)
+                    onChange={(value) => {
+                      setTextNew(value)
                       if (textNewSourcePath) setTextNewSourcePath('')
                     }}
                   />
@@ -3438,52 +3505,32 @@ export function App() {
               <CompareSourcePane
                 title="Old JSON"
                 sourcePath={jsonOldPath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Browse old JSON file"
-                      onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear old JSON path"
-                      onClick={() => setJSONOldPath('')}
-                      disabled={!jsonOldPath}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
               >
-                <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
+                <ComparePathInputBody
+                  value={jsonOldPath}
+                  onChange={setJSONOldPath}
+                  onBrowse={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
+                  onClear={() => setJSONOldPath('')}
+                  clearDisabled={!jsonOldPath}
+                  browseLabel="Browse old JSON file"
+                  clearLabel="Clear old JSON path"
+                />
               </CompareSourcePane>
             }
             right={
               <CompareSourcePane
                 title="New JSON"
                 sourcePath={jsonNewPath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Browse new JSON file"
-                      onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear new JSON path"
-                      onClick={() => setJSONNewPath('')}
-                      disabled={!jsonNewPath}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
               >
-                <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
+                <ComparePathInputBody
+                  value={jsonNewPath}
+                  onChange={setJSONNewPath}
+                  onBrowse={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
+                  onClear={() => setJSONNewPath('')}
+                  clearDisabled={!jsonNewPath}
+                  browseLabel="Browse new JSON file"
+                  clearLabel="Clear new JSON path"
+                />
               </CompareSourcePane>
             }
           />
@@ -3498,66 +3545,37 @@ export function App() {
               <CompareSourcePane
                 title="Old Spec"
                 sourcePath={specOldPath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Browse old spec file"
-                      onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear old spec path"
-                      onClick={() => setSpecOldPath('')}
-                      disabled={!specOldPath}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
               >
-                <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+                <ComparePathInputBody
+                  value={specOldPath}
+                  onChange={setSpecOldPath}
+                  onBrowse={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
+                  onClear={() => setSpecOldPath('')}
+                  clearDisabled={!specOldPath}
+                  browseLabel="Browse old spec file"
+                  clearLabel="Clear old spec path"
+                />
               </CompareSourcePane>
             }
             right={
               <CompareSourcePane
                 title="New Spec"
                 sourcePath={specNewPath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Browse new spec file"
-                      onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear new spec path"
-                      onClick={() => setSpecNewPath('')}
-                      disabled={!specNewPath}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
               >
-                <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+                <ComparePathInputBody
+                  value={specNewPath}
+                  onChange={setSpecNewPath}
+                  onBrowse={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
+                  onClear={() => setSpecNewPath('')}
+                  clearDisabled={!specNewPath}
+                  browseLabel="Browse new spec file"
+                  clearLabel="Clear new spec path"
+                />
               </CompareSourcePane>
             }
           />
         }
-        result={
-          <CompareResultShell
-            hasResult
-            toolbar={<div />}
-            summary={summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-            className="spec-result-shell"
-          >
-            <pre className="result-output">{output || '(no output yet)'}</pre>
-          </CompareResultShell>
-        }
+        result={renderSpecResultPanel()}
       />
     ) : mode === 'folder' ? (
       <div className="result-panel">{renderFolderResultPanel()}</div>
