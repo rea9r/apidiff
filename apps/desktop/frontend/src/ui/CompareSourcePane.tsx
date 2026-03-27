@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ComparePathSlot } from './ComparePathSlot'
 
 type CompareSourcePaneProps = {
   title: string
@@ -22,15 +23,7 @@ export function CompareSourcePane({
       <div className="compare-source-pane-header">
         <div className="compare-source-pane-title">
           <label className="field-label">{title}</label>
-          <div className="compare-source-pane-path-slot">
-            {sourcePath ? (
-              <div className="muted compare-source-pane-path" title={sourcePath}>
-                {sourcePath}
-              </div>
-            ) : (
-              <div className="compare-source-pane-path compare-source-pane-path-empty" aria-hidden="true" />
-            )}
-          </div>
+          <ComparePathSlot path={sourcePath} />
         </div>
         {actions ? <div className="compare-source-pane-actions">{actions}</div> : null}
       </div>

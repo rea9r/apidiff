@@ -50,6 +50,11 @@ import { CompareSourcePane } from './ui/CompareSourcePane'
 import { CompareResultShell } from './ui/CompareResultShell'
 import { CompareSectionHeader } from './ui/CompareSectionHeader'
 import { CompareValueBlock } from './ui/CompareValueBlock'
+import {
+  ComparePaneAction,
+  ComparePaneActions,
+} from './ui/CompareSourceActions'
+import { CompareStatusState } from './ui/CompareStatusState'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -2627,8 +2632,8 @@ export function App() {
       : null
 
     return (
-      <CompareResultShell
-        hasResult={hasJSONResult}
+        <CompareResultShell
+          hasResult={hasJSONResult}
         toolbar={
           <CompareResultToolbar
           primary={
@@ -2702,7 +2707,7 @@ export function App() {
         {showRich ? (
             <div className="json-diff-table-wrap">
               {jsonDiffRows.length === 0 ? (
-                <div className="json-empty-state muted">No differences.</div>
+                <CompareStatusState kind="success-empty" />
               ) : (
                 <table className="json-diff-table">
                   <thead>
@@ -3307,160 +3312,121 @@ export function App() {
     mode === 'text' ? (
       <CompareWorkspaceShell
         source={
-          <CompareSourceGrid
-            left={
-              <CompareSourcePane
-                title="Old text"
-                sourcePath={textOldSourcePath}
-                actions={
-                  <>
-                    <Tooltip label="Open file into Old text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Open file into Old text"
-                        className="text-editor-action"
+          <div className="compare-source-stack">
+            <div className="compare-source-shared-actions">
+              <ComparePaneAction
+                label="Swap old and new texts"
+                onClick={swapTextInputs}
+                disabled={textEditorBusy}
+              >
+                <IconSwitchHorizontal size={14} />
+              </ComparePaneAction>
+            </div>
+            <CompareSourceGrid
+              left={
+                <CompareSourcePane
+                  title="Old text"
+                  sourcePath={textOldSourcePath}
+                  actions={
+                    <ComparePaneActions>
+                      <ComparePaneAction
+                        label="Open file into Old text"
                         onClick={() => void loadTextFromFile('old')}
                         disabled={textEditorBusy}
                         loading={textFileBusyTarget === 'old'}
                       >
-                        <IconFolderOpen size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Paste clipboard into Old text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Paste clipboard into Old text"
-                        className="text-editor-action"
+                        <IconFolderOpen size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Paste clipboard into Old text"
                         onClick={() => void pasteTextFromClipboard('old')}
                         disabled={textEditorBusy}
                         loading={textClipboardBusyTarget === 'old'}
                       >
-                        <IconClipboardText size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Copy Old text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Copy Old text"
-                        className="text-editor-action"
+                        <IconClipboardText size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Copy Old text"
                         onClick={() => void copyTextInput('old')}
                         disabled={textEditorBusy || !textOld}
                         loading={textPaneCopyBusyTarget === 'old'}
                       >
-                        <IconCopy size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Clear Old text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Clear Old text"
-                        className="text-editor-action is-danger"
+                        <IconCopy size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Clear Old text"
                         onClick={() => clearTextInput('old')}
                         disabled={textEditorBusy || !textOld}
+                        danger
                       >
-                        <IconBackspace size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Swap old and new texts">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Swap sides"
-                        className="text-editor-action"
-                        onClick={swapTextInputs}
-                        disabled={textEditorBusy}
-                      >
-                        <IconSwitchHorizontal size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </>
-                }
-              >
-                <textarea
-                  className="text-editor"
-                  value={textOld}
-                  onChange={(e) => {
-                    setTextOld(e.target.value)
-                    if (textOldSourcePath) setTextOldSourcePath('')
-                  }}
-                />
-              </CompareSourcePane>
-            }
-            right={
-              <CompareSourcePane
-                title="New text"
-                sourcePath={textNewSourcePath}
-                actions={
-                  <>
-                    <Tooltip label="Open file into New text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Open file into New text"
-                        className="text-editor-action"
+                        <IconBackspace size={14} />
+                      </ComparePaneAction>
+                    </ComparePaneActions>
+                  }
+                >
+                  <textarea
+                    className="text-editor"
+                    value={textOld}
+                    onChange={(e) => {
+                      setTextOld(e.target.value)
+                      if (textOldSourcePath) setTextOldSourcePath('')
+                    }}
+                  />
+                </CompareSourcePane>
+              }
+              right={
+                <CompareSourcePane
+                  title="New text"
+                  sourcePath={textNewSourcePath}
+                  actions={
+                    <ComparePaneActions>
+                      <ComparePaneAction
+                        label="Open file into New text"
                         onClick={() => void loadTextFromFile('new')}
                         disabled={textEditorBusy}
                         loading={textFileBusyTarget === 'new'}
                       >
-                        <IconFolderOpen size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Paste clipboard into New text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Paste clipboard into New text"
-                        className="text-editor-action"
+                        <IconFolderOpen size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Paste clipboard into New text"
                         onClick={() => void pasteTextFromClipboard('new')}
                         disabled={textEditorBusy}
                         loading={textClipboardBusyTarget === 'new'}
                       >
-                        <IconClipboardText size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Copy New text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Copy New text"
-                        className="text-editor-action"
+                        <IconClipboardText size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Copy New text"
                         onClick={() => void copyTextInput('new')}
                         disabled={textEditorBusy || !textNew}
                         loading={textPaneCopyBusyTarget === 'new'}
                       >
-                        <IconCopy size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Clear New text">
-                      <ActionIcon
-                        variant="default"
-                        size={28}
-                        aria-label="Clear New text"
-                        className="text-editor-action is-danger"
+                        <IconCopy size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Clear New text"
                         onClick={() => clearTextInput('new')}
                         disabled={textEditorBusy || !textNew}
+                        danger
                       >
-                        <IconBackspace size={15} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </>
-                }
-              >
-                <textarea
-                  className="text-editor"
-                  value={textNew}
-                  onChange={(e) => {
-                    setTextNew(e.target.value)
-                    if (textNewSourcePath) setTextNewSourcePath('')
-                  }}
-                />
-              </CompareSourcePane>
-            }
-          />
+                        <IconBackspace size={14} />
+                      </ComparePaneAction>
+                    </ComparePaneActions>
+                  }
+                >
+                  <textarea
+                    className="text-editor"
+                    value={textNew}
+                    onChange={(e) => {
+                      setTextNew(e.target.value)
+                      if (textNewSourcePath) setTextNewSourcePath('')
+                    }}
+                  />
+                </CompareSourcePane>
+              }
+            />
+          </div>
         }
         result={renderTextResultPanel()}
       />
@@ -3469,31 +3435,55 @@ export function App() {
         source={
           <CompareSourceGrid
             left={
-              <CompareSourcePane title="Old JSON" sourcePath={jsonOldPath}>
-                <div className="path-row">
-                  <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
-                  <button
-                    type="button"
-                    className="button-secondary"
-                    onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
-                  >
-                    Browse...
-                  </button>
-                </div>
+              <CompareSourcePane
+                title="Old JSON"
+                sourcePath={jsonOldPath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Browse old JSON file"
+                      onClick={() => browseAndSet(api.pickJSONFile, setJSONOldPath)}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear old JSON path"
+                      onClick={() => setJSONOldPath('')}
+                      disabled={!jsonOldPath}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
+              >
+                <input value={jsonOldPath} onChange={(e) => setJSONOldPath(e.target.value)} />
               </CompareSourcePane>
             }
             right={
-              <CompareSourcePane title="New JSON" sourcePath={jsonNewPath}>
-                <div className="path-row">
-                  <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
-                  <button
-                    type="button"
-                    className="button-secondary"
-                    onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
-                  >
-                    Browse...
-                  </button>
-                </div>
+              <CompareSourcePane
+                title="New JSON"
+                sourcePath={jsonNewPath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Browse new JSON file"
+                      onClick={() => browseAndSet(api.pickJSONFile, setJSONNewPath)}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear new JSON path"
+                      onClick={() => setJSONNewPath('')}
+                      disabled={!jsonNewPath}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
+              >
+                <input value={jsonNewPath} onChange={(e) => setJSONNewPath(e.target.value)} />
               </CompareSourcePane>
             }
           />
@@ -3501,44 +3491,74 @@ export function App() {
         result={renderJSONResultPanel()}
       />
     ) : mode === 'spec' ? (
-      <div className="compare-mode-main">
-        <SectionCard title="Spec sources">
-          <div className="compare-source-panel">
-            <div className="compare-source-grid">
-              <div className="field-block">
-                <label className="field-label">Old spec path</label>
-                <div className="path-row">
-                  <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
-                  <button
-                    type="button"
-                    className="button-secondary"
-                    onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
-                  >
-                    Browse...
-                  </button>
-                </div>
-              </div>
-              <div className="field-block">
-                <label className="field-label">New spec path</label>
-                <div className="path-row">
-                  <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
-                  <button
-                    type="button"
-                    className="button-secondary"
-                    onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
-                  >
-                    Browse...
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-        <SectionCard title="Result">
-          {summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
-          <pre className="result-output">{output || '(no output yet)'}</pre>
-        </SectionCard>
-      </div>
+      <CompareWorkspaceShell
+        source={
+          <CompareSourceGrid
+            left={
+              <CompareSourcePane
+                title="Old Spec"
+                sourcePath={specOldPath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Browse old spec file"
+                      onClick={() => browseAndSet(api.pickSpecFile, setSpecOldPath)}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear old spec path"
+                      onClick={() => setSpecOldPath('')}
+                      disabled={!specOldPath}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
+              >
+                <input value={specOldPath} onChange={(e) => setSpecOldPath(e.target.value)} />
+              </CompareSourcePane>
+            }
+            right={
+              <CompareSourcePane
+                title="New Spec"
+                sourcePath={specNewPath}
+                actions={
+                  <ComparePaneActions>
+                    <ComparePaneAction
+                      label="Browse new spec file"
+                      onClick={() => browseAndSet(api.pickSpecFile, setSpecNewPath)}
+                    >
+                      <IconFolderOpen size={14} />
+                    </ComparePaneAction>
+                    <ComparePaneAction
+                      label="Clear new spec path"
+                      onClick={() => setSpecNewPath('')}
+                      disabled={!specNewPath}
+                      danger
+                    >
+                      <IconBackspace size={14} />
+                    </ComparePaneAction>
+                  </ComparePaneActions>
+                }
+              >
+                <input value={specNewPath} onChange={(e) => setSpecNewPath(e.target.value)} />
+              </CompareSourcePane>
+            }
+          />
+        }
+        result={
+          <CompareResultShell
+            hasResult
+            toolbar={<div />}
+            summary={summaryLine ? <div className="result-summary">{summaryLine}</div> : null}
+            className="spec-result-shell"
+          >
+            <pre className="result-output">{output || '(no output yet)'}</pre>
+          </CompareResultShell>
+        }
+      />
     ) : mode === 'folder' ? (
       <div className="result-panel">{renderFolderResultPanel()}</div>
     ) : (

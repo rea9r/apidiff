@@ -26,6 +26,12 @@
   --xdiff-toolbar-control-height: 26px;
   --xdiff-mono-font-size: 13px;
   --xdiff-mono-line-height: 1.45;
+  --xdiff-compare-pane-gap: 8px;
+  --xdiff-compare-pane-padding: 8px;
+  --xdiff-compare-pane-path-slot-height: 18px;
+  --xdiff-compare-pane-action-size: 26px;
+  --xdiff-compare-result-gap: 8px;
+  --xdiff-compare-result-padding: 8px;
 }
 
 [data-mantine-color-scheme='dark'] {
@@ -163,6 +169,23 @@ body {
 .text-result-action svg {
   width: 14px;
   height: 14px;
+}
+
+.compare-pane-action {
+  width: var(--xdiff-compare-pane-action-size) !important;
+  min-width: var(--xdiff-compare-pane-action-size) !important;
+  height: var(--xdiff-compare-pane-action-size) !important;
+  min-height: var(--xdiff-compare-pane-action-size) !important;
+}
+
+.compare-pane-action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.compare-pane-action.is-danger {
+  color: var(--mantine-color-red-7);
+  border-color: color-mix(in srgb, var(--mantine-color-red-6) 30%, var(--xdiff-viewer-border));
 }
 
 .control-panel {
@@ -537,6 +560,9 @@ button {
 
 .compare-workspace-source {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-compare-pane-gap);
 }
 
 .compare-workspace-result {
@@ -562,7 +588,7 @@ button {
 .compare-source-pane {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--xdiff-compare-pane-gap);
   min-height: 0;
   min-width: 0;
 }
@@ -589,14 +615,14 @@ button {
   flex: 0 0 auto;
 }
 
-.compare-source-pane-path-slot {
-  min-height: 18px;
+.compare-path-slot {
+  min-height: var(--xdiff-compare-pane-path-slot-height);
   display: flex;
   align-items: center;
   margin-top: 4px;
 }
 
-.compare-source-pane-path {
+.compare-path-slot-text {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -605,7 +631,7 @@ button {
   line-height: 1.2;
 }
 
-.compare-source-pane-path-empty {
+.compare-path-slot-empty {
   visibility: hidden;
 }
 
@@ -613,6 +639,24 @@ button {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.compare-source-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xdiff-compare-pane-gap);
+}
+
+.compare-source-shared-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.compare-pane-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--xdiff-toolbar-gap);
+  flex-wrap: wrap;
 }
 
 @container compare-workspace (max-width: 900px) {
@@ -748,7 +792,7 @@ button {
 .compare-result-shell {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--xdiff-compare-result-gap);
   min-height: 0;
   flex: 1;
   min-width: 0;
@@ -860,6 +904,20 @@ button {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: 8px;
   background: var(--xdiff-viewer-code-bg);
+}
+
+.compare-status-state {
+  padding: var(--xdiff-compare-result-padding);
+  font-size: 0.9rem;
+}
+
+.compare-status-state.empty,
+.compare-status-state.success-empty {
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
+.compare-status-state.error {
+  color: var(--mantine-color-red-7);
 }
 
 .json-diff-table-wrap {
