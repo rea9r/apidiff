@@ -1,7 +1,12 @@
 import { useMemo } from 'react'
+import { useComputedColorScheme } from '@mantine/core'
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { yaml } from '@codemirror/lang-yaml'
+import {
+  createCompareCodeEditorTheme,
+  createCompareCodeHighlightStyle,
+} from './codeEditorTheme'
 
 type CompareCodeInputLanguage = 'json' | 'yaml'
 
@@ -23,6 +28,19 @@ export function CompareCodeInputBody({
   helperText,
 }: CompareCodeInputBodyProps) {
   const extensions = useMemo(() => [language === 'json' ? json() : yaml()], [language])
+  const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
+  const editorTheme = useMemo(
+    () => createCompareCodeEditorTheme(computedColorScheme === 'dark' ? 'dark' : 'light'),
+    [computedColorScheme],
+  )
+  const editorHighlight = useMemo(
+    () => createCompareCodeHighlightStyle(computedColorScheme === 'dark' ? 'dark' : 'light'),
+    [computedColorScheme],
+  )
+  const editorExtensions = useMemo(
+    () => [...extensions, editorTheme, editorHighlight],
+    [extensions, editorTheme, editorHighlight],
+  )
   const label = language === 'json' ? 'JSON' : 'YAML'
   const defaultPlaceholder =
     language === 'json' ? 'Paste or edit JSON here' : 'Paste or edit OpenAPI YAML here'
@@ -41,7 +59,7 @@ export function CompareCodeInputBody({
           <CodeMirror
             value={value}
             height="220px"
-            extensions={extensions}
+            extensions={editorExtensions}
             onChange={onChange}
             basicSetup={{
               lineNumbers: false,

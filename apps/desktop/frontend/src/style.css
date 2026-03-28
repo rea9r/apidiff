@@ -700,14 +700,21 @@ button {
 
 .compare-code-input-shell {
   position: relative;
+  border: 1px solid var(--xdiff-viewer-border-strong);
+  border-radius: 8px;
+  background: var(--xdiff-viewer-surface);
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.compare-code-input-shell:focus-within {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-blue-5) 45%, transparent);
 }
 
 .compare-code-input-body {
   min-height: 220px;
-  border: 1px solid var(--xdiff-viewer-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--xdiff-viewer-surface);
+  background: color-mix(in srgb, var(--xdiff-viewer-surface) 92%, var(--xdiff-viewer-surface-subtle));
 }
 
 .compare-code-input-placeholder {
@@ -715,7 +722,7 @@ button {
   top: 10px;
   left: 12px;
   right: 12px;
-  color: var(--xdiff-viewer-text-dimmed);
+  color: color-mix(in srgb, var(--xdiff-viewer-text-dimmed) 88%, var(--xdiff-viewer-border));
   font-size: 0.88rem;
   pointer-events: none;
   z-index: 1;
@@ -733,8 +740,8 @@ button {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: var(--xdiff-viewer-text-dimmed);
-  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 82%, transparent);
+  color: color-mix(in srgb, var(--xdiff-viewer-text-dimmed) 88%, var(--xdiff-viewer-border));
+  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 84%, transparent);
   border: 1px solid var(--xdiff-viewer-border);
 }
 
@@ -764,12 +771,12 @@ button {
 .compare-code-input-helper {
   margin-top: 6px;
   font-size: 0.82rem;
-  color: var(--xdiff-viewer-text-dimmed);
+  color: color-mix(in srgb, var(--xdiff-viewer-text-dimmed) 90%, var(--xdiff-viewer-border));
 }
 
 .compare-code-input-error {
   font-size: 0.82rem;
-  color: var(--mantine-color-red-7);
+  color: color-mix(in srgb, var(--mantine-color-red-7) 90%, var(--xdiff-viewer-text-dimmed));
 }
 
 .compare-source-stack {
