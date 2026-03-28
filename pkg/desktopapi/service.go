@@ -541,8 +541,9 @@ func (s *Service) CompareFolders(req CompareFoldersRequest) (*CompareFoldersResp
 	nameFilter := strings.ToLower(strings.TrimSpace(req.NameFilter))
 
 	resp := &CompareFoldersResponse{
-		Summary: FolderCompareSummary{},
-		Entries: make([]FolderCompareEntry, 0, len(keys)),
+		ScannedSummary: FolderCompareSummary{},
+		VisibleSummary: FolderCompareSummary{},
+		Entries:        make([]FolderCompareEntry, 0, len(keys)),
 	}
 
 	for _, rel := range keys {
@@ -612,6 +613,7 @@ func (s *Service) CompareFolders(req CompareFoldersRequest) (*CompareFoldersResp
 			entry.LeftKind,
 			entry.RightKind,
 		)
+		addFolderSummary(&resp.ScannedSummary, entry.Status)
 
 		if !req.ShowSame && entry.Status == "same" {
 			continue
@@ -621,7 +623,7 @@ func (s *Service) CompareFolders(req CompareFoldersRequest) (*CompareFoldersResp
 		}
 
 		resp.Entries = append(resp.Entries, entry)
-		addFolderSummary(&resp.Summary, entry.Status)
+		addFolderSummary(&resp.VisibleSummary, entry.Status)
 	}
 
 	return resp, nil

@@ -121,7 +121,8 @@ export type FolderCompareEntry = {
 }
 
 export type CompareFoldersResponse = {
-  summary: FolderCompareSummary
+  scannedSummary: FolderCompareSummary
+  visibleSummary: FolderCompareSummary
   entries: FolderCompareEntry[]
   error?: string
 }

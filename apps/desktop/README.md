@@ -40,6 +40,7 @@ This app is an experimental desktop GUI for xdiff.
 - Text rich diff keeps omitted unchanged sections collapsed by default, with per-section and global expand/collapse controls
 - Text rich diff supports row search with next/prev navigation and auto-reveal of the active hidden unchanged section
 - Folder compare MVP with recursive directory scan, flat result list, and child compare launch
+- Folder compare workflow polish with scanned/visible summaries, quick filters, and selected-row detail pane
 
 Not included yet:
 

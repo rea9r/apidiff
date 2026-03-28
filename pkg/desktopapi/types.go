@@ -85,9 +85,10 @@ type FolderCompareEntry struct {
 }
 
 type CompareFoldersResponse struct {
-	Summary FolderCompareSummary `json:"summary"`
-	Entries []FolderCompareEntry `json:"entries"`
-	Error   string               `json:"error,omitempty"`
+	ScannedSummary FolderCompareSummary `json:"scannedSummary"`
+	VisibleSummary FolderCompareSummary `json:"visibleSummary"`
+	Entries        []FolderCompareEntry `json:"entries"`
+	Error          string               `json:"error,omitempty"`
 }
 
 type RunScenarioRequest struct {

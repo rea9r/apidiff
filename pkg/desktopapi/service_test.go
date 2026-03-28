@@ -17,6 +17,17 @@ func writeFile(t *testing.T, path, body string) {
 	}
 }
 
+func findFolderEntry(t *testing.T, entries []FolderCompareEntry, relativePath string) FolderCompareEntry {
+	t.Helper()
+	for _, entry := range entries {
+		if entry.RelativePath == relativePath {
+			return entry
+		}
+	}
+	t.Fatalf("entry %q not found", relativePath)
+	return FolderCompareEntry{}
+}
+
 func TestCompareJSONFiles(t *testing.T) {
 	tmp := t.TempDir()
 	oldPath := filepath.Join(tmp, "old.json")
@@ -811,7 +822,7 @@ func TestLoadTextFileRejectsNonUTF8(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_SameAndChanged(t *testing.T) {
+func TestCompareFolders_ScannedAndVisibleSummary(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -833,33 +844,11 @@ func TestCompareFolders_SameAndChanged(t *testing.T) {
 	if res.Error != "" {
 		t.Fatalf("CompareFolders() response error = %s", res.Error)
 	}
-	if res.Summary.Total != 2 || res.Summary.Same != 1 || res.Summary.Changed != 1 {
-		t.Fatalf("unexpected summary: %+v", res.Summary)
+	if res.ScannedSummary.Total != 2 || res.ScannedSummary.Same != 1 || res.ScannedSummary.Changed != 1 {
+		t.Fatalf("unexpected scanned summary: %+v", res.ScannedSummary)
 	}
-}
-
-func TestCompareFolders_LeftOnlyAndRightOnly(t *testing.T) {
-	leftRoot := filepath.Join(t.TempDir(), "left")
-	rightRoot := filepath.Join(t.TempDir(), "right")
-
-	writeFile(t, filepath.Join(leftRoot, "left-only.txt"), "left\n")
-	writeFile(t, filepath.Join(rightRoot, "right-only.txt"), "right\n")
-
-	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
-		LeftRoot:  leftRoot,
-		RightRoot: rightRoot,
-		Recursive: true,
-		ShowSame:  false,
-	})
-	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
-	}
-	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
-	}
-	if res.Summary.Total != 2 || res.Summary.LeftOnly != 1 || res.Summary.RightOnly != 1 {
-		t.Fatalf("unexpected summary: %+v", res.Summary)
+	if res.VisibleSummary.Total != 2 || res.VisibleSummary.Same != 1 || res.VisibleSummary.Changed != 1 {
+		t.Fatalf("unexpected visible summary: %+v", res.VisibleSummary)
 	}
 }
 
@@ -885,8 +874,11 @@ func TestCompareFolders_TypeMismatch(t *testing.T) {
 	if res.Error != "" {
 		t.Fatalf("CompareFolders() response error = %s", res.Error)
 	}
-	if res.Summary.Total != 1 || res.Summary.TypeMismatch != 1 {
-		t.Fatalf("unexpected summary: %+v", res.Summary)
+	if res.ScannedSummary.Total != 1 || res.ScannedSummary.TypeMismatch != 1 {
+		t.Fatalf("unexpected scanned summary: %+v", res.ScannedSummary)
+	}
+	if res.VisibleSummary.Total != 1 || res.VisibleSummary.TypeMismatch != 1 {
+		t.Fatalf("unexpected visible summary: %+v", res.VisibleSummary)
 	}
 }
 
@@ -922,7 +914,57 @@ func TestCompareFolders_FilterAndShowSame(t *testing.T) {
 	if res.Entries[0].CompareModeHint != "json" {
 		t.Fatalf("unexpected mode hint: %s", res.Entries[0].CompareModeHint)
 	}
-	if res.Summary.Total != 1 || res.Summary.Changed != 1 {
-		t.Fatalf("unexpected summary: %+v", res.Summary)
+	if res.ScannedSummary.Total != 2 || res.ScannedSummary.Changed != 1 || res.ScannedSummary.Same != 1 {
+		t.Fatalf("unexpected scanned summary: %+v", res.ScannedSummary)
+	}
+	if res.VisibleSummary.Total != 1 || res.VisibleSummary.Changed != 1 {
+		t.Fatalf("unexpected visible summary: %+v", res.VisibleSummary)
+	}
+	if res.VisibleSummary.Same != 0 {
+		t.Fatalf("expected same=0 in visible summary, got %+v", res.VisibleSummary)
+	}
+}
+
+func TestCompareFolders_OpenableHints(t *testing.T) {
+	leftRoot := filepath.Join(t.TempDir(), "left")
+	rightRoot := filepath.Join(t.TempDir(), "right")
+
+	writeFile(t, filepath.Join(leftRoot, "payload.json"), `{"v":1}`)
+	writeFile(t, filepath.Join(rightRoot, "payload.json"), `{"v":2}`)
+	writeFile(t, filepath.Join(leftRoot, "openapi.yaml"), "openapi: 3.0.0\ninfo:\n  title: old\n  version: 1.0.0\n")
+	writeFile(t, filepath.Join(rightRoot, "openapi.yaml"), "openapi: 3.0.0\ninfo:\n  title: new\n  version: 1.0.0\n")
+	writeFile(t, filepath.Join(leftRoot, "note.txt"), "left\n")
+	writeFile(t, filepath.Join(rightRoot, "note.txt"), "right\n")
+	writeFile(t, filepath.Join(leftRoot, "left-only.txt"), "left only\n")
+
+	svc := NewService()
+	res, err := svc.CompareFolders(CompareFoldersRequest{
+		LeftRoot:  leftRoot,
+		RightRoot: rightRoot,
+		Recursive: true,
+		ShowSame:  true,
+	})
+	if err != nil {
+		t.Fatalf("CompareFolders() error = %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("CompareFolders() response error = %s", res.Error)
+	}
+
+	jsonEntry := findFolderEntry(t, res.Entries, "payload.json")
+	if jsonEntry.CompareModeHint != "json" {
+		t.Fatalf("payload.json hint = %s, want json", jsonEntry.CompareModeHint)
+	}
+	specEntry := findFolderEntry(t, res.Entries, "openapi.yaml")
+	if specEntry.CompareModeHint != "spec" {
+		t.Fatalf("openapi.yaml hint = %s, want spec", specEntry.CompareModeHint)
+	}
+	textEntry := findFolderEntry(t, res.Entries, "note.txt")
+	if textEntry.CompareModeHint != "text" {
+		t.Fatalf("note.txt hint = %s, want text", textEntry.CompareModeHint)
+	}
+	leftOnlyEntry := findFolderEntry(t, res.Entries, "left-only.txt")
+	if leftOnlyEntry.CompareModeHint != "none" {
+		t.Fatalf("left-only.txt hint = %s, want none", leftOnlyEntry.CompareModeHint)
 	}
 }
