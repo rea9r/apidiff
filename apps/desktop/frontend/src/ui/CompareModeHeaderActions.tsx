@@ -1,5 +1,5 @@
 import { Tooltip } from '@mantine/core'
-import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal, IconArrowsDiff } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { HeaderRailAction, HeaderRailGroup, HeaderRailPrimaryButton } from './HeaderRail'
 
@@ -26,7 +26,12 @@ export function CompareModeHeaderActions({
 
   return (
     <HeaderRailGroup className="compare-mode-header-actions">
-      <HeaderRailPrimaryButton onClick={onCompare} loading={loading} disabled={compareDisabled}>
+      <HeaderRailPrimaryButton
+        onClick={onCompare}
+        loading={loading}
+        disabled={compareDisabled}
+        leftSection={<IconArrowsDiff size={14} />}
+      >
         {compareLabel}
       </HeaderRailPrimaryButton>
       <Tooltip label={optionsLabel}>
