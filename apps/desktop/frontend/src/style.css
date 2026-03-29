@@ -1611,17 +1611,15 @@ button {
 .folder-header-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.folder-header-left,
-.folder-header-right {
+.folder-header-context {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .folder-title {
@@ -1864,14 +1862,16 @@ button {
 .folder-quick-filters {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.folder-secondary-controls {
+.folder-result-toolbar-left,
+.folder-result-toolbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -2006,6 +2006,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 320px;
+  overflow: auto;
 }
 
 .folder-summary-title {
