@@ -1984,6 +1984,10 @@ button {
   cursor: pointer;
 }
 
+.folder-tree-name.is-dir > .folder-entry-path {
+  color: color-mix(in srgb, var(--mantine-color-blue-7) 72%, var(--xdiff-viewer-text-dimmed));
+}
+
 .folder-tree-name.is-dir:hover,
 .folder-tree-name.is-openable:hover {
   text-decoration: underline;
