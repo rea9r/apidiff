@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
 import {
   IconArrowLeft,
+  IconArrowsDiff,
   IconBackspace,
   IconBinaryTree2,
   IconChevronRight,
@@ -4086,108 +4087,110 @@ export function App() {
     return (
       <SectionCard>
         <div className="folder-result-shell">
-          <div className="folder-header-bar">
-            <div className="folder-header-context">
-              <span className="folder-title">Folder Compare</span>
-              <div className="folder-current-path" aria-label="Current path">
-                {folderBreadcrumbs.map((crumb, index) => (
-                  <Fragment key={crumb.path || 'root'}>
-                    {crumb.path === currentPath ? (
-                      <span className="folder-breadcrumb-current">{crumb.label}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="folder-breadcrumb-link"
-                        onClick={() => void navigateFolderPath(crumb.path)}
-                        disabled={loading || !canCompareFolders}
-                      >
-                        {crumb.label}
-                      </button>
-                    )}
-                    {index < folderBreadcrumbs.length - 1 ? (
-                      <span className="folder-breadcrumb-sep">/</span>
-                    ) : null}
-                  </Fragment>
-                ))}
+          <div className="folder-result-header">
+            <div className="folder-header-bar">
+              <div className="folder-header-context">
+                <span className="folder-title">Folder Compare</span>
+                <div className="folder-current-path" aria-label="Current path">
+                  {folderBreadcrumbs.map((crumb, index) => (
+                    <Fragment key={crumb.path || 'root'}>
+                      {crumb.path === currentPath ? (
+                        <span className="folder-breadcrumb-current">{crumb.label}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="folder-breadcrumb-link"
+                          onClick={() => void navigateFolderPath(crumb.path)}
+                          disabled={loading || !canCompareFolders}
+                        >
+                          {crumb.label}
+                        </button>
+                      )}
+                      {index < folderBreadcrumbs.length - 1 ? (
+                        <span className="folder-breadcrumb-sep">/</span>
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="folder-root-bar">
-            <div
-              className="folder-root-field"
-              onClick={() => void browseFolderRoot('left')}
-              role="button"
-              tabIndex={loading ? -1 : 0}
-              onKeyDown={(event) => {
-                if (loading) {
-                  return
-                }
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  void browseFolderRoot('left')
-                }
-              }}
-            >
-              <span className="folder-root-label">Left</span>
-              <input
-                className="folder-root-input"
-                readOnly
-                value={folderLeftRoot}
-                placeholder="Select left folder"
-                title={folderLeftRoot || 'Select left folder'}
-              />
-              <ActionIcon
-                variant="default"
-                size={24}
-                aria-label="Pick left folder"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void browseFolderRoot('left')
+            <div className="folder-root-bar">
+              <div
+                className="folder-root-field"
+                onClick={() => void browseFolderRoot('left')}
+                role="button"
+                tabIndex={loading ? -1 : 0}
+                onKeyDown={(event) => {
+                  if (loading) {
+                    return
+                  }
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    void browseFolderRoot('left')
+                  }
                 }}
-                disabled={loading}
               >
-                <IconFolderOpen size={14} />
-              </ActionIcon>
-            </div>
-            <div
-              className="folder-root-field"
-              onClick={() => void browseFolderRoot('right')}
-              role="button"
-              tabIndex={loading ? -1 : 0}
-              onKeyDown={(event) => {
-                if (loading) {
-                  return
-                }
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  void browseFolderRoot('right')
-                }
-              }}
-            >
-              <span className="folder-root-label">Right</span>
-              <input
-                className="folder-root-input"
-                readOnly
-                value={folderRightRoot}
-                placeholder="Select right folder"
-                title={folderRightRoot || 'Select right folder'}
-              />
-              <ActionIcon
-                variant="default"
-                size={24}
-                aria-label="Pick right folder"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  void browseFolderRoot('right')
+                <span className="folder-root-label">Left</span>
+                <input
+                  className="folder-root-input"
+                  readOnly
+                  value={folderLeftRoot}
+                  placeholder="Select left folder"
+                  title={folderLeftRoot || 'Select left folder'}
+                />
+                <ActionIcon
+                  variant="default"
+                  size={24}
+                  aria-label="Pick left folder"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void browseFolderRoot('left')
+                  }}
+                  disabled={loading}
+                >
+                  <IconFolderOpen size={14} />
+                </ActionIcon>
+              </div>
+              <div
+                className="folder-root-field"
+                onClick={() => void browseFolderRoot('right')}
+                role="button"
+                tabIndex={loading ? -1 : 0}
+                onKeyDown={(event) => {
+                  if (loading) {
+                    return
+                  }
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    void browseFolderRoot('right')
+                  }
                 }}
-                disabled={loading}
               >
-                <IconFolderOpen size={14} />
-              </ActionIcon>
+                <span className="folder-root-label">Right</span>
+                <input
+                  className="folder-root-input"
+                  readOnly
+                  value={folderRightRoot}
+                  placeholder="Select right folder"
+                  title={folderRightRoot || 'Select right folder'}
+                />
+                <ActionIcon
+                  variant="default"
+                  size={24}
+                  aria-label="Pick right folder"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void browseFolderRoot('right')
+                  }}
+                  disabled={loading}
+                >
+                  <IconFolderOpen size={14} />
+                </ActionIcon>
+              </div>
             </div>
-          </div>
 
-          {folderStatus ? <div className="muted">{folderStatus}</div> : null}
+            {folderStatus ? <div className="muted">{folderStatus}</div> : null}
+          </div>
 
           {res?.error ? (
             <pre className="result-output">{res.error}</pre>
@@ -4251,20 +4254,21 @@ export function App() {
                   />
                 </div>
               </div>
-              {folderViewMode === 'list' ? (
-                <div
-                  className="folder-table-wrap"
-                  tabIndex={0}
-                  onKeyDown={(event) => void handleFolderTableKeyDown(event)}
-                  onFocus={() => {
-                    if (!selectedFolderItemPath && sortedFolderItems.length > 0) {
-                      setSelectedFolderItemPath(sortedFolderItems[0].relativePath)
-                    }
-                  }}
-                >
-                  <table className="folder-results-table">
-                    <thead>
-                      <tr>
+              <div className="folder-list-tree-viewport">
+                {folderViewMode === 'list' ? (
+                  <div
+                    className="folder-table-wrap"
+                    tabIndex={0}
+                    onKeyDown={(event) => void handleFolderTableKeyDown(event)}
+                    onFocus={() => {
+                      if (!selectedFolderItemPath && sortedFolderItems.length > 0) {
+                        setSelectedFolderItemPath(sortedFolderItems[0].relativePath)
+                      }
+                    }}
+                  >
+                    <table className="folder-results-table">
+                      <thead>
+                        <tr>
                         <th
                           className="folder-sortable-header"
                           onClick={() => applyFolderSort('name')}
@@ -4310,85 +4314,205 @@ export function App() {
                           ) : null}
                         </th>
                         <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedFolderItems.length === 0 ? (
-                        <tr>
-                          <td colSpan={5}>
-                            <div className="muted">No entries to show.</div>
-                          </td>
                         </tr>
-                      ) : (
-                        sortedFolderItems.map((item) => {
-                          const openable = canOpenFolderItem(item)
-                          const enterable = item.isDir && item.status !== 'type-mismatch'
-                          const actionReason = getFolderItemActionReason(item)
-                          const selected = item.relativePath === selectedFolderItemPath
+                      </thead>
+                      <tbody>
+                        {sortedFolderItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={5}>
+                              <div className="muted">No entries to show.</div>
+                            </td>
+                          </tr>
+                        ) : (
+                          sortedFolderItems.map((item) => {
+                            const openable = canOpenFolderItem(item)
+                            const enterable = item.isDir && item.status !== 'type-mismatch'
+                            const actionReason = getFolderItemActionReason(item)
+                            const selected = item.relativePath === selectedFolderItemPath
+
+                            return (
+                              <tr
+                                key={item.relativePath}
+                                className={[
+                                  selected ? 'folder-row-selected' : '',
+                                  enterable || openable ? 'folder-row-clickable' : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                                onClick={() => setSelectedFolderItemPath(item.relativePath)}
+                                onDoubleClick={() => void handleFolderRowDoubleClick(item)}
+                              >
+                                <td>
+                                  <div
+                                    className={`folder-item-name ${enterable ? 'is-dir' : ''}`}
+                                    onClick={(event) => {
+                                      if (!enterable) return
+                                      event.stopPropagation()
+                                      void navigateFolderPath(item.relativePath)
+                                    }}
+                                  >
+                                    {item.isDir ? (
+                                      <IconFolderOpen size={14} />
+                                    ) : (
+                                      <IconFile size={14} />
+                                    )}
+                                    <span
+                                      className="folder-entry-path"
+                                      title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
+                                    >
+                                      {item.name}
+                                    </span>
+                                  </div>
+                                  {item.relativePath !== item.name ? (
+                                    <div className="folder-entry-sub muted">{item.relativePath}</div>
+                                  ) : null}
+                                  {item.message ? (
+                                    <div className="folder-entry-sub muted">{item.message}</div>
+                                  ) : null}
+                                </td>
+                                <td className="folder-status-cell">
+                                  <StatusBadge tone={toneForFolderStatus(item.status)}>
+                                    {formatFolderStatusLabel(item.status)}
+                                  </StatusBadge>
+                                </td>
+                                <td>
+                                  {formatFolderSide(item.leftExists, item.leftKind, item.leftSize)}
+                                </td>
+                                <td>
+                                  {formatFolderSide(item.rightExists, item.rightKind, item.rightSize)}
+                                </td>
+                                <td>
+                                  {enterable ? (
+                                    <button
+                                      type="button"
+                                      className="folder-action-button button-secondary button-compact"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        void navigateFolderPath(item.relativePath)
+                                      }}
+                                      disabled={loading}
+                                    >
+                                      Enter
+                                    </button>
+                                  ) : openable ? (
+                                    <button
+                                      type="button"
+                                      className="folder-action-button button-secondary button-compact"
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        void openFolderEntryDiff(item)
+                                      }}
+                                      disabled={folderOpenBusyPath === item.relativePath}
+                                    >
+                                      {folderOpenBusyPath === item.relativePath
+                                        ? 'Opening...'
+                                        : 'Open diff'}
+                                    </button>
+                                  ) : (
+                                    <span className="folder-action-reason muted">
+                                      {actionReason ?? '—'}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="folder-tree-wrap">
+                    {flattenedFolderTreeRows.length === 0 ? (
+                      <div className="muted">No entries to show.</div>
+                    ) : (
+                      <div className="folder-tree" role="tree">
+                        {flattenedFolderTreeRows.map(({ node, depth }) => {
+                          const openable = canOpenFolderItem(node.item)
+                          const enterable = node.isDir && node.item.status !== 'type-mismatch'
+                          const actionReason = getFolderItemActionReason(node.item)
+                          const selected = node.path === selectedFolderItemPath
+                          const loadingNode = folderTreeLoadingPath === node.path
 
                           return (
-                            <tr
-                              key={item.relativePath}
-                              className={[
-                                selected ? 'folder-row-selected' : '',
-                                enterable || openable ? 'folder-row-clickable' : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              onClick={() => setSelectedFolderItemPath(item.relativePath)}
-                              onDoubleClick={() => void handleFolderRowDoubleClick(item)}
+                            <div
+                              key={node.path}
+                              role="treeitem"
+                              aria-expanded={node.isDir ? !!node.expanded : undefined}
+                              className={`folder-tree-row ${
+                                selected ? 'is-selected' : ''
+                              } ${enterable || openable ? 'folder-row-clickable' : ''}`}
+                              onClick={() => setSelectedFolderItemPath(node.path)}
+                              onDoubleClick={() => void handleFolderTreeRowDoubleClick(node)}
                             >
-                              <td>
-                                <div
-                                  className={`folder-item-name ${enterable ? 'is-dir' : ''}`}
-                                  onClick={(event) => {
-                                    if (!enterable) return
-                                    event.stopPropagation()
-                                    void navigateFolderPath(item.relativePath)
-                                  }}
-                                >
-                                  {item.isDir ? (
-                                    <IconFolderOpen size={14} />
-                                  ) : (
-                                    <IconFile size={14} />
-                                  )}
-                                  <span
-                                    className="folder-entry-path"
-                                    title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
+                              <div
+                                className={`folder-tree-name ${node.isDir ? 'is-dir' : 'is-file'} ${
+                                  openable ? 'is-openable' : ''
+                                }`}
+                              >
+                                <span
+                                  className="folder-tree-indent"
+                                  style={{ ['--tree-depth' as string]: depth }}
+                                  aria-hidden="true"
+                                />
+                                {node.isDir ? (
+                                  <button
+                                    type="button"
+                                    className="folder-tree-chevron"
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      void toggleFolderTreeNode(node)
+                                    }}
+                                    aria-label={node.expanded ? 'Collapse folder' : 'Expand folder'}
                                   >
-                                    {item.name}
-                                  </span>
-                                </div>
-                                {item.relativePath !== item.name ? (
-                                  <div className="folder-entry-sub muted">{item.relativePath}</div>
-                                ) : null}
-                                {item.message ? (
-                                  <div className="folder-entry-sub muted">{item.message}</div>
-                                ) : null}
-                              </td>
-                              <td className="folder-status-cell">
-                                <StatusBadge tone={toneForFolderStatus(item.status)}>
-                                  {formatFolderStatusLabel(item.status)}
-                                </StatusBadge>
-                              </td>
-                              <td>
-                                {formatFolderSide(item.leftExists, item.leftKind, item.leftSize)}
-                              </td>
-                              <td>
-                                {formatFolderSide(item.rightExists, item.rightKind, item.rightSize)}
-                              </td>
-                              <td>
-                                {enterable ? (
+                                    {node.expanded ? (
+                                      <IconChevronDown size={14} />
+                                    ) : (
+                                      <IconChevronRight size={14} />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="folder-tree-chevron-spacer" />
+                                )}
+                                {node.isDir ? <IconFolderOpen size={14} /> : <IconFile size={14} />}
+                                <span className="folder-entry-path">{node.name}</span>
+                                <span className="folder-tree-status folder-status-cell">
+                                  <StatusBadge tone={toneForFolderStatus(node.status)}>
+                                    {formatFolderStatusLabel(node.status)}
+                                  </StatusBadge>
+                                </span>
+                              </div>
+
+                              <div className="folder-tree-secondary">
+                                {formatFolderSide(
+                                  node.item.leftExists,
+                                  node.item.leftKind,
+                                  node.item.leftSize,
+                                )}{' '}
+                                /{' '}
+                                {formatFolderSide(
+                                  node.item.rightExists,
+                                  node.item.rightKind,
+                                  node.item.rightSize,
+                                )}
+                              </div>
+
+                              <div className="folder-tree-action">
+                                {node.isDir ? (
                                   <button
                                     type="button"
                                     className="folder-action-button button-secondary button-compact"
                                     onClick={(event) => {
                                       event.stopPropagation()
-                                      void navigateFolderPath(item.relativePath)
+                                      void toggleFolderTreeNode(node)
                                     }}
-                                    disabled={loading}
+                                    disabled={loadingNode}
                                   >
-                                    Enter
+                                    {loadingNode
+                                      ? 'Loading...'
+                                      : node.expanded
+                                        ? 'Collapse'
+                                        : 'Enter'}
                                   </button>
                                 ) : openable ? (
                                   <button
@@ -4396,145 +4520,26 @@ export function App() {
                                     className="folder-action-button button-secondary button-compact"
                                     onClick={(event) => {
                                       event.stopPropagation()
-                                      void openFolderEntryDiff(item)
+                                      void openFolderEntryDiff(node.item)
                                     }}
-                                    disabled={folderOpenBusyPath === item.relativePath}
+                                    disabled={folderOpenBusyPath === node.path}
                                   >
-                                    {folderOpenBusyPath === item.relativePath
-                                      ? 'Opening...'
-                                      : 'Open diff'}
+                                    {folderOpenBusyPath === node.path ? 'Opening...' : 'Open diff'}
                                   </button>
                                 ) : (
                                   <span className="folder-action-reason muted">
                                     {actionReason ?? '—'}
                                   </span>
                                 )}
-                              </td>
-                            </tr>
+                              </div>
+                            </div>
                           )
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="folder-tree-wrap">
-                  {flattenedFolderTreeRows.length === 0 ? (
-                    <div className="muted">No entries to show.</div>
-                  ) : (
-                    <div className="folder-tree" role="tree">
-                      {flattenedFolderTreeRows.map(({ node, depth }) => {
-                        const openable = canOpenFolderItem(node.item)
-                        const enterable = node.isDir && node.item.status !== 'type-mismatch'
-                        const actionReason = getFolderItemActionReason(node.item)
-                        const selected = node.path === selectedFolderItemPath
-                        const loadingNode = folderTreeLoadingPath === node.path
-
-                        return (
-                          <div
-                            key={node.path}
-                            role="treeitem"
-                            aria-expanded={node.isDir ? !!node.expanded : undefined}
-                            className={`folder-tree-row ${
-                              selected ? 'is-selected' : ''
-                            } ${enterable || openable ? 'folder-row-clickable' : ''}`}
-                            onClick={() => setSelectedFolderItemPath(node.path)}
-                            onDoubleClick={() => void handleFolderTreeRowDoubleClick(node)}
-                          >
-                            <div
-                              className={`folder-tree-name ${node.isDir ? 'is-dir' : 'is-file'} ${
-                                openable ? 'is-openable' : ''
-                              }`}
-                            >
-                              <span
-                                className="folder-tree-indent"
-                                style={{ ['--tree-depth' as string]: depth }}
-                                aria-hidden="true"
-                              />
-                              {node.isDir ? (
-                                <button
-                                  type="button"
-                                  className="folder-tree-chevron"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    void toggleFolderTreeNode(node)
-                                  }}
-                                  aria-label={node.expanded ? 'Collapse folder' : 'Expand folder'}
-                                >
-                                  {node.expanded ? (
-                                    <IconChevronDown size={14} />
-                                  ) : (
-                                    <IconChevronRight size={14} />
-                                  )}
-                                </button>
-                              ) : (
-                                <span className="folder-tree-chevron-spacer" />
-                              )}
-                              {node.isDir ? <IconFolderOpen size={14} /> : <IconFile size={14} />}
-                              <span className="folder-entry-path">{node.name}</span>
-                              <span className="folder-tree-status folder-status-cell">
-                                <StatusBadge tone={toneForFolderStatus(node.status)}>
-                                  {formatFolderStatusLabel(node.status)}
-                                </StatusBadge>
-                              </span>
-                            </div>
-
-                            <div className="folder-tree-secondary">
-                              {formatFolderSide(
-                                node.item.leftExists,
-                                node.item.leftKind,
-                                node.item.leftSize,
-                              )}{' '}
-                              /{' '}
-                              {formatFolderSide(
-                                node.item.rightExists,
-                                node.item.rightKind,
-                                node.item.rightSize,
-                              )}
-                            </div>
-
-                            <div className="folder-tree-action">
-                              {node.isDir ? (
-                                <button
-                                  type="button"
-                                  className="folder-action-button button-secondary button-compact"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    void toggleFolderTreeNode(node)
-                                  }}
-                                  disabled={loadingNode}
-                                >
-                                  {loadingNode
-                                    ? 'Loading...'
-                                    : node.expanded
-                                      ? 'Collapse'
-                                      : 'Enter'}
-                                </button>
-                              ) : openable ? (
-                                <button
-                                  type="button"
-                                  className="folder-action-button button-secondary button-compact"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    void openFolderEntryDiff(node.item)
-                                  }}
-                                  disabled={folderOpenBusyPath === node.path}
-                                >
-                                  {folderOpenBusyPath === node.path ? 'Opening...' : 'Open diff'}
-                                </button>
-                              ) : (
-                                <span className="folder-action-reason muted">
-                                  {actionReason ?? '—'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {selectedFolderItemForDetail ? (
                 <div className="folder-detail-card">
@@ -4653,6 +4658,7 @@ export function App() {
           onClick={() => void onRun()}
           loading={loading}
           disabled={!folderLeftRoot || !folderRightRoot}
+          leftSection={<IconArrowsDiff size={14} />}
         >
           Compare
         </HeaderRailPrimaryButton>
