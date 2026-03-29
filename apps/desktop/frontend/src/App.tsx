@@ -3,6 +3,7 @@ import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
 import {
+  IconArrowLeft,
   IconBackspace,
   IconBinaryTree2,
   IconChevronRight,
@@ -4198,8 +4199,6 @@ export function App() {
                     <span>{res.scannedSummary.total} scanned</span>
                     <span>{visibleCount} here</span>
                   </div>
-                </div>
-                <div className="folder-result-toolbar-right">
                   <div
                     className="folder-view-mode-toggle"
                     role="tablist"
@@ -4230,6 +4229,8 @@ export function App() {
                       Tree
                     </button>
                   </div>
+                </div>
+                <div className="folder-result-toolbar-right">
                   {quickFilters.map((filterKey) => (
                     <button
                       key={filterKey}
@@ -4643,13 +4644,6 @@ export function App() {
       onCompare={() => void onRun()}
       optionsOpen={compareOptionsOpened}
       onToggleOptions={() => setCompareOptionsOpened((prev) => !prev)}
-      extraActions={
-        folderReturnContext ? (
-          <HeaderRailPrimaryButton variant="default" onClick={returnToFolderCompare}>
-            Back to folder compare
-          </HeaderRailPrimaryButton>
-        ) : null
-      }
     />
   ) : undefined
   const folderHeaderActions =
@@ -4948,118 +4942,137 @@ export function App() {
       </section>
     ) : null
 
+  const folderReturnPathBanner =
+    isCompareCentricMode && folderReturnContext ? (
+      <div className="folder-return-banner">
+        <button
+          type="button"
+          className="button-secondary button-compact folder-return-button"
+          onClick={returnToFolderCompare}
+        >
+          <IconArrowLeft size={13} />
+          Back to folder compare
+        </button>
+      </div>
+    ) : null
+
   const mainContent =
     mode === 'text' ? (
-      <CompareWorkspaceShell
-        source={
-          <CompareSourceGrid
-            left={
-              <CompareSourcePane
-                title="Old text"
-                sourcePath={textOldSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into Old text"
-                      onClick={() => void loadTextFromFile('old')}
-                      disabled={textEditorBusy}
-                      loading={textFileBusyTarget === 'old'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into Old text"
-                      onClick={() => void pasteTextFromClipboard('old')}
-                      disabled={textEditorBusy}
-                      loading={textClipboardBusyTarget === 'old'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy Old text"
-                      onClick={() => void copyTextInput('old')}
-                      disabled={textEditorBusy || !textOld}
-                      loading={textPaneCopyBusyTarget === 'old'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear Old text"
-                      onClick={() => clearTextInput('old')}
-                      disabled={textEditorBusy || !textOld}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareTextInputBody
-                  value={textOld}
-                  onChange={(value) => {
-                    setTextOld(value)
-                    if (textOldSourcePath) setTextOldSourcePath('')
-                  }}
-                />
-              </CompareSourcePane>
-            }
-            right={
-              <CompareSourcePane
-                title="New text"
-                sourcePath={textNewSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into New text"
-                      onClick={() => void loadTextFromFile('new')}
-                      disabled={textEditorBusy}
-                      loading={textFileBusyTarget === 'new'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into New text"
-                      onClick={() => void pasteTextFromClipboard('new')}
-                      disabled={textEditorBusy}
-                      loading={textClipboardBusyTarget === 'new'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy New text"
-                      onClick={() => void copyTextInput('new')}
-                      disabled={textEditorBusy || !textNew}
-                      loading={textPaneCopyBusyTarget === 'new'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear New text"
-                      onClick={() => clearTextInput('new')}
-                      disabled={textEditorBusy || !textNew}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareTextInputBody
-                  value={textNew}
-                  onChange={(value) => {
-                    setTextNew(value)
-                    if (textNewSourcePath) setTextNewSourcePath('')
-                  }}
-                />
-              </CompareSourcePane>
-            }
-          />
-        }
-        result={renderTextResultPanel()}
-      />
+      <div className="compare-main-shell">
+        {folderReturnPathBanner}
+        <CompareWorkspaceShell
+          source={
+            <CompareSourceGrid
+              left={
+                <CompareSourcePane
+                  title="Old text"
+                  sourcePath={textOldSourcePath}
+                  actions={
+                    <ComparePaneActions>
+                      <ComparePaneAction
+                        label="Open file into Old text"
+                        onClick={() => void loadTextFromFile('old')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'old'}
+                      >
+                        <IconFolderOpen size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Paste clipboard into Old text"
+                        onClick={() => void pasteTextFromClipboard('old')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'old'}
+                      >
+                        <IconClipboardText size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Copy Old text"
+                        onClick={() => void copyTextInput('old')}
+                        disabled={textEditorBusy || !textOld}
+                        loading={textPaneCopyBusyTarget === 'old'}
+                      >
+                        <IconCopy size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Clear Old text"
+                        onClick={() => clearTextInput('old')}
+                        disabled={textEditorBusy || !textOld}
+                        danger
+                      >
+                        <IconBackspace size={14} />
+                      </ComparePaneAction>
+                    </ComparePaneActions>
+                  }
+                >
+                  <CompareTextInputBody
+                    value={textOld}
+                    onChange={(value) => {
+                      setTextOld(value)
+                      if (textOldSourcePath) setTextOldSourcePath('')
+                    }}
+                  />
+                </CompareSourcePane>
+              }
+              right={
+                <CompareSourcePane
+                  title="New text"
+                  sourcePath={textNewSourcePath}
+                  actions={
+                    <ComparePaneActions>
+                      <ComparePaneAction
+                        label="Open file into New text"
+                        onClick={() => void loadTextFromFile('new')}
+                        disabled={textEditorBusy}
+                        loading={textFileBusyTarget === 'new'}
+                      >
+                        <IconFolderOpen size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Paste clipboard into New text"
+                        onClick={() => void pasteTextFromClipboard('new')}
+                        disabled={textEditorBusy}
+                        loading={textClipboardBusyTarget === 'new'}
+                      >
+                        <IconClipboardText size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Copy New text"
+                        onClick={() => void copyTextInput('new')}
+                        disabled={textEditorBusy || !textNew}
+                        loading={textPaneCopyBusyTarget === 'new'}
+                      >
+                        <IconCopy size={14} />
+                      </ComparePaneAction>
+                      <ComparePaneAction
+                        label="Clear New text"
+                        onClick={() => clearTextInput('new')}
+                        disabled={textEditorBusy || !textNew}
+                        danger
+                      >
+                        <IconBackspace size={14} />
+                      </ComparePaneAction>
+                    </ComparePaneActions>
+                  }
+                >
+                  <CompareTextInputBody
+                    value={textNew}
+                    onChange={(value) => {
+                      setTextNew(value)
+                      if (textNewSourcePath) setTextNewSourcePath('')
+                    }}
+                  />
+                </CompareSourcePane>
+              }
+            />
+          }
+          result={renderTextResultPanel()}
+        />
+      </div>
     ) : mode === 'json' ? (
-      <CompareWorkspaceShell
-        source={
+      <div className="compare-main-shell">
+        {folderReturnPathBanner}
+        <CompareWorkspaceShell
+          source={
           <CompareSourceGrid
             left={
               <CompareSourcePane
@@ -5167,11 +5180,14 @@ export function App() {
             }
           />
         }
-        result={renderJSONResultPanel()}
-      />
+          result={renderJSONResultPanel()}
+        />
+      </div>
     ) : mode === 'spec' ? (
-      <CompareWorkspaceShell
-        source={
+      <div className="compare-main-shell">
+        {folderReturnPathBanner}
+        <CompareWorkspaceShell
+          source={
           <CompareSourceGrid
             left={
               <CompareSourcePane
@@ -5279,8 +5295,9 @@ export function App() {
             }
           />
         }
-        result={renderSpecResultPanel()}
-      />
+          result={renderSpecResultPanel()}
+        />
+      </div>
     ) : mode === 'folder' ? (
       <div className="result-panel">{renderFolderResultPanel()}</div>
     ) : (
