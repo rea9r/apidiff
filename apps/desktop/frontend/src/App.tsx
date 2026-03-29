@@ -580,15 +580,26 @@ function canOpenFolderItem(entry: FolderCompareItem): boolean {
   )
 }
 
-function chooseStructuredDefaultDisplayMode(options: {
+function chooseDefaultDisplayModeForMode(options: {
+  mode: 'json' | 'spec'
   hasDiffText: boolean
   canRenderSemantic: boolean
 }): StructuredResultView {
-  if (options.hasDiffText) {
-    return 'diff'
+  if (options.mode === 'json') {
+    if (options.hasDiffText) {
+      return 'diff'
+    }
+    if (options.canRenderSemantic) {
+      return 'semantic'
+    }
+    return 'raw'
   }
+
   if (options.canRenderSemantic) {
     return 'semantic'
+  }
+  if (options.hasDiffText) {
+    return 'diff'
   }
   return 'raw'
 }
@@ -2208,7 +2219,8 @@ export function App() {
         setJSONSearchQuery('')
         setJSONActiveSearchIndex(0)
         setJSONResultView(
-          chooseStructuredDefaultDisplayMode({
+          chooseDefaultDisplayModeForMode({
+            mode: 'json',
             hasDiffText: richRes.diffText.trim().length > 0,
             canRenderSemantic: !richRes.result.error,
           }),
@@ -2252,7 +2264,8 @@ export function App() {
         setSpecSearchQuery('')
         setSpecActiveSearchIndex(0)
         setSpecResultView(
-          chooseStructuredDefaultDisplayMode({
+          chooseDefaultDisplayModeForMode({
+            mode: 'spec',
             hasDiffText: richRes.diffText.trim().length > 0,
             canRenderSemantic: !richRes.result.error,
           }),
@@ -2477,7 +2490,8 @@ export function App() {
     } satisfies CompareJSONValuesRequest)
     setJSONRichResult(richRes)
     setJSONResultView(
-      chooseStructuredDefaultDisplayMode({
+      chooseDefaultDisplayModeForMode({
+        mode: 'json',
         hasDiffText: richRes.diffText.trim().length > 0,
         canRenderSemantic: !richRes.result.error,
       }),
@@ -2506,7 +2520,8 @@ export function App() {
     setSpecSearchQuery('')
     setSpecActiveSearchIndex(0)
     setSpecResultView(
-      chooseStructuredDefaultDisplayMode({
+      chooseDefaultDisplayModeForMode({
+        mode: 'spec',
         hasDiffText: richRes.diffText.trim().length > 0,
         canRenderSemantic: !richRes.result.error,
       }),
