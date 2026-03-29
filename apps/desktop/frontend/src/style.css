@@ -1984,7 +1984,8 @@ button {
   cursor: pointer;
 }
 
-.folder-tree-name.is-dir > .folder-entry-path {
+.folder-tree-name.is-dir > .folder-entry-path,
+.folder-tree-name.is-dir > svg {
   color: color-mix(in srgb, var(--mantine-color-blue-7) 72%, var(--xdiff-viewer-text-dimmed));
 }
 
