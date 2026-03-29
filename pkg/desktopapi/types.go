@@ -52,11 +52,12 @@ type LoadTextFileResponse struct {
 }
 
 type CompareFoldersRequest struct {
-	LeftRoot   string `json:"leftRoot"`
-	RightRoot  string `json:"rightRoot"`
-	Recursive  bool   `json:"recursive"`
-	ShowSame   bool   `json:"showSame"`
-	NameFilter string `json:"nameFilter"`
+	LeftRoot    string `json:"leftRoot"`
+	RightRoot   string `json:"rightRoot"`
+	CurrentPath string `json:"currentPath"`
+	Recursive   bool   `json:"recursive"`
+	ShowSame    bool   `json:"showSame"`
+	NameFilter  string `json:"nameFilter"`
 }
 
 type FolderCompareSummary struct {
@@ -69,8 +70,10 @@ type FolderCompareSummary struct {
 	Error        int `json:"error"`
 }
 
-type FolderCompareEntry struct {
+type FolderCompareItem struct {
+	Name            string `json:"name"`
 	RelativePath    string `json:"relativePath"`
+	IsDir           bool   `json:"isDir"`
 	Status          string `json:"status"`
 	LeftPath        string `json:"leftPath"`
 	RightPath       string `json:"rightPath"`
@@ -85,9 +88,11 @@ type FolderCompareEntry struct {
 }
 
 type CompareFoldersResponse struct {
+	CurrentPath    string               `json:"currentPath"`
+	ParentPath     string               `json:"parentPath,omitempty"`
 	ScannedSummary FolderCompareSummary `json:"scannedSummary"`
-	VisibleSummary FolderCompareSummary `json:"visibleSummary"`
-	Entries        []FolderCompareEntry `json:"entries"`
+	CurrentSummary FolderCompareSummary `json:"currentSummary"`
+	Items          []FolderCompareItem  `json:"items"`
 	Error          string               `json:"error,omitempty"`
 }
 

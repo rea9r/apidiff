@@ -19,7 +19,7 @@ import type {
   CompareSpecRichResponse,
   CompareSpecValuesRequest,
   CompareResponse,
-  FolderCompareEntry,
+  FolderCompareItem,
   FolderCompareSummary,
   JSONRichDiffItem,
   LoadTextFileRequest,
@@ -505,7 +505,7 @@ function toneForScenarioStatus(status: string): 'success' | 'warning' | 'danger'
 }
 
 function toneForFolderStatus(
-  status: FolderCompareEntry['status'],
+  status: FolderCompareItem['status'],
 ): 'default' | 'success' | 'warning' | 'danger' | 'accent' {
   if (status === 'same') return 'success'
   if (status === 'changed') return 'warning'
@@ -514,7 +514,7 @@ function toneForFolderStatus(
   return 'default'
 }
 
-function formatFolderStatusLabel(status: FolderCompareEntry['status']): string {
+function formatFolderStatusLabel(status: FolderCompareItem['status']): string {
   switch (status) {
     case 'same':
       return 'same'
@@ -533,7 +533,7 @@ function formatFolderStatusLabel(status: FolderCompareEntry['status']): string {
   }
 }
 
-function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
+function canOpenFolderItem(entry: FolderCompareItem): boolean {
   return (
     entry.compareModeHint !== 'none' &&
     entry.leftExists &&
@@ -543,15 +543,16 @@ function canOpenFolderEntry(entry: FolderCompareEntry): boolean {
   )
 }
 
-function getFolderEntryActionReason(entry: FolderCompareEntry): string | null {
-  if (canOpenFolderEntry(entry)) {
+function getFolderItemActionReason(entry: FolderCompareItem): string | null {
+  if (canOpenFolderItem(entry)) {
     return null
   }
 
   if (!entry.leftExists) return 'Only on right'
   if (!entry.rightExists) return 'Only on left'
-  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
+  if (entry.isDir) return 'Directory item'
+  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
   if (entry.compareModeHint === 'none') return 'No compare mode'
   return 'Not comparable'
 }
@@ -617,6 +618,21 @@ function renderFolderSummaryLine(label: string, summary: FolderCompareSummary) {
       <span>{summary.error} error</span>
     </div>
   )
+}
+
+function buildFolderBreadcrumbs(currentPath: string): Array<{ label: string; path: string }> {
+  const crumbs: Array<{ label: string; path: string }> = [{ label: 'Root', path: '' }]
+  if (!currentPath) {
+    return crumbs
+  }
+
+  const parts = currentPath.split('/').filter((part) => part.length > 0)
+  let acc = ''
+  for (const part of parts) {
+    acc = acc ? `${acc}/${part}` : part
+    crumbs.push({ label: part, path: acc })
+  }
+  return crumbs
 }
 
 function parseIgnorePaths(input: string): string[] {
@@ -1204,13 +1220,14 @@ export function App() {
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
   const [folderRightRoot, setFolderRightRoot] = useState('')
   const [folderRecursive, setFolderRecursive] = useState(true)
-  const [folderShowSame, setFolderShowSame] = useState(false)
+  const [folderShowSame, setFolderShowSame] = useState(true)
   const [folderNameFilter, setFolderNameFilter] = useState('')
+  const [folderCurrentPath, setFolderCurrentPath] = useState('')
   const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
   const [folderStatus, setFolderStatus] = useState('')
   const [folderOpenBusyPath, setFolderOpenBusyPath] = useState('')
   const [folderQuickFilter, setFolderQuickFilter] = useState<FolderQuickFilter>('all')
-  const [selectedFolderEntryPath, setSelectedFolderEntryPath] = useState('')
+  const [selectedFolderItemPath, setSelectedFolderItemPath] = useState('')
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -1355,44 +1372,66 @@ export function App() {
   const specInputInvalid = !!specOldParseError || !!specNewParseError
   const specInputEmpty = !specOldText.trim() || !specNewText.trim()
   const specEditorBusy = specClipboardBusyTarget !== null || specFileBusyTarget !== null
-  const folderEntries = folderResult?.entries ?? []
-  const filteredFolderEntries = useMemo(() => {
+  const folderItems = folderResult?.items ?? []
+  const filteredFolderItems = useMemo(() => {
     if (folderQuickFilter === 'all') {
-      return folderEntries
+      return folderItems
     }
-    return folderEntries.filter((entry) => entry.status === folderQuickFilter)
-  }, [folderEntries, folderQuickFilter])
-  const selectedFolderEntry = useMemo(
-    () => filteredFolderEntries.find((entry) => entry.relativePath === selectedFolderEntryPath) ?? null,
-    [filteredFolderEntries, selectedFolderEntryPath],
+    return folderItems.filter((item) => item.status === folderQuickFilter)
+  }, [folderItems, folderQuickFilter])
+  const selectedFolderItem = useMemo(
+    () => filteredFolderItems.find((item) => item.relativePath === selectedFolderItemPath) ?? null,
+    [filteredFolderItems, selectedFolderItemPath],
   )
   const folderQuickFilterCounts = useMemo(
     () => ({
-      all: folderResult?.visibleSummary.total ?? 0,
-      changed: folderResult?.visibleSummary.changed ?? 0,
-      'left-only': folderResult?.visibleSummary.leftOnly ?? 0,
-      'right-only': folderResult?.visibleSummary.rightOnly ?? 0,
-      'type-mismatch': folderResult?.visibleSummary.typeMismatch ?? 0,
-      error: folderResult?.visibleSummary.error ?? 0,
-      same: folderResult?.visibleSummary.same ?? 0,
+      all: folderResult?.currentSummary.total ?? 0,
+      changed: folderResult?.currentSummary.changed ?? 0,
+      'left-only': folderResult?.currentSummary.leftOnly ?? 0,
+      'right-only': folderResult?.currentSummary.rightOnly ?? 0,
+      'type-mismatch': folderResult?.currentSummary.typeMismatch ?? 0,
+      error: folderResult?.currentSummary.error ?? 0,
+      same: folderResult?.currentSummary.same ?? 0,
     }),
     [folderResult],
   )
+  const folderBreadcrumbs = useMemo(
+    () => buildFolderBreadcrumbs(folderResult?.currentPath ?? folderCurrentPath),
+    [folderResult?.currentPath, folderCurrentPath],
+  )
 
   useEffect(() => {
-    if (filteredFolderEntries.length === 0) {
-      if (selectedFolderEntryPath !== '') {
-        setSelectedFolderEntryPath('')
+    if (filteredFolderItems.length === 0) {
+      if (selectedFolderItemPath !== '') {
+        setSelectedFolderItemPath('')
       }
       return
     }
-    const hasSelection = filteredFolderEntries.some(
-      (entry) => entry.relativePath === selectedFolderEntryPath,
+    const hasSelection = filteredFolderItems.some(
+      (item) => item.relativePath === selectedFolderItemPath,
     )
     if (!hasSelection) {
-      setSelectedFolderEntryPath(filteredFolderEntries[0].relativePath)
+      setSelectedFolderItemPath(filteredFolderItems[0].relativePath)
     }
-  }, [filteredFolderEntries, selectedFolderEntryPath])
+  }, [filteredFolderItems, selectedFolderItemPath])
+
+  useEffect(() => {
+    if (mode !== 'folder') {
+      return
+    }
+    if (!folderResult) {
+      return
+    }
+    if (!folderLeftRoot || !folderRightRoot) {
+      return
+    }
+    const resultPath = folderResult.currentPath ?? ''
+    if (resultPath === folderCurrentPath) {
+      return
+    }
+
+    void runFolderCompare(folderCurrentPath)
+  }, [mode, folderResult, folderCurrentPath, folderLeftRoot, folderRightRoot])
 
   useEffect(() => {
     try {
@@ -1669,6 +1708,9 @@ export function App() {
         setFolderRightRoot(selected)
       }
 
+      setFolderCurrentPath('')
+      setSelectedFolderItemPath('')
+      setFolderResult(null)
       setFolderStatus('')
     } catch (error) {
       const message = `Failed to pick folder: ${formatUnknownError(error)}`
@@ -1681,7 +1723,7 @@ export function App() {
     }
   }
 
-  const runFolderCompare = async () => {
+  const runFolderCompare = async (nextCurrentPath = folderCurrentPath) => {
     const fn = api.compareFolders
     if (!fn) throw new Error('Wails bridge not available (CompareFolders)')
 
@@ -1690,12 +1732,14 @@ export function App() {
     const res: CompareFoldersResponse = await fn({
       leftRoot: folderLeftRoot,
       rightRoot: folderRightRoot,
+      currentPath: nextCurrentPath,
       recursive: folderRecursive,
       showSame: folderShowSame,
       nameFilter: folderNameFilter,
     } satisfies CompareFoldersRequest)
 
     setFolderResult(res)
+    setFolderCurrentPath(res.currentPath ?? nextCurrentPath)
 
     if (res.error) {
       setFolderStatus(res.error)
@@ -1703,12 +1747,14 @@ export function App() {
     }
 
     setFolderStatus(
-      `Showing ${res.visibleSummary.total} of ${res.scannedSummary.total} scanned entries.`,
+      `Showing ${res.currentSummary.total} item(s) in ${
+        res.currentPath || 'root'
+      } · scanned ${res.scannedSummary.total}`,
     )
   }
 
-  const openFolderEntryDiff = async (entry: FolderCompareEntry) => {
-    if (!canOpenFolderEntry(entry)) {
+  const openFolderEntryDiff = async (entry: FolderCompareItem) => {
+    if (!canOpenFolderItem(entry)) {
       return
     }
 
@@ -1842,6 +1888,12 @@ export function App() {
     } finally {
       setFolderOpenBusyPath('')
     }
+  }
+
+  const navigateFolderPath = (nextPath: string) => {
+    setFolderQuickFilter('all')
+    setSelectedFolderItemPath('')
+    setFolderCurrentPath(nextPath)
   }
 
   const runJSON = async () => {
@@ -3587,8 +3639,8 @@ export function App() {
       'error',
       'same',
     ]
-    const detailActionReason = selectedFolderEntry
-      ? getFolderEntryActionReason(selectedFolderEntry)
+    const detailActionReason = selectedFolderItem
+      ? getFolderItemActionReason(selectedFolderItem)
       : null
 
     return (
@@ -3600,9 +3652,41 @@ export function App() {
             <pre className="result-output">{res.error}</pre>
           ) : res ? (
             <>
+              <div className="folder-nav-bar">
+                {res.parentPath !== undefined ? (
+                  <button
+                    type="button"
+                    className="button-secondary button-compact"
+                    onClick={() => void navigateFolderPath(res.parentPath || '')}
+                    disabled={loading || res.currentPath === ''}
+                  >
+                    Up
+                  </button>
+                ) : null}
+                <div className="folder-breadcrumbs">
+                  {folderBreadcrumbs.map((crumb, index) => (
+                    <Fragment key={crumb.path || 'root'}>
+                      <button
+                        type="button"
+                        className={`button-secondary button-compact folder-breadcrumb ${
+                          crumb.path === (res.currentPath || '') ? 'folder-breadcrumb-current' : ''
+                        }`}
+                        onClick={() => void navigateFolderPath(crumb.path)}
+                        disabled={loading}
+                      >
+                        {crumb.label}
+                      </button>
+                      {index < folderBreadcrumbs.length - 1 ? (
+                        <IconChevronRight size={14} className="folder-breadcrumb-sep" />
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+
               <div className="folder-summary-block">
                 {renderFolderSummaryLine('Scanned', res.scannedSummary)}
-                {renderFolderSummaryLine('Visible', res.visibleSummary)}
+                {renderFolderSummaryLine('Current', res.currentSummary)}
               </div>
 
               <div className="folder-quick-filters">
@@ -3632,56 +3716,81 @@ export function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFolderEntries.length === 0 ? (
+                    {filteredFolderItems.length === 0 ? (
                       <tr>
                         <td colSpan={5}>
                           <div className="muted">No entries to show.</div>
                         </td>
                       </tr>
                     ) : (
-                      filteredFolderEntries.map((entry) => {
-                        const openable = canOpenFolderEntry(entry)
-                        const actionReason = getFolderEntryActionReason(entry)
-                        const selected = entry.relativePath === selectedFolderEntryPath
+                      filteredFolderItems.map((item) => {
+                        const openable = canOpenFolderItem(item)
+                        const enterable = item.isDir && item.status !== 'type-mismatch'
+                        const actionReason = getFolderItemActionReason(item)
+                        const selected = item.relativePath === selectedFolderItemPath
 
                         return (
                           <tr
-                            key={entry.relativePath}
+                            key={item.relativePath}
                             className={selected ? 'folder-row-selected' : ''}
-                            onClick={() => setSelectedFolderEntryPath(entry.relativePath)}
+                            onClick={() => setSelectedFolderItemPath(item.relativePath)}
                           >
                             <td>
                               <div
-                                className="folder-entry-path"
-                                title={`${entry.leftPath || '(missing)'}\n${entry.rightPath || '(missing)'}`}
+                                className={`folder-item-name ${enterable ? 'is-dir' : ''}`}
+                                onClick={(event) => {
+                                  if (!enterable) return
+                                  event.stopPropagation()
+                                  void navigateFolderPath(item.relativePath)
+                                }}
                               >
-                                {entry.relativePath}
+                                {item.isDir ? <IconFolderOpen size={14} /> : null}
+                                <span
+                                className="folder-entry-path"
+                                title={`${item.leftPath || '(missing)'}\n${item.rightPath || '(missing)'}`}
+                              >
+                                  {item.name}
+                                </span>
                               </div>
-                              {entry.message ? (
-                                <div className="folder-entry-sub muted">{entry.message}</div>
+                              {item.message ? (
+                                <div className="folder-entry-sub muted">{item.message}</div>
                               ) : null}
                             </td>
                             <td>
-                              <StatusBadge tone={toneForFolderStatus(entry.status)}>
-                                {formatFolderStatusLabel(entry.status)}
+                              <StatusBadge tone={toneForFolderStatus(item.status)}>
+                                {formatFolderStatusLabel(item.status)}
                               </StatusBadge>
                             </td>
-                            <td>{formatFolderSide(entry.leftExists, entry.leftKind, entry.leftSize)}</td>
                             <td>
-                              {formatFolderSide(entry.rightExists, entry.rightKind, entry.rightSize)}
+                              {formatFolderSide(item.leftExists, item.leftKind, item.leftSize)}
                             </td>
                             <td>
-                              {openable ? (
+                              {formatFolderSide(item.rightExists, item.rightKind, item.rightSize)}
+                            </td>
+                            <td>
+                              {enterable ? (
                                 <button
                                   type="button"
                                   className="folder-action-button button-secondary button-compact"
                                   onClick={(event) => {
                                     event.stopPropagation()
-                                    void openFolderEntryDiff(entry)
+                                    void navigateFolderPath(item.relativePath)
                                   }}
-                                  disabled={folderOpenBusyPath === entry.relativePath}
+                                  disabled={loading}
                                 >
-                                  {folderOpenBusyPath === entry.relativePath
+                                  Enter
+                                </button>
+                              ) : openable ? (
+                                <button
+                                  type="button"
+                                  className="folder-action-button button-secondary button-compact"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    void openFolderEntryDiff(item)
+                                  }}
+                                  disabled={folderOpenBusyPath === item.relativePath}
+                                >
+                                  {folderOpenBusyPath === item.relativePath
                                     ? 'Opening...'
                                     : 'Open diff'}
                                 </button>
@@ -3699,52 +3808,62 @@ export function App() {
                 </table>
               </div>
 
-              {selectedFolderEntry ? (
+              {selectedFolderItem ? (
                 <div className="folder-detail-card">
                   <div className="folder-summary-title">Selected Entry</div>
                   <div className="folder-detail-grid">
                     <div className="folder-detail-label">Relative path</div>
-                    <div className="folder-entry-path">{selectedFolderEntry.relativePath}</div>
+                    <div className="folder-entry-path">{selectedFolderItem.relativePath}</div>
                     <div className="folder-detail-label">Status</div>
                     <div>
-                      <StatusBadge tone={toneForFolderStatus(selectedFolderEntry.status)}>
-                        {formatFolderStatusLabel(selectedFolderEntry.status)}
+                      <StatusBadge tone={toneForFolderStatus(selectedFolderItem.status)}>
+                        {formatFolderStatusLabel(selectedFolderItem.status)}
                       </StatusBadge>
                     </div>
                     <div className="folder-detail-label">Left path</div>
                     <div className="folder-entry-path">
-                      {selectedFolderEntry.leftPath || '(missing)'}
+                      {selectedFolderItem.leftPath || '(missing)'}
                     </div>
                     <div className="folder-detail-label">Right path</div>
                     <div className="folder-entry-path">
-                      {selectedFolderEntry.rightPath || '(missing)'}
+                      {selectedFolderItem.rightPath || '(missing)'}
                     </div>
                     <div className="folder-detail-label">Left kind</div>
-                    <div>{selectedFolderEntry.leftKind}</div>
+                    <div>{selectedFolderItem.leftKind}</div>
                     <div className="folder-detail-label">Right kind</div>
-                    <div>{selectedFolderEntry.rightKind}</div>
+                    <div>{selectedFolderItem.rightKind}</div>
                     <div className="folder-detail-label">Left size</div>
-                    <div>{selectedFolderEntry.leftSize}</div>
+                    <div>{selectedFolderItem.leftSize}</div>
                     <div className="folder-detail-label">Right size</div>
-                    <div>{selectedFolderEntry.rightSize}</div>
+                    <div>{selectedFolderItem.rightSize}</div>
                     <div className="folder-detail-label">Mode hint</div>
-                    <div>{selectedFolderEntry.compareModeHint}</div>
-                    {selectedFolderEntry.message ? (
+                    <div>{selectedFolderItem.compareModeHint}</div>
+                    {selectedFolderItem.message ? (
                       <>
                         <div className="folder-detail-label">Message</div>
-                        <div>{selectedFolderEntry.message}</div>
+                        <div>{selectedFolderItem.message}</div>
                       </>
                     ) : null}
                   </div>
                   <div className="folder-detail-action">
-                    {canOpenFolderEntry(selectedFolderEntry) ? (
+                    {selectedFolderItem.isDir &&
+                    selectedFolderItem.status !== 'type-mismatch' ? (
                       <button
                         type="button"
                         className="folder-action-button button-secondary button-compact"
-                        onClick={() => void openFolderEntryDiff(selectedFolderEntry)}
-                        disabled={folderOpenBusyPath === selectedFolderEntry.relativePath}
+                        onClick={() => void navigateFolderPath(selectedFolderItem.relativePath)}
+                        disabled={loading}
                       >
-                        {folderOpenBusyPath === selectedFolderEntry.relativePath
+                        Enter folder
+                      </button>
+                    ) : canOpenFolderItem(selectedFolderItem) ? (
+                      <button
+                        type="button"
+                        className="folder-action-button button-secondary button-compact"
+                        onClick={() => void openFolderEntryDiff(selectedFolderItem)}
+                        disabled={folderOpenBusyPath === selectedFolderItem.relativePath}
+                      >
+                        {folderOpenBusyPath === selectedFolderItem.relativePath
                           ? 'Opening...'
                           : 'Open diff'}
                       </button>
@@ -3995,7 +4114,15 @@ export function App() {
         <div className="field-block">
           <label className="field-label">Left root</label>
           <div className="path-row">
-            <input value={folderLeftRoot} onChange={(e) => setFolderLeftRoot(e.target.value)} />
+            <input
+              value={folderLeftRoot}
+              onChange={(e) => {
+                setFolderLeftRoot(e.target.value)
+                setFolderCurrentPath('')
+                setSelectedFolderItemPath('')
+                setFolderResult(null)
+              }}
+            />
             <button
               type="button"
               className="button-secondary"
@@ -4009,7 +4136,15 @@ export function App() {
         <div className="field-block">
           <label className="field-label">Right root</label>
           <div className="path-row">
-            <input value={folderRightRoot} onChange={(e) => setFolderRightRoot(e.target.value)} />
+            <input
+              value={folderRightRoot}
+              onChange={(e) => {
+                setFolderRightRoot(e.target.value)
+                setFolderCurrentPath('')
+                setSelectedFolderItemPath('')
+                setFolderResult(null)
+              }}
+            />
             <button
               type="button"
               className="button-secondary"

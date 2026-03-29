@@ -1619,6 +1619,32 @@ button {
   font-weight: 600;
 }
 
+.folder-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.folder-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.folder-breadcrumb {
+  cursor: pointer;
+}
+
+.folder-breadcrumb-current {
+  border-color: var(--xdiff-search-hit-border);
+}
+
+.folder-breadcrumb-sep {
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
 .folder-table-wrap {
   flex: 1;
   min-height: 0;
@@ -1660,6 +1686,16 @@ button {
 .folder-entry-path {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   word-break: break-word;
+}
+
+.folder-item-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.folder-item-name.is-dir {
+  cursor: pointer;
 }
 
 .folder-entry-sub {

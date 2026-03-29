@@ -3,6 +3,7 @@ package desktopapi
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -508,6 +509,13 @@ func (s *Service) LoadTextFile(req LoadTextFileRequest) (*LoadTextFileResponse, 
 func (s *Service) CompareFolders(req CompareFoldersRequest) (*CompareFoldersResponse, error) {
 	leftRoot := strings.TrimSpace(req.LeftRoot)
 	rightRoot := strings.TrimSpace(req.RightRoot)
+	currentPath, currentPathErr := normalizeFolderCurrentPath(req.CurrentPath)
+	if currentPathErr != nil {
+		return &CompareFoldersResponse{
+			Error: fmt.Sprintf("invalid currentPath: %v", currentPathErr),
+		}, nil
+	}
+
 	if leftRoot == "" || rightRoot == "" {
 		return &CompareFoldersResponse{
 			Error: "leftRoot and rightRoot are required",
@@ -537,94 +545,64 @@ func (s *Service) CompareFolders(req CompareFoldersRequest) (*CompareFoldersResp
 		return &CompareFoldersResponse{Error: fmt.Sprintf("right root walk error: %v", err)}, nil
 	}
 
-	keys := collectFolderKeys(leftEntries, rightEntries)
+	scannedKeys := collectFolderKeys(leftEntries, rightEntries)
 	nameFilter := strings.ToLower(strings.TrimSpace(req.NameFilter))
 
 	resp := &CompareFoldersResponse{
+		CurrentPath:    currentPath,
+		ParentPath:     parentFolderPath(currentPath),
 		ScannedSummary: FolderCompareSummary{},
-		VisibleSummary: FolderCompareSummary{},
-		Entries:        make([]FolderCompareEntry, 0, len(keys)),
+		CurrentSummary: FolderCompareSummary{},
+		Items:          make([]FolderCompareItem, 0),
 	}
 
-	for _, rel := range keys {
-		left, leftOK := leftEntries[rel]
-		right, rightOK := rightEntries[rel]
+	for _, rel := range scannedKeys {
+		item := buildFolderCompareItem(rel, leftRoot, rightRoot, req.Recursive, leftEntries, rightEntries)
+		addFolderSummary(&resp.ScannedSummary, item.Status)
+	}
 
-		entry := FolderCompareEntry{
-			RelativePath: rel,
-			LeftExists:   leftOK,
-			RightExists:  rightOK,
-			LeftKind:     "missing",
-			RightKind:    "missing",
-			LeftPath:     "",
-			RightPath:    "",
-			LeftSize:     0,
-			RightSize:    0,
-			Status:       "error",
-		}
-		if leftOK {
-			entry.LeftPath = left.Path
-			entry.LeftKind = left.Kind
-			entry.LeftSize = left.Size
-		}
-		if rightOK {
-			entry.RightPath = right.Path
-			entry.RightKind = right.Kind
-			entry.RightSize = right.Size
+	childNames, childErr := collectCurrentFolderChildNames(leftRoot, rightRoot, currentPath)
+	if childErr != nil {
+		resp.Error = fmt.Sprintf("current folder listing error: %v", childErr)
+		return resp, nil
+	}
+
+	resp.Items = make([]FolderCompareItem, 0, len(childNames))
+	for _, name := range childNames {
+		relativePath := name
+		if currentPath != "" {
+			relativePath = currentPath + "/" + name
 		}
 
-		switch {
-		case leftOK && left.Err != nil:
-			entry.Status = "error"
-			entry.Message = left.Err.Error()
-		case rightOK && right.Err != nil:
-			entry.Status = "error"
-			entry.Message = right.Err.Error()
-		case !leftOK:
-			entry.Status = "right-only"
-		case !rightOK:
-			entry.Status = "left-only"
-		case left.Kind != right.Kind:
-			entry.Status = "type-mismatch"
-		case left.Kind == "dir":
-			entry.Status = "same"
-		case left.Kind == "file":
-			if left.Size != right.Size {
-				entry.Status = "changed"
-			} else {
-				equal, cmpErr := compareFileContents(left.Path, right.Path)
-				if cmpErr != nil {
-					entry.Status = "error"
-					entry.Message = cmpErr.Error()
-				} else if equal {
-					entry.Status = "same"
-				} else {
-					entry.Status = "changed"
-				}
-			}
-		default:
-			entry.Status = "error"
-			entry.Message = "unsupported file kind"
-		}
-
-		entry.CompareModeHint = inferCompareModeHint(
-			entry.RelativePath,
-			entry.Status,
-			entry.LeftKind,
-			entry.RightKind,
+		item := buildFolderCompareItem(
+			relativePath,
+			leftRoot,
+			rightRoot,
+			req.Recursive,
+			leftEntries,
+			rightEntries,
 		)
-		addFolderSummary(&resp.ScannedSummary, entry.Status)
+		item.Name = name
 
-		if !req.ShowSame && entry.Status == "same" {
+		if !req.ShowSame && item.Status == "same" {
 			continue
 		}
-		if nameFilter != "" && !strings.Contains(strings.ToLower(entry.RelativePath), nameFilter) {
+		if nameFilter != "" && !strings.Contains(strings.ToLower(item.Name), nameFilter) {
 			continue
 		}
 
-		resp.Entries = append(resp.Entries, entry)
-		addFolderSummary(&resp.VisibleSummary, entry.Status)
+		resp.Items = append(resp.Items, item)
+		addFolderSummary(&resp.CurrentSummary, item.Status)
 	}
+
+	sort.Slice(resp.Items, func(i, j int) bool {
+		leftIsDir := resp.Items[i].IsDir
+		rightIsDir := resp.Items[j].IsDir
+		if leftIsDir != rightIsDir {
+			return leftIsDir
+		}
+		return strings.ToLower(resp.Items[i].Name) < strings.ToLower(resp.Items[j].Name)
+	})
 
 	return resp, nil
 }
@@ -906,6 +884,247 @@ func inferCompareModeHint(relativePath, status, leftKind, rightKind string) stri
 		return "json"
 	}
 	return "text"
+}
+
+func normalizeFolderCurrentPath(path string) (string, error) {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return "", nil
+	}
+
+	clean := filepath.ToSlash(filepath.Clean(trimmed))
+	clean = strings.TrimPrefix(clean, "./")
+	clean = strings.TrimPrefix(clean, "/")
+	if clean == "." || clean == "" {
+		return "", nil
+	}
+
+	segments := strings.Split(clean, "/")
+	for _, segment := range segments {
+		if segment == ".." {
+			return "", fmt.Errorf("path traversal is not allowed")
+		}
+	}
+
+	return clean, nil
+}
+
+func parentFolderPath(currentPath string) string {
+	if currentPath == "" {
+		return ""
+	}
+
+	parent := filepath.ToSlash(filepath.Dir(currentPath))
+	if parent == "." {
+		return ""
+	}
+	return parent
+}
+
+func collectCurrentFolderChildNames(leftRoot, rightRoot, currentPath string) ([]string, error) {
+	names := map[string]struct{}{}
+
+	add := func(root string) error {
+		children, err := listCurrentFolderChildNames(root, currentPath)
+		if err != nil {
+			return err
+		}
+		for _, child := range children {
+			names[child] = struct{}{}
+		}
+		return nil
+	}
+
+	if err := add(leftRoot); err != nil {
+		return nil, err
+	}
+	if err := add(rightRoot); err != nil {
+		return nil, err
+	}
+
+	out := make([]string, 0, len(names))
+	for name := range names {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+func listCurrentFolderChildNames(root, currentPath string) ([]string, error) {
+	base := root
+	if currentPath != "" {
+		base = filepath.Join(root, filepath.FromSlash(currentPath))
+	}
+
+	info, err := os.Stat(base)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%s is not a directory", base)
+	}
+
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	return names, nil
+}
+
+func buildFolderCompareItem(
+	relativePath, leftRoot, rightRoot string,
+	recursive bool,
+	leftEntries, rightEntries map[string]folderEntrySnapshot,
+) FolderCompareItem {
+	left, leftOK := resolveFolderSnapshot(leftRoot, relativePath, leftEntries)
+	right, rightOK := resolveFolderSnapshot(rightRoot, relativePath, rightEntries)
+
+	item := FolderCompareItem{
+		Name:         filepath.Base(relativePath),
+		RelativePath: relativePath,
+		LeftExists:   leftOK,
+		RightExists:  rightOK,
+		LeftKind:     "missing",
+		RightKind:    "missing",
+		LeftPath:     "",
+		RightPath:    "",
+		Status:       "error",
+	}
+
+	if leftOK {
+		item.LeftPath = left.Path
+		item.LeftKind = left.Kind
+		item.LeftSize = left.Size
+	}
+	if rightOK {
+		item.RightPath = right.Path
+		item.RightKind = right.Kind
+		item.RightSize = right.Size
+	}
+
+	switch {
+	case leftOK && left.Err != nil:
+		item.Status = "error"
+		item.Message = left.Err.Error()
+	case rightOK && right.Err != nil:
+		item.Status = "error"
+		item.Message = right.Err.Error()
+	case !leftOK:
+		item.Status = "right-only"
+	case !rightOK:
+		item.Status = "left-only"
+	case left.Kind != right.Kind:
+		item.Status = "type-mismatch"
+	case left.Kind == "dir":
+		item.IsDir = true
+		if recursive {
+			item.Status = aggregateDirectoryStatus(relativePath, leftEntries, rightEntries)
+		} else {
+			item.Status = "same"
+		}
+	case left.Kind == "file":
+		if left.Size != right.Size {
+			item.Status = "changed"
+		} else {
+			equal, cmpErr := compareFileContents(left.Path, right.Path)
+			if cmpErr != nil {
+				item.Status = "error"
+				item.Message = cmpErr.Error()
+			} else if equal {
+				item.Status = "same"
+			} else {
+				item.Status = "changed"
+			}
+		}
+	default:
+		item.Status = "error"
+		item.Message = "unsupported file kind"
+	}
+
+	item.CompareModeHint = inferCompareModeHint(
+		item.RelativePath,
+		item.Status,
+		item.LeftKind,
+		item.RightKind,
+	)
+	item.IsDir = item.LeftKind == "dir" || item.RightKind == "dir"
+	return item
+}
+
+func aggregateDirectoryStatus(
+	relativePath string,
+	leftEntries, rightEntries map[string]folderEntrySnapshot,
+) string {
+	prefix := relativePath + "/"
+	hasDescendant := false
+
+	for key := range leftEntries {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		hasDescendant = true
+		item := buildFolderCompareItem(key, "", "", false, leftEntries, rightEntries)
+		if item.Status != "same" {
+			return "changed"
+		}
+	}
+
+	for key := range rightEntries {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		hasDescendant = true
+		item := buildFolderCompareItem(key, "", "", false, leftEntries, rightEntries)
+		if item.Status != "same" {
+			return "changed"
+		}
+	}
+
+	if !hasDescendant {
+		return "same"
+	}
+
+	return "same"
+}
+
+func resolveFolderSnapshot(
+	root, relativePath string,
+	entries map[string]folderEntrySnapshot,
+) (folderEntrySnapshot, bool) {
+	if snap, ok := entries[relativePath]; ok {
+		return snap, true
+	}
+
+	if root == "" {
+		return folderEntrySnapshot{}, false
+	}
+
+	absPath := filepath.Join(root, filepath.FromSlash(relativePath))
+	kind, size, err := classifyFolderPath(absPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return folderEntrySnapshot{}, false
+		}
+		return folderEntrySnapshot{
+			Path: absPath,
+			Kind: "unknown",
+			Err:  err,
+		}, true
+	}
+
+	return folderEntrySnapshot{
+		Path: absPath,
+		Kind: kind,
+		Size: size,
+	}, true
 }
 
 func addFolderSummary(summary *FolderCompareSummary, status string) {

@@ -90,6 +90,7 @@ export type LoadTextFileResponse = {
 export type CompareFoldersRequest = {
   leftRoot: string
   rightRoot: string
+  currentPath: string
   recursive: boolean
   showSame: boolean
   nameFilter: string
@@ -105,8 +106,10 @@ export type FolderCompareSummary = {
   error: number
 }
 
-export type FolderCompareEntry = {
+export type FolderCompareItem = {
+  name: string
   relativePath: string
+  isDir: boolean
   status: 'same' | 'changed' | 'left-only' | 'right-only' | 'type-mismatch' | 'error'
   leftPath: string
   rightPath: string
@@ -121,9 +124,11 @@ export type FolderCompareEntry = {
 }
 
 export type CompareFoldersResponse = {
+  currentPath: string
+  parentPath?: string
   scannedSummary: FolderCompareSummary
-  visibleSummary: FolderCompareSummary
-  entries: FolderCompareEntry[]
+  currentSummary: FolderCompareSummary
+  items: FolderCompareItem[]
   error?: string
 }
 
