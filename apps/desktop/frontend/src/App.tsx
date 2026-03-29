@@ -580,6 +580,19 @@ function canOpenFolderItem(entry: FolderCompareItem): boolean {
   )
 }
 
+function chooseStructuredDefaultDisplayMode(options: {
+  hasDiffText: boolean
+  canRenderSemantic: boolean
+}): StructuredResultView {
+  if (options.hasDiffText) {
+    return 'diff'
+  }
+  if (options.canRenderSemantic) {
+    return 'semantic'
+  }
+  return 'raw'
+}
+
 function getFolderItemActionReason(entry: FolderCompareItem): string | null {
   if (canOpenFolderItem(entry)) {
     return null
@@ -588,8 +601,8 @@ function getFolderItemActionReason(entry: FolderCompareItem): string | null {
   if (!entry.leftExists) return 'Only on right'
   if (!entry.rightExists) return 'Only on left'
   if (entry.leftKind !== entry.rightKind) return 'Type mismatch'
-  if (entry.isDir) return 'Directory item'
-  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Directory item'
+  if (entry.isDir) return 'Folder item'
+  if (entry.leftKind === 'dir' || entry.rightKind === 'dir') return 'Folder item'
   if (entry.compareModeHint === 'none') return 'No compare mode'
   return 'Not comparable'
 }
@@ -656,10 +669,17 @@ function formatFolderSide(exists: boolean, kind: string, size: number): string {
     return '—'
   }
   if (kind === 'dir') {
-    return 'dir'
+    return 'folder'
   }
   if (kind === 'file') {
     return size > 0 ? `file · ${formatBytes(size)}` : 'file'
+  }
+  return kind
+}
+
+function formatFolderKindLabel(kind: FolderCompareItem['leftKind']): string {
+  if (kind === 'dir') {
+    return 'folder'
   }
   return kind
 }
@@ -2187,7 +2207,12 @@ export function App() {
         setJSONRichResult(richRes)
         setJSONSearchQuery('')
         setJSONActiveSearchIndex(0)
-        setJSONResultView('diff')
+        setJSONResultView(
+          chooseStructuredDefaultDisplayMode({
+            hasDiffText: richRes.diffText.trim().length > 0,
+            canRenderSemantic: !richRes.result.error,
+          }),
+        )
         setMode('json')
         setResult(richRes.result)
         return
@@ -2226,7 +2251,12 @@ export function App() {
         setSpecRichResult(richRes)
         setSpecSearchQuery('')
         setSpecActiveSearchIndex(0)
-        setSpecResultView('diff')
+        setSpecResultView(
+          chooseStructuredDefaultDisplayMode({
+            hasDiffText: richRes.diffText.trim().length > 0,
+            canRenderSemantic: !richRes.result.error,
+          }),
+        )
         setMode('spec')
         setResult(richRes.result)
         return
@@ -2446,7 +2476,12 @@ export function App() {
       ignoreOrder,
     } satisfies CompareJSONValuesRequest)
     setJSONRichResult(richRes)
-    setJSONResultView('diff')
+    setJSONResultView(
+      chooseStructuredDefaultDisplayMode({
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
     setJSONSearchQuery('')
     setJSONActiveSearchIndex(0)
     setResult(richRes.result)
@@ -2470,7 +2505,12 @@ export function App() {
     setSpecRichResult(richRes)
     setSpecSearchQuery('')
     setSpecActiveSearchIndex(0)
-    setSpecResultView('diff')
+    setSpecResultView(
+      chooseStructuredDefaultDisplayMode({
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
     setResult(richRes.result)
   }
 
@@ -5034,9 +5074,9 @@ export function App() {
                 <div className="folder-detail-label">Right path</div>
                 <div className="folder-entry-path">{selectedFolderItemForDetail.rightPath || '(missing)'}</div>
                 <div className="folder-detail-label">Left kind</div>
-                <div>{selectedFolderItemForDetail.leftKind}</div>
+                <div>{formatFolderKindLabel(selectedFolderItemForDetail.leftKind)}</div>
                 <div className="folder-detail-label">Right kind</div>
-                <div>{selectedFolderItemForDetail.rightKind}</div>
+                <div>{formatFolderKindLabel(selectedFolderItemForDetail.rightKind)}</div>
                 <div className="folder-detail-label">Left size</div>
                 <div>{selectedFolderItemForDetail.leftSize}</div>
                 <div className="folder-detail-label">Right size</div>
