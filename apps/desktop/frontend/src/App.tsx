@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
@@ -101,6 +101,8 @@ type FolderQuickFilter =
   | 'type-mismatch'
   | 'error'
   | 'same'
+type FolderSortKey = 'name' | 'status' | 'left' | 'right'
+type FolderSortDirection = 'asc' | 'desc'
 type WailsRuntimeClipboard = {
   ClipboardGetText?: () => Promise<string>
   ClipboardSetText?: (text: string) => Promise<boolean>
@@ -579,6 +581,18 @@ function folderQuickFilterLabel(filter: FolderQuickFilter): string {
   }
 }
 
+function toggleFolderSort(
+  key: FolderSortKey,
+  currentKey: FolderSortKey,
+  currentDir: FolderSortDirection,
+): { key: FolderSortKey; dir: FolderSortDirection } {
+  if (key !== currentKey) {
+    return { key, dir: 'asc' }
+  }
+
+  return { key, dir: currentDir === 'asc' ? 'desc' : 'asc' }
+}
+
 function ignorePathsToText(paths: string[]): string {
   return paths.join('\n')
 }
@@ -604,6 +618,25 @@ function formatFolderSide(exists: boolean, kind: string, size: number): string {
     return size > 0 ? `file · ${formatBytes(size)}` : 'file'
   }
   return kind
+}
+
+function folderStatusSortRank(status: FolderCompareItem['status']): number {
+  switch (status) {
+    case 'changed':
+      return 0
+    case 'left-only':
+      return 1
+    case 'right-only':
+      return 2
+    case 'type-mismatch':
+      return 3
+    case 'error':
+      return 4
+    case 'same':
+      return 5
+    default:
+      return 99
+  }
 }
 
 function renderFolderSummaryLine(label: string, summary: FolderCompareSummary) {
@@ -1229,6 +1262,8 @@ export function App() {
   const [folderOpenBusyPath, setFolderOpenBusyPath] = useState('')
   const [folderQuickFilter, setFolderQuickFilter] = useState<FolderQuickFilter>('all')
   const [selectedFolderItemPath, setSelectedFolderItemPath] = useState('')
+  const [folderSortKey, setFolderSortKey] = useState<FolderSortKey>('name')
+  const [folderSortDirection, setFolderSortDirection] = useState<FolderSortDirection>('asc')
 
   const [scenarioPath, setScenarioPath] = useState('')
   const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
@@ -1380,9 +1415,62 @@ export function App() {
     }
     return folderItems.filter((item) => item.status === folderQuickFilter)
   }, [folderItems, folderQuickFilter])
+  const sortedFolderItems = useMemo(() => {
+    const items = [...filteredFolderItems]
+    const directionMultiplier = folderSortDirection === 'asc' ? 1 : -1
+
+    items.sort((left, right) => {
+      if (folderSortKey === 'name') {
+        if (left.isDir !== right.isDir) {
+          return left.isDir ? -1 : 1
+        }
+        const comparedName = left.name.localeCompare(right.name, undefined, {
+          sensitivity: 'base',
+        })
+        if (comparedName !== 0) {
+          return comparedName * directionMultiplier
+        }
+        return left.relativePath.localeCompare(right.relativePath, undefined, {
+          sensitivity: 'base',
+        })
+      }
+
+      if (folderSortKey === 'status') {
+        const rankDiff = folderStatusSortRank(left.status) - folderStatusSortRank(right.status)
+        if (rankDiff !== 0) {
+          return rankDiff * directionMultiplier
+        }
+        return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+      }
+
+      if (folderSortKey === 'left') {
+        const compared = formatFolderSide(left.leftExists, left.leftKind, left.leftSize).localeCompare(
+          formatFolderSide(right.leftExists, right.leftKind, right.leftSize),
+          undefined,
+          { sensitivity: 'base' },
+        )
+        if (compared !== 0) {
+          return compared * directionMultiplier
+        }
+        return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+      }
+
+      const compared = formatFolderSide(left.rightExists, left.rightKind, left.rightSize).localeCompare(
+        formatFolderSide(right.rightExists, right.rightKind, right.rightSize),
+        undefined,
+        { sensitivity: 'base' },
+      )
+      if (compared !== 0) {
+        return compared * directionMultiplier
+      }
+      return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+    })
+
+    return items
+  }, [filteredFolderItems, folderSortDirection, folderSortKey])
   const selectedFolderItem = useMemo(
-    () => filteredFolderItems.find((item) => item.relativePath === selectedFolderItemPath) ?? null,
-    [filteredFolderItems, selectedFolderItemPath],
+    () => sortedFolderItems.find((item) => item.relativePath === selectedFolderItemPath) ?? null,
+    [sortedFolderItems, selectedFolderItemPath],
   )
   const folderQuickFilterCounts = useMemo(
     () => ({
@@ -1402,19 +1490,19 @@ export function App() {
   )
 
   useEffect(() => {
-    if (filteredFolderItems.length === 0) {
+    if (sortedFolderItems.length === 0) {
       if (selectedFolderItemPath !== '') {
         setSelectedFolderItemPath('')
       }
       return
     }
-    const hasSelection = filteredFolderItems.some(
+    const hasSelection = sortedFolderItems.some(
       (item) => item.relativePath === selectedFolderItemPath,
     )
     if (!hasSelection) {
-      setSelectedFolderItemPath(filteredFolderItems[0].relativePath)
+      setSelectedFolderItemPath(sortedFolderItems[0].relativePath)
     }
-  }, [filteredFolderItems, selectedFolderItemPath])
+  }, [sortedFolderItems, selectedFolderItemPath])
 
   useEffect(() => {
     if (mode !== 'folder') {
@@ -1897,6 +1985,12 @@ export function App() {
     setFolderCurrentPath(nextPath)
   }
 
+  const applyFolderSort = (key: FolderSortKey) => {
+    const next = toggleFolderSort(key, folderSortKey, folderSortDirection)
+    setFolderSortKey(next.key)
+    setFolderSortDirection(next.dir)
+  }
+
   const handleFolderRowDoubleClick = async (item: FolderCompareItem) => {
     const enterable = item.isDir && item.status !== 'type-mismatch'
     if (enterable) {
@@ -1906,6 +2000,55 @@ export function App() {
 
     if (canOpenFolderItem(item)) {
       await openFolderEntryDiff(item)
+    }
+  }
+
+  const handleFolderTableKeyDown = async (event: KeyboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (!target) {
+      return
+    }
+    const tagName = target.tagName.toLowerCase()
+    if (
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable
+    ) {
+      return
+    }
+
+    if (sortedFolderItems.length === 0) {
+      return
+    }
+
+    const currentIndex = selectedFolderItem
+      ? sortedFolderItems.findIndex((item) => item.relativePath === selectedFolderItem.relativePath)
+      : -1
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      const nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, sortedFolderItems.length - 1)
+      setSelectedFolderItemPath(sortedFolderItems[nextIndex].relativePath)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1
+      setSelectedFolderItemPath(sortedFolderItems[nextIndex].relativePath)
+      return
+    }
+
+    if (event.key === 'Enter' && selectedFolderItem) {
+      event.preventDefault()
+      await handleFolderRowDoubleClick(selectedFolderItem)
+      return
+    }
+
+    if (event.key === 'Backspace' && folderResult?.currentPath) {
+      event.preventDefault()
+      navigateFolderPath(folderResult.parentPath || '')
     }
   }
 
@@ -3717,26 +3860,75 @@ export function App() {
                 ))}
               </div>
 
-              <div className="folder-table-wrap">
+              <div
+                className="folder-table-wrap"
+                tabIndex={0}
+                onKeyDown={(event) => void handleFolderTableKeyDown(event)}
+                onFocus={() => {
+                  if (!selectedFolderItemPath && sortedFolderItems.length > 0) {
+                    setSelectedFolderItemPath(sortedFolderItems[0].relativePath)
+                  }
+                }}
+              >
                 <table className="folder-results-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Status</th>
-                      <th>Left</th>
-                      <th>Right</th>
+                      <th
+                        className="folder-sortable-header"
+                        onClick={() => applyFolderSort('name')}
+                      >
+                        Name
+                        {folderSortKey === 'name' ? (
+                          <span className="folder-sort-indicator">
+                            {folderSortDirection === 'asc' ? '▲' : '▼'}
+                          </span>
+                        ) : null}
+                      </th>
+                      <th
+                        className="folder-sortable-header"
+                        onClick={() => applyFolderSort('status')}
+                      >
+                        Status
+                        {folderSortKey === 'status' ? (
+                          <span className="folder-sort-indicator">
+                            {folderSortDirection === 'asc' ? '▲' : '▼'}
+                          </span>
+                        ) : null}
+                      </th>
+                      <th
+                        className="folder-sortable-header"
+                        onClick={() => applyFolderSort('left')}
+                      >
+                        Left
+                        {folderSortKey === 'left' ? (
+                          <span className="folder-sort-indicator">
+                            {folderSortDirection === 'asc' ? '▲' : '▼'}
+                          </span>
+                        ) : null}
+                      </th>
+                      <th
+                        className="folder-sortable-header"
+                        onClick={() => applyFolderSort('right')}
+                      >
+                        Right
+                        {folderSortKey === 'right' ? (
+                          <span className="folder-sort-indicator">
+                            {folderSortDirection === 'asc' ? '▲' : '▼'}
+                          </span>
+                        ) : null}
+                      </th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFolderItems.length === 0 ? (
+                    {sortedFolderItems.length === 0 ? (
                       <tr>
                         <td colSpan={5}>
                           <div className="muted">No entries to show.</div>
                         </td>
                       </tr>
                     ) : (
-                      filteredFolderItems.map((item) => {
+                      sortedFolderItems.map((item) => {
                         const openable = canOpenFolderItem(item)
                         const enterable = item.isDir && item.status !== 'type-mismatch'
                         const actionReason = getFolderItemActionReason(item)

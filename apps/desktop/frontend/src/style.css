@@ -1654,6 +1654,11 @@ button {
   background: var(--xdiff-viewer-surface);
 }
 
+.folder-table-wrap:focus {
+  outline: 2px solid color-mix(in srgb, var(--mantine-color-blue-5) 35%, transparent);
+  outline-offset: 2px;
+}
+
 .folder-results-table {
   width: 100%;
   border-collapse: collapse;
@@ -1687,6 +1692,21 @@ button {
   background: var(--xdiff-viewer-surface-subtle);
 }
 
+.folder-sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.folder-sortable-header:hover {
+  background: var(--xdiff-viewer-surface-muted);
+}
+
+.folder-sort-indicator {
+  margin-left: 4px;
+  opacity: 0.8;
+  font-size: 0.72rem;
+}
+
 .folder-entry-path {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   word-break: break-word;
@@ -1699,8 +1719,8 @@ button {
 }
 
 .folder-status-cell .mantine-Badge-root {
-  font-size: 0.68rem;
-  padding-inline: 6px;
+  font-size: 0.78rem;
+  padding: 1px 7px;
 }
 
 .folder-item-name.is-dir {
