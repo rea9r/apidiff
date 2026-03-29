@@ -21,7 +21,6 @@ import type {
   CompareSpecValuesRequest,
   CompareResponse,
   FolderCompareItem,
-  FolderCompareSummary,
   JSONRichDiffItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
@@ -731,21 +730,6 @@ function filterFolderTreeNodesByQuickFilter(
       },
     ]
   })
-}
-
-function renderFolderSummaryLine(label: string, summary: FolderCompareSummary) {
-  return (
-    <div className="folder-summary-line">
-      <span className="folder-summary-heading">{label}:</span>
-      <span>{summary.total} total</span>
-      <span>{summary.changed} changed</span>
-      <span>{summary.same} same</span>
-      <span>{summary.leftOnly} left only</span>
-      <span>{summary.rightOnly} right only</span>
-      <span>{summary.typeMismatch} type mismatch</span>
-      <span>{summary.error} error</span>
-    </div>
-  )
 }
 
 function buildFolderBreadcrumbs(currentPath: string): Array<{ label: string; path: string }> {
@@ -1995,12 +1979,7 @@ export function App() {
       setFolderStatus(res.error)
       return
     }
-
-    setFolderStatus(
-      `Showing ${res.currentSummary.total} item(s) in ${
-        res.currentPath || 'root'
-      } · scanned ${res.scannedSummary.total}`,
-    )
+    setFolderStatus('')
   }
 
   const loadFolderChildren = async (relativePath: string): Promise<FolderCompareItem[]> => {
@@ -4069,78 +4048,111 @@ export function App() {
     const detailActionReason = selectedFolderItemForDetail
       ? getFolderItemActionReason(selectedFolderItemForDetail)
       : null
+    const currentPath = res?.currentPath ?? folderCurrentPath
+    const currentPathLabel = currentPath ? `root / ${currentPath}` : 'root'
+    const visibleCount =
+      folderViewMode === 'tree' ? flattenedFolderTreeRows.length : sortedFolderItems.length
+    const canCompareFolders = !!folderLeftRoot && !!folderRightRoot
 
     return (
       <SectionCard title="Folder Compare">
         <div className="folder-result-shell">
+          <div className="folder-header-bar">
+            <div className="folder-header-left">
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={() => void navigateFolderPath(res?.parentPath || '')}
+                disabled={loading || !res || currentPath === ''}
+              >
+                Up
+              </button>
+              <div className="folder-breadcrumbs">
+                {folderBreadcrumbs.map((crumb, index) => (
+                  <Fragment key={crumb.path || 'root'}>
+                    <button
+                      type="button"
+                      className={`button-secondary button-compact folder-breadcrumb ${
+                        crumb.path === currentPath ? 'folder-breadcrumb-current' : ''
+                      }`}
+                      onClick={() => void navigateFolderPath(crumb.path)}
+                      disabled={loading || !canCompareFolders}
+                    >
+                      {crumb.label}
+                    </button>
+                    {index < folderBreadcrumbs.length - 1 ? (
+                      <IconChevronRight size={14} className="folder-breadcrumb-sep" />
+                    ) : null}
+                  </Fragment>
+                ))}
+              </div>
+              <span className="folder-current-path">{currentPathLabel}</span>
+            </div>
+            <div className="folder-header-right">
+              <div className="folder-compact-summary">
+                <span>{res?.scannedSummary.total ?? 0} scanned</span>
+                <span>{visibleCount} here</span>
+              </div>
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={() => void browseFolderRoot('left')}
+                disabled={loading}
+                title={folderLeftRoot || 'Left root is not selected'}
+              >
+                {folderLeftRoot ? 'Left root' : 'Pick left'}
+              </button>
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={() => void browseFolderRoot('right')}
+                disabled={loading}
+                title={folderRightRoot || 'Right root is not selected'}
+              >
+                {folderRightRoot ? 'Right root' : 'Pick right'}
+              </button>
+              <div className="folder-view-mode-toggle" role="tablist" aria-label="Folder view mode">
+                <button
+                  type="button"
+                  className={`button-secondary button-compact ${
+                    folderViewMode === 'list' ? 'folder-quick-filter-active' : ''
+                  }`}
+                  onClick={() => setFolderViewMode('list')}
+                  role="tab"
+                  aria-selected={folderViewMode === 'list'}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  className={`button-secondary button-compact ${
+                    folderViewMode === 'tree' ? 'folder-quick-filter-active' : ''
+                  }`}
+                  onClick={() => setFolderViewMode('tree')}
+                  role="tab"
+                  aria-selected={folderViewMode === 'tree'}
+                >
+                  Tree
+                </button>
+              </div>
+              <button
+                type="button"
+                className="button-primary button-compact"
+                onClick={onRun}
+                disabled={loading || !canCompareFolders}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+
           {folderStatus ? <div className="muted">{folderStatus}</div> : null}
 
           {res?.error ? (
             <pre className="result-output">{res.error}</pre>
           ) : res ? (
             <>
-              <div className="folder-nav-bar">
-                {res.parentPath !== undefined ? (
-                  <button
-                    type="button"
-                    className="button-secondary button-compact"
-                    onClick={() => void navigateFolderPath(res.parentPath || '')}
-                    disabled={loading || res.currentPath === ''}
-                  >
-                    Up
-                  </button>
-                ) : null}
-                <div className="folder-breadcrumbs">
-                  {folderBreadcrumbs.map((crumb, index) => (
-                    <Fragment key={crumb.path || 'root'}>
-                      <button
-                        type="button"
-                        className={`button-secondary button-compact folder-breadcrumb ${
-                          crumb.path === (res.currentPath || '') ? 'folder-breadcrumb-current' : ''
-                        }`}
-                        onClick={() => void navigateFolderPath(crumb.path)}
-                        disabled={loading}
-                      >
-                        {crumb.label}
-                      </button>
-                      {index < folderBreadcrumbs.length - 1 ? (
-                        <IconChevronRight size={14} className="folder-breadcrumb-sep" />
-                      ) : null}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-
-              <div className="folder-summary-block">
-                {renderFolderSummaryLine('Scanned', res.scannedSummary)}
-                {renderFolderSummaryLine('Current', res.currentSummary)}
-              </div>
-
               <div className="folder-quick-filters">
-                <div className="folder-view-mode-toggle" role="tablist" aria-label="Folder view mode">
-                  <button
-                    type="button"
-                    className={`button-secondary button-compact ${
-                      folderViewMode === 'list' ? 'folder-quick-filter-active' : ''
-                    }`}
-                    onClick={() => setFolderViewMode('list')}
-                    role="tab"
-                    aria-selected={folderViewMode === 'list'}
-                  >
-                    List
-                  </button>
-                  <button
-                    type="button"
-                    className={`button-secondary button-compact ${
-                      folderViewMode === 'tree' ? 'folder-quick-filter-active' : ''
-                    }`}
-                    onClick={() => setFolderViewMode('tree')}
-                    role="tab"
-                    aria-selected={folderViewMode === 'tree'}
-                  >
-                    Tree
-                  </button>
-                </div>
                 {quickFilters.map((filterKey) => (
                   <button
                     key={filterKey}
@@ -4153,6 +4165,30 @@ export function App() {
                     {folderQuickFilterLabel(filterKey)} ({folderQuickFilterCounts[filterKey]})
                   </button>
                 ))}
+              </div>
+              <div className="folder-secondary-controls">
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={folderRecursive}
+                    onChange={(event) => setFolderRecursive(event.target.checked)}
+                  />
+                  recursive
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={folderShowSame}
+                    onChange={(event) => setFolderShowSame(event.target.checked)}
+                  />
+                  show same
+                </label>
+                <input
+                  className="folder-name-filter-input"
+                  value={folderNameFilter}
+                  onChange={(event) => setFolderNameFilter(event.target.value)}
+                  placeholder="name filter"
+                />
               </div>
               {folderViewMode === 'list' ? (
                 <div
@@ -4754,88 +4790,7 @@ export function App() {
     )
 
   const sidebarContent =
-    mode === 'folder' ? (
-      <section className="mode-panel">
-        <div className="field-block">
-          <label className="field-label">Left root</label>
-          <div className="path-row">
-            <input
-              value={folderLeftRoot}
-              onChange={(e) => {
-                setFolderLeftRoot(e.target.value)
-                setFolderCurrentPath('')
-                setSelectedFolderItemPath('')
-                setFolderResult(null)
-              }}
-            />
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={() => void browseFolderRoot('left')}
-            >
-              Browse...
-            </button>
-          </div>
-        </div>
-
-        <div className="field-block">
-          <label className="field-label">Right root</label>
-          <div className="path-row">
-            <input
-              value={folderRightRoot}
-              onChange={(e) => {
-                setFolderRightRoot(e.target.value)
-                setFolderCurrentPath('')
-                setSelectedFolderItemPath('')
-                setFolderResult(null)
-              }}
-            />
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={() => void browseFolderRoot('right')}
-            >
-              Browse...
-            </button>
-          </div>
-        </div>
-
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={folderRecursive}
-            onChange={(e) => setFolderRecursive(e.target.checked)}
-          />
-          recursive
-        </label>
-
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={folderShowSame}
-            onChange={(e) => setFolderShowSame(e.target.checked)}
-          />
-          show same
-        </label>
-
-        <div className="field-block">
-          <label className="field-label">Name filter</label>
-          <input
-            value={folderNameFilter}
-            onChange={(e) => setFolderNameFilter(e.target.value)}
-            placeholder="case-insensitive substring"
-          />
-        </div>
-
-        <button
-          className="button-primary"
-          onClick={onRun}
-          disabled={loading || !folderLeftRoot || !folderRightRoot}
-        >
-          {loading ? 'Comparing...' : 'Compare folders'}
-        </button>
-      </section>
-    ) : mode === 'scenario' ? (
+    mode === 'scenario' ? (
       <section className="mode-panel">
         <div className="field-block">
           <label className="field-label">Scenario path</label>
@@ -5274,6 +5229,7 @@ export function App() {
       <div className="workspace-inspector-body">{compareOptionsContent}</div>
     </div>
   ) : null
+  const isMainFirstMode = isCompareCentricMode || mode === 'folder'
 
   return (
     <AppChrome
@@ -5284,8 +5240,8 @@ export function App() {
           setCompareOptionsOpened(false)
         }
       }}
-      layoutMode={isCompareCentricMode ? 'workspace' : 'sidebar'}
-      sidebar={isCompareCentricMode ? undefined : sidebarContent}
+      layoutMode={isMainFirstMode ? 'workspace' : 'sidebar'}
+      sidebar={isMainFirstMode ? undefined : sidebarContent}
       headerActions={isCompareCentricMode ? compareModeHeaderActions : undefined}
       main={mainContent}
       inspector={isCompareCentricMode ? compareOptionsInspector : undefined}

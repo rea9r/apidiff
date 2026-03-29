@@ -1601,36 +1601,38 @@ button {
 .folder-result-shell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-height: 0;
   flex: 1;
 }
 
-.folder-summary-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.folder-summary-line {
+.folder-header-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: var(--xdiff-folder-small-font-size);
-  line-height: 1.3;
 }
 
-.folder-summary-heading {
-  font-weight: 600;
-  font-size: var(--xdiff-folder-small-font-size);
-}
-
-.folder-nav-bar {
+.folder-header-left,
+.folder-header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+}
+
+.folder-current-path {
+  color: var(--xdiff-viewer-text-dimmed);
+  font-size: var(--xdiff-folder-small-font-size);
+}
+
+.folder-compact-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--xdiff-viewer-text-dimmed);
+  font-size: var(--xdiff-folder-small-font-size);
 }
 
 .folder-breadcrumbs {
@@ -1801,6 +1803,23 @@ button {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.folder-secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.folder-secondary-controls .checkbox-row {
+  margin: 0;
+  font-size: var(--xdiff-folder-small-font-size);
+}
+
+.folder-name-filter-input {
+  min-width: 220px;
+  max-width: 320px;
 }
 
 .folder-view-mode-toggle {
