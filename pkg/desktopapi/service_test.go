@@ -106,6 +106,9 @@ func TestCompareJSONRich_Basic(t *testing.T) {
 		richRes.Result.Error != rawRes.Error {
 		t.Fatalf("raw compare result mismatch: got %+v, want %+v", richRes.Result, *rawRes)
 	}
+	if strings.TrimSpace(richRes.DiffText) == "" {
+		t.Fatal("expected diff text")
+	}
 	if len(richRes.Diffs) == 0 {
 		t.Fatal("expected rich diffs")
 	}
@@ -252,6 +255,9 @@ func TestCompareJSONValuesRich_Basic(t *testing.T) {
 	if strings.TrimSpace(res.Result.Output) == "" {
 		t.Fatal("expected output")
 	}
+	if strings.TrimSpace(res.DiffText) == "" {
+		t.Fatal("expected diff text")
+	}
 	if len(res.Diffs) == 0 {
 		t.Fatal("expected structured diffs")
 	}
@@ -390,6 +396,9 @@ func TestCompareSpecRich_PathMethodAddedRemoved(t *testing.T) {
 	}
 	if richRes.Result.ExitCode != rawRes.ExitCode || richRes.Result.DiffFound != rawRes.DiffFound {
 		t.Fatalf("raw compare result mismatch: got %+v want %+v", richRes.Result, *rawRes)
+	}
+	if strings.TrimSpace(richRes.DiffText) == "" {
+		t.Fatal("expected diff text")
 	}
 	if len(richRes.Diffs) == 0 {
 		t.Fatal("expected rich diffs")
@@ -649,6 +658,9 @@ func TestCompareSpecValuesRich_Basic(t *testing.T) {
 	}
 	if !res.Result.DiffFound {
 		t.Fatalf("expected diffFound=true, got %+v", res.Result)
+	}
+	if strings.TrimSpace(res.DiffText) == "" {
+		t.Fatal("expected diff text")
 	}
 	if len(res.Diffs) == 0 {
 		t.Fatal("expected rich diffs")

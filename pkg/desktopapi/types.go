@@ -133,9 +133,10 @@ type JSONRichSummary struct {
 }
 
 type CompareJSONRichResponse struct {
-	Result  CompareResponse    `json:"result"`
-	Summary JSONRichSummary    `json:"summary"`
-	Diffs   []JSONRichDiffItem `json:"diffs"`
+	Result   CompareResponse    `json:"result"`
+	DiffText string             `json:"diffText"`
+	Summary  JSONRichSummary    `json:"summary"`
+	Diffs    []JSONRichDiffItem `json:"diffs"`
 }
 
 type SpecRichDiffItem struct {
@@ -158,9 +159,10 @@ type SpecRichSummary struct {
 }
 
 type CompareSpecRichResponse struct {
-	Result  CompareResponse    `json:"result"`
-	Summary SpecRichSummary    `json:"summary"`
-	Diffs   []SpecRichDiffItem `json:"diffs"`
+	Result   CompareResponse    `json:"result"`
+	DiffText string             `json:"diffText"`
+	Summary  SpecRichSummary    `json:"summary"`
+	Diffs    []SpecRichDiffItem `json:"diffs"`
 }
 
 type ScenarioSummary struct {

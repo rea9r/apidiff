@@ -78,6 +78,15 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 		return nil, err
 	}
 
+	diffReq := req
+	diffReq.Common.OutputFormat = "text"
+	diffReq.Common.TextStyle = "patch"
+	diffReq.Common.NoColor = true
+	diffResult, err := s.CompareJSONFiles(diffReq)
+	if err != nil {
+		return nil, err
+	}
+
 	structuredReq := req
 	structuredReq.Common.OutputFormat = output.JSONFormat
 	structuredReq.Common.ShowPaths = false
@@ -94,9 +103,10 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	}
 
 	return &CompareJSONRichResponse{
-		Result:  *rawResult,
-		Summary: summarizeJSONRichDiffs(diffs),
-		Diffs:   diffs,
+		Result:   *rawResult,
+		DiffText: pickDiffText(diffResult.Output, rawResult.Output),
+		Summary:  summarizeJSONRichDiffs(diffs),
+		Diffs:    diffs,
 	}, nil
 }
 
@@ -135,15 +145,23 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 	structuredOpts.UseColor = false
 	structuredRun := runner.RunJSONValuesDetailed(oldValue, newValue, structuredOpts)
 
+	diffOpts := rawOpts
+	diffOpts.Format = output.TextFormat
+	diffOpts.TextStyle = "patch"
+	diffOpts.ShowPaths = false
+	diffOpts.UseColor = false
+	diffRun := runner.RunJSONValuesDetailed(oldValue, newValue, diffOpts)
+
 	diffs, err := parseJSONMachineDiffs(structuredRun.Output)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CompareJSONRichResponse{
-		Result:  rawResult,
-		Summary: summarizeJSONRichDiffs(diffs),
-		Diffs:   diffs,
+		Result:   rawResult,
+		DiffText: pickDiffText(diffRun.Output, rawResult.Output),
+		Summary:  summarizeJSONRichDiffs(diffs),
+		Diffs:    diffs,
 	}, nil
 }
 
@@ -232,6 +250,15 @@ func (s *Service) CompareSpecRich(req CompareSpecRequest) (*CompareSpecRichRespo
 		return nil, err
 	}
 
+	diffReq := req
+	diffReq.Common.OutputFormat = "text"
+	diffReq.Common.TextStyle = "patch"
+	diffReq.Common.NoColor = true
+	diffResult, err := s.CompareSpecFiles(diffReq)
+	if err != nil {
+		return nil, err
+	}
+
 	structuredReq := req
 	structuredReq.Common.OutputFormat = output.JSONFormat
 	structuredReq.Common.ShowPaths = false
@@ -248,9 +275,10 @@ func (s *Service) CompareSpecRich(req CompareSpecRequest) (*CompareSpecRichRespo
 	}
 
 	return &CompareSpecRichResponse{
-		Result:  *rawResult,
-		Summary: summarizeSpecRichDiffs(diffs),
-		Diffs:   diffs,
+		Result:   *rawResult,
+		DiffText: pickDiffText(diffResult.Output, rawResult.Output),
+		Summary:  summarizeSpecRichDiffs(diffs),
+		Diffs:    diffs,
 	}, nil
 }
 
@@ -290,15 +318,23 @@ func (s *Service) CompareSpecValuesRich(req CompareSpecValuesRequest) (*CompareS
 	structuredOptions.UseColor = false
 	structuredRun := runner.RunDeltaDiffsDetailed(diffs, structuredOptions)
 
+	diffOptions := rawOptions
+	diffOptions.Format = output.TextFormat
+	diffOptions.TextStyle = "patch"
+	diffOptions.ShowPaths = false
+	diffOptions.UseColor = false
+	diffRun := runner.RunDeltaDiffsDetailed(diffs, diffOptions)
+
 	specDiffs, err := parseSpecMachineDiffs(structuredRun.Output)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CompareSpecRichResponse{
-		Result:  rawResult,
-		Summary: summarizeSpecRichDiffs(specDiffs),
-		Diffs:   specDiffs,
+		Result:   rawResult,
+		DiffText: pickDiffText(diffRun.Output, rawResult.Output),
+		Summary:  summarizeSpecRichDiffs(specDiffs),
+		Diffs:    specDiffs,
 	}, nil
 }
 
@@ -687,6 +723,13 @@ func errString(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+func pickDiffText(primary, fallback string) string {
+	if strings.TrimSpace(primary) != "" {
+		return primary
+	}
+	return fallback
 }
 
 func normalizeOutputFormat(v string) string {

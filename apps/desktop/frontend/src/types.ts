@@ -36,6 +36,7 @@ export type JSONRichSummary = {
 
 export type CompareJSONRichResponse = {
   result: CompareResponse
+  diffText: string
   summary: JSONRichSummary
   diffs: JSONRichDiffItem[]
 }
@@ -74,6 +75,7 @@ export type SpecRichSummary = {
 
 export type CompareSpecRichResponse = {
   result: CompareResponse
+  diffText: string
   summary: SpecRichSummary
   diffs: SpecRichDiffItem[]
 }

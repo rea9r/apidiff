@@ -1,4 +1,12 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MutableRefObject,
+} from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import YAML from 'yaml'
@@ -93,8 +101,8 @@ const defaultTextCommon: CompareCommon = {
   noColor: true,
 }
 
-type TextResultView = 'rich' | 'raw'
-type JSONResultView = 'rich' | 'raw'
+type TextResultView = 'diff' | 'raw'
+type StructuredResultView = 'diff' | 'semantic' | 'raw'
 type TextDiffLayout = 'split' | 'unified'
 type TextInputTarget = 'old' | 'new'
 type FolderQuickFilter =
@@ -1277,7 +1285,7 @@ export function App() {
   const [jsonNewSourcePath, setJSONNewSourcePath] = useState('')
   const [ignoreOrder, setIgnoreOrder] = useState(false)
   const [jsonCommon, setJSONCommon] = useState<CompareCommon>(defaultJSONCommon)
-  const [jsonResultView, setJSONResultView] = useState<JSONResultView>('rich')
+  const [jsonResultView, setJSONResultView] = useState<StructuredResultView>('diff')
   const [jsonRichResult, setJSONRichResult] = useState<CompareJSONRichResponse | null>(null)
   const [jsonSearchQuery, setJSONSearchQuery] = useState('')
   const [jsonActiveSearchIndex, setJSONActiveSearchIndex] = useState(0)
@@ -1297,7 +1305,7 @@ export function App() {
   const [specOldSourcePath, setSpecOldSourcePath] = useState('')
   const [specNewSourcePath, setSpecNewSourcePath] = useState('')
   const [specCommon, setSpecCommon] = useState<CompareCommon>(defaultSpecCommon)
-  const [specResultView, setSpecResultView] = useState<'rich' | 'raw'>('rich')
+  const [specResultView, setSpecResultView] = useState<StructuredResultView>('diff')
   const [specRichResult, setSpecRichResult] = useState<CompareSpecRichResponse | null>(null)
   const [specSearchQuery, setSpecSearchQuery] = useState('')
   const [specActiveSearchIndex, setSpecActiveSearchIndex] = useState(0)
@@ -1315,7 +1323,7 @@ export function App() {
   const [textOldSourcePath, setTextOldSourcePath] = useState('')
   const [textNewSourcePath, setTextNewSourcePath] = useState('')
   const [textCommon, setTextCommon] = useState<CompareCommon>(defaultTextCommon)
-  const [textResultView, setTextResultView] = useState<TextResultView>('rich')
+  const [textResultView, setTextResultView] = useState<TextResultView>('diff')
   const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
   const [textResult, setTextResult] = useState<CompareResponse | null>(null)
   const [textLastRunOld, setTextLastRunOld] = useState('')
@@ -1329,6 +1337,8 @@ export function App() {
   const [textSearchQuery, setTextSearchQuery] = useState('')
   const [textActiveSearchIndex, setTextActiveSearchIndex] = useState(0)
   const textSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const jsonDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const specDiffSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(
@@ -1422,8 +1432,18 @@ export function App() {
 
   const jsonResult = jsonRichResult?.result ?? null
   const jsonDiffRows = jsonRichResult?.diffs ?? []
+  const jsonDiffTextRows = useMemo(
+    () => (jsonRichResult?.diffText ? parseUnifiedDiff(jsonRichResult.diffText) : null),
+    [jsonRichResult?.diffText],
+  )
+  const jsonDiffTextItems = useMemo(
+    () =>
+      jsonDiffTextRows ? buildRichDiffItems(jsonDiffTextRows, jsonOldText, jsonNewText) : null,
+    [jsonDiffTextRows, jsonOldText, jsonNewText],
+  )
   const jsonDiffGroups = useMemo(() => buildJSONDiffGroups(jsonDiffRows), [jsonDiffRows])
   const canRenderJSONRich = !!jsonRichResult && !jsonRichResult.result.error
+  const canRenderJSONDiff = !!jsonRichResult && !jsonResult?.error && !!jsonDiffTextRows
   const normalizedJSONSearchQuery = useMemo(
     () => normalizeSearchQuery(jsonSearchQuery),
     [jsonSearchQuery],
@@ -1440,6 +1460,18 @@ export function App() {
       )
       .map(({ index }) => index)
   }, [jsonDiffRows, normalizedJSONSearchQuery])
+  const jsonDiffSearchMatches = useMemo(
+    () =>
+      jsonDiffTextItems
+        ? buildTextSearchMatches(jsonDiffTextItems, normalizedJSONSearchQuery)
+        : [],
+    [jsonDiffTextItems, normalizedJSONSearchQuery],
+  )
+  const jsonDiffSearchMatchIds = useMemo(
+    () => new Set(jsonDiffSearchMatches.map((match) => match.id)),
+    [jsonDiffSearchMatches],
+  )
+  const activeJSONDiffSearchMatch = jsonDiffSearchMatches[jsonActiveSearchIndex] ?? null
   const jsonSearchMatchIndexSet = useMemo(
     () => new Set(jsonSearchMatches),
     [jsonSearchMatches],
@@ -1465,6 +1497,16 @@ export function App() {
   const jsonEditorBusy = jsonClipboardBusyTarget !== null || jsonFileBusyTarget !== null
   const specResult = specRichResult?.result ?? null
   const specDiffRows = specRichResult?.diffs ?? []
+  const specDiffTextRows = useMemo(
+    () => (specRichResult?.diffText ? parseUnifiedDiff(specRichResult.diffText) : null),
+    [specRichResult?.diffText],
+  )
+  const specDiffTextItems = useMemo(
+    () =>
+      specDiffTextRows ? buildRichDiffItems(specDiffTextRows, specOldText, specNewText) : null,
+    [specDiffTextRows, specOldText, specNewText],
+  )
+  const canRenderSpecDiff = !!specRichResult && !specResult?.error && !!specDiffTextRows
   const normalizedSpecSearchQuery = useMemo(
     () => normalizeSearchQuery(specSearchQuery),
     [specSearchQuery],
@@ -1481,6 +1523,18 @@ export function App() {
       )
       .map(({ index }) => index)
   }, [specDiffRows, normalizedSpecSearchQuery])
+  const specDiffSearchMatches = useMemo(
+    () =>
+      specDiffTextItems
+        ? buildTextSearchMatches(specDiffTextItems, normalizedSpecSearchQuery)
+        : [],
+    [specDiffTextItems, normalizedSpecSearchQuery],
+  )
+  const specDiffSearchMatchIds = useMemo(
+    () => new Set(specDiffSearchMatches.map((match) => match.id)),
+    [specDiffSearchMatches],
+  )
+  const activeSpecDiffSearchMatch = specDiffSearchMatches[specActiveSearchIndex] ?? null
   const specSearchMatchIndexSet = useMemo(
     () => new Set(specSearchMatches),
     [specSearchMatches],
@@ -1703,7 +1757,7 @@ export function App() {
       return
     }
 
-    if (textResultView === 'rich' && !canRenderTextRich) {
+    if (textResultView === 'diff' && !canRenderTextRich) {
       setTextResultView('raw')
     }
   }, [canRenderTextRich, textResult, textResultView])
@@ -1713,20 +1767,35 @@ export function App() {
       return
     }
 
-    if (jsonResultView === 'rich' && !canRenderJSONRich) {
-      setJSONResultView('raw')
+    if (jsonResultView === 'semantic' && !canRenderJSONRich) {
+      setJSONResultView(canRenderJSONDiff ? 'diff' : 'raw')
+      return
     }
-  }, [canRenderJSONRich, jsonRichResult, jsonResultView])
+
+    if (jsonResultView === 'diff' && !canRenderJSONDiff) {
+      setJSONResultView(canRenderJSONRich ? 'semantic' : 'raw')
+    }
+  }, [canRenderJSONDiff, canRenderJSONRich, jsonRichResult, jsonResultView])
 
   useEffect(() => {
     if (!specRichResult) {
       return
     }
 
-    if (specResultView === 'rich' && !!specResult?.error) {
-      setSpecResultView('raw')
+    if (specResultView === 'semantic' && !!specResult?.error) {
+      setSpecResultView(canRenderSpecDiff ? 'diff' : 'raw')
+      return
     }
-  }, [specRichResult, specResult?.error, specResultView])
+
+    if (specResultView === 'semantic' && !specRichResult) {
+      setSpecResultView(canRenderSpecDiff ? 'diff' : 'raw')
+      return
+    }
+
+    if (specResultView === 'diff' && !canRenderSpecDiff) {
+      setSpecResultView(specRichResult && !specResult?.error ? 'semantic' : 'raw')
+    }
+  }, [canRenderSpecDiff, specRichResult, specResult?.error, specResultView])
 
   useEffect(() => {
     setJSONExpandedGroups(jsonDiffGroups.map((group) => group.key))
@@ -1759,33 +1828,37 @@ export function App() {
   }, [textSearchMatches.length, textActiveSearchIndex])
 
   useEffect(() => {
-    if (jsonSearchMatches.length === 0) {
+    const targetLength =
+      jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length
+    if (targetLength === 0) {
       if (jsonActiveSearchIndex !== 0) {
         setJSONActiveSearchIndex(0)
       }
       return
     }
 
-    if (jsonActiveSearchIndex >= jsonSearchMatches.length) {
+    if (jsonActiveSearchIndex >= targetLength) {
       setJSONActiveSearchIndex(0)
     }
-  }, [jsonSearchMatches.length, jsonActiveSearchIndex])
+  }, [jsonSearchMatches.length, jsonDiffSearchMatches.length, jsonActiveSearchIndex, jsonResultView])
 
   useEffect(() => {
-    if (specSearchMatches.length === 0) {
+    const targetLength =
+      specResultView === 'semantic' ? specSearchMatches.length : specDiffSearchMatches.length
+    if (targetLength === 0) {
       if (specActiveSearchIndex !== 0) {
         setSpecActiveSearchIndex(0)
       }
       return
     }
 
-    if (specActiveSearchIndex >= specSearchMatches.length) {
+    if (specActiveSearchIndex >= targetLength) {
       setSpecActiveSearchIndex(0)
     }
-  }, [specSearchMatches.length, specActiveSearchIndex])
+  }, [specSearchMatches.length, specDiffSearchMatches.length, specActiveSearchIndex, specResultView])
 
   useEffect(() => {
-    if (textResultView !== 'rich' || !canRenderTextRich || !activeTextSearchMatch) {
+    if (textResultView !== 'diff' || !canRenderTextRich || !activeTextSearchMatch) {
       return
     }
 
@@ -1800,6 +1873,26 @@ export function App() {
     textResultView,
     effectiveExpandedSectionIds.join('|'),
   ])
+
+  useEffect(() => {
+    if (jsonResultView !== 'diff' || !canRenderJSONDiff || !activeJSONDiffSearchMatch) {
+      return
+    }
+    const node = jsonDiffSearchRowRefs.current[activeJSONDiffSearchMatch.id]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [activeJSONDiffSearchMatch?.id, canRenderJSONDiff, jsonResultView, textDiffLayout])
+
+  useEffect(() => {
+    if (specResultView !== 'diff' || !canRenderSpecDiff || !activeSpecDiffSearchMatch) {
+      return
+    }
+    const node = specDiffSearchRowRefs.current[activeSpecDiffSearchMatch.id]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [activeSpecDiffSearchMatch?.id, canRenderSpecDiff, specResultView, textDiffLayout])
 
   useEffect(() => {
     setTextExpandedUnchangedSectionIds((prev) =>
@@ -1873,8 +1966,8 @@ export function App() {
       return
     }
 
-    if (textResultView !== 'rich') {
-      setTextResultView('rich')
+    if (textResultView !== 'diff') {
+      setTextResultView('diff')
     }
 
     setTextActiveSearchIndex((prev) =>
@@ -2094,7 +2187,7 @@ export function App() {
         setJSONRichResult(richRes)
         setJSONSearchQuery('')
         setJSONActiveSearchIndex(0)
-        setJSONResultView('rich')
+        setJSONResultView('diff')
         setMode('json')
         setResult(richRes.result)
         return
@@ -2133,7 +2226,7 @@ export function App() {
         setSpecRichResult(richRes)
         setSpecSearchQuery('')
         setSpecActiveSearchIndex(0)
-        setSpecResultView('rich')
+        setSpecResultView('diff')
         setMode('spec')
         setResult(richRes.result)
         return
@@ -2353,7 +2446,7 @@ export function App() {
       ignoreOrder,
     } satisfies CompareJSONValuesRequest)
     setJSONRichResult(richRes)
-    setJSONResultView('rich')
+    setJSONResultView('diff')
     setJSONSearchQuery('')
     setJSONActiveSearchIndex(0)
     setResult(richRes.result)
@@ -2377,7 +2470,7 @@ export function App() {
     setSpecRichResult(richRes)
     setSpecSearchQuery('')
     setSpecActiveSearchIndex(0)
-    setSpecResultView('rich')
+    setSpecResultView('diff')
     setResult(richRes.result)
   }
 
@@ -3055,6 +3148,7 @@ export function App() {
               output: '',
               error: String(e),
             },
+            diffText: '',
             summary: {
               added: 0,
               removed: 0,
@@ -3072,6 +3166,7 @@ export function App() {
               output: '',
               error: String(e),
             },
+            diffText: '',
             summary: {
               added: 0,
               removed: 0,
@@ -3470,10 +3565,288 @@ export function App() {
     )
   }
 
+  const buildModeRowId = (_modeKey: 'json' | 'spec', itemIndex: number) =>
+    buildTextSearchRowIDForItem(itemIndex)
+
+  const buildModeOmittedRowId = (
+    modeKey: 'json' | 'spec',
+    sectionId: string,
+    itemIndex: number,
+  ) => buildTextSearchRowIDForOmitted(sectionId, itemIndex)
+
+  const registerModeSearchRowRef =
+    (rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>, matchId: string) =>
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        rowRefs.current[matchId] = node
+        return
+      }
+      delete rowRefs.current[matchId]
+    }
+
+  const renderModeUnifiedDiffRows = (
+    items: RichDiffItem[],
+    modeKey: 'json' | 'spec',
+    searchMatchIds: Set<string>,
+    activeMatchId: string | null,
+    rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>,
+  ) => {
+    const showHunkHeaders = shouldShowTextHunkHeaders(items)
+
+    return (
+      <div className="text-diff-grid">
+        {items.map((item, idx) => {
+          if (item.kind === 'omitted') {
+            const expanded = true
+            return (
+              <div key={`${modeKey}-${item.sectionId}`} className="text-omitted-block">
+                <div className={`text-omitted-banner ${expanded ? 'expanded' : ''}`}>
+                  <span className="muted">{item.lines.length} unchanged lines</span>
+                </div>
+                {item.lines.map((line, lineIndex) => {
+                  const row = buildExpandedContextRow(
+                    line,
+                    item.startOldLine + lineIndex,
+                    item.startNewLine + lineIndex,
+                  )
+                  const matchId = buildModeOmittedRowId(modeKey, item.sectionId, lineIndex)
+                  const matched = searchMatchIds.has(matchId)
+                  const rowClass = matched
+                    ? activeMatchId === matchId
+                      ? 'active-search-hit'
+                      : 'search-hit'
+                    : ''
+                  return (
+                    <div
+                      key={`${modeKey}-${item.sectionId}-${lineIndex}`}
+                      ref={
+                        matched
+                          ? registerModeSearchRowRef(rowRefs, matchId)
+                          : undefined
+                      }
+                      className={['text-diff-row', row.kind, rowClass].filter(Boolean).join(' ')}
+                    >
+                      <div className="text-diff-line">{row.oldLine ?? ''}</div>
+                      <div className="text-diff-line">{row.newLine ?? ''}</div>
+                      <pre className="text-diff-content">{row.content}</pre>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+
+          const row = item.row
+          if (shouldHideTextRichMetaRow(row)) {
+            return null
+          }
+          if (row.kind === 'hunk' && !showHunkHeaders) {
+            return null
+          }
+          const matchId = buildModeRowId(modeKey, idx)
+          const matched = searchMatchIds.has(matchId)
+          const rowClass = matched
+            ? activeMatchId === matchId
+              ? 'active-search-hit'
+              : 'search-hit'
+            : ''
+          return (
+            <div
+              key={`${modeKey}-${idx}-${row.kind}`}
+              ref={matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined}
+              className={['text-diff-row', row.kind, rowClass].filter(Boolean).join(' ')}
+            >
+              <div className="text-diff-line">{row.oldLine ?? ''}</div>
+              <div className="text-diff-line">{row.newLine ?? ''}</div>
+              <pre className="text-diff-content">
+                {renderInlineDiffContent(row, `${modeKey}-diff-${idx}`)}
+              </pre>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderModeSplitDiffRows = (
+    items: RichDiffItem[],
+    modeKey: 'json' | 'spec',
+    searchMatchIds: Set<string>,
+    activeMatchId: string | null,
+    rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>,
+  ) => {
+    const showHunkHeaders = shouldShowTextHunkHeaders(items)
+    const splitNodes: JSX.Element[] = []
+    let index = 0
+
+    while (index < items.length) {
+      const item = items[index]
+
+      if (item.kind === 'omitted') {
+        splitNodes.push(
+          <div key={`${modeKey}-split-omitted-${item.sectionId}`} className="split-omitted-block">
+            <div className="split-diff-banner omitted">
+              <div className="split-omitted-banner-inner">
+                <span className="muted">{item.lines.length} unchanged lines</span>
+              </div>
+            </div>
+            {item.lines.map((line, lineIndex) => {
+              const row = buildExpandedContextRow(
+                line,
+                item.startOldLine + lineIndex,
+                item.startNewLine + lineIndex,
+              )
+              const matchId = buildModeOmittedRowId(modeKey, item.sectionId, lineIndex)
+              const matched = searchMatchIds.has(matchId)
+              const rowClass = matched
+                ? activeMatchId === matchId
+                  ? 'active-search-hit'
+                  : 'search-hit'
+                : ''
+              return (
+                <div key={`${modeKey}-split-omitted-row-${item.sectionId}-${lineIndex}`} className="split-diff-row">
+                  {renderSplitDiffCell(
+                    row,
+                    'left',
+                    `${modeKey}-split-omitted-left-${item.sectionId}-${lineIndex}`,
+                    rowClass,
+                    matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined,
+                  )}
+                  {renderSplitDiffCell(
+                    row,
+                    'right',
+                    `${modeKey}-split-omitted-right-${item.sectionId}-${lineIndex}`,
+                    rowClass,
+                  )}
+                </div>
+              )
+            })}
+          </div>,
+        )
+        index++
+        continue
+      }
+
+      const row = item.row
+      if (row.kind === 'meta' || row.kind === 'hunk') {
+        if (shouldHideTextRichMetaRow(row)) {
+          index++
+          continue
+        }
+        if (row.kind === 'hunk' && !showHunkHeaders) {
+          index++
+          continue
+        }
+        splitNodes.push(
+          <div key={`${modeKey}-split-banner-${index}`} className={`split-diff-banner ${row.kind}`}>
+            <pre className="split-diff-banner-content">{row.content}</pre>
+          </div>,
+        )
+        index++
+        continue
+      }
+
+      if (row.kind === 'context') {
+        const matchId = buildModeRowId(modeKey, index)
+        const matched = searchMatchIds.has(matchId)
+        const rowClass = matched
+          ? activeMatchId === matchId
+            ? 'active-search-hit'
+            : 'search-hit'
+          : ''
+        splitNodes.push(
+          <div key={`${modeKey}-split-row-${index}`} className="split-diff-row">
+            {renderSplitDiffCell(
+              row,
+              'left',
+              `${modeKey}-split-left-${index}`,
+              rowClass,
+              matched ? registerModeSearchRowRef(rowRefs, matchId) : undefined,
+            )}
+            {renderSplitDiffCell(row, 'right', `${modeKey}-split-right-${index}`, rowClass)}
+          </div>,
+        )
+        index++
+        continue
+      }
+
+      const removed: Array<{ row: UnifiedDiffRow; matchId: string }> = []
+      const added: Array<{ row: UnifiedDiffRow; matchId: string }> = []
+      let end = index
+
+      while (end < items.length) {
+        const candidate = items[end]
+        if (candidate.kind !== 'row') {
+          break
+        }
+        if (candidate.row.kind !== 'remove' && candidate.row.kind !== 'add') {
+          break
+        }
+        const matchId = buildModeRowId(modeKey, end)
+        if (candidate.row.kind === 'remove') {
+          removed.push({ row: candidate.row, matchId })
+        } else {
+          added.push({ row: candidate.row, matchId })
+        }
+        end++
+      }
+
+      const pairCount = Math.max(removed.length, added.length)
+      for (let pairIndex = 0; pairIndex < pairCount; pairIndex++) {
+        const left = removed[pairIndex] ?? null
+        const right = added[pairIndex] ?? null
+        const leftMatched = left ? searchMatchIds.has(left.matchId) : false
+        const rightMatched = right ? searchMatchIds.has(right.matchId) : false
+        splitNodes.push(
+          <div key={`${modeKey}-split-pair-${index}-${pairIndex}`} className="split-diff-row">
+            {renderSplitDiffCell(
+              left?.row ?? null,
+              'left',
+              `${modeKey}-split-pair-left-${index}-${pairIndex}`,
+              leftMatched
+                ? activeMatchId === left?.matchId
+                  ? 'active-search-hit'
+                  : 'search-hit'
+                : '',
+              left && leftMatched
+                ? registerModeSearchRowRef(rowRefs, left.matchId)
+                : undefined,
+            )}
+            {renderSplitDiffCell(
+              right?.row ?? null,
+              'right',
+              `${modeKey}-split-pair-right-${index}-${pairIndex}`,
+              rightMatched
+                ? activeMatchId === right?.matchId
+                  ? 'active-search-hit'
+                  : 'search-hit'
+                : '',
+              right && rightMatched
+                ? registerModeSearchRowRef(rowRefs, right.matchId)
+                : undefined,
+            )}
+          </div>,
+        )
+      }
+
+      index = end
+    }
+
+    return (
+      <div className="split-diff-grid">
+        <div className="split-diff-header">
+          <div className="split-diff-header-cell">Old</div>
+          <div className="split-diff-header-cell">New</div>
+        </div>
+        {splitNodes}
+      </div>
+    )
+  }
+
   const renderTextResultPanel = () => {
     const raw = textResult ? renderResult(textResult) : ''
     const hasTextResult = !!textResult
-    const showRich = textResultView === 'rich' && canRenderTextRich && !!textRichItems
+    const showRich = textResultView === 'diff' && canRenderTextRich && !!textRichItems
     const canSearchRich = showRich
     const diffCounts = summarizeTextDiffCounts(textRichRows)
     const textSummaryItems = buildTextSummaryBadgeItems({
@@ -3497,7 +3870,7 @@ export function App() {
           primary={
             <CompareSearchControls
               value={textSearchQuery}
-              placeholder="Search rich diff"
+              placeholder="Search diff"
               statusText={textSearchStatus}
               disabled={!canSearchRich}
               onChange={setTextSearchQuery}
@@ -3541,15 +3914,15 @@ export function App() {
                     title: 'Display',
                     items: [
                       {
-                        key: 'text-display-rich',
-                        label: 'Rich diff',
-                        active: textResultView === 'rich',
+                        key: 'text-display-diff',
+                        label: 'Diff',
+                        active: textResultView === 'diff',
                         disabled: !canRenderTextRich,
-                        onSelect: () => setTextResultView('rich'),
+                        onSelect: () => setTextResultView('diff'),
                       },
                       {
                         key: 'text-display-raw',
-                        label: 'Raw output',
+                        label: 'Raw',
                         active: textResultView === 'raw',
                         onSelect: () => setTextResultView('raw'),
                       },
@@ -3562,14 +3935,14 @@ export function App() {
                         key: 'text-layout-split',
                         label: 'Split',
                         active: textDiffLayout === 'split',
-                        disabled: !canRenderTextRich,
+                        disabled: textResultView !== 'diff' || !canRenderTextRich,
                         onSelect: () => setTextDiffLayout('split'),
                       },
                       {
                         key: 'text-layout-unified',
                         label: 'Unified',
                         active: textDiffLayout === 'unified',
-                        disabled: !canRenderTextRich,
+                        disabled: textResultView !== 'diff' || !canRenderTextRich,
                         onSelect: () => setTextDiffLayout('unified'),
                       },
                     ],
@@ -3611,18 +3984,22 @@ export function App() {
   }
 
   const moveJSONSearch = (direction: 1 | -1) => {
-    if (!canRenderJSONRich || jsonSearchMatches.length === 0) {
+    const targetMatches =
+      jsonResultView === 'semantic' ? jsonSearchMatches : jsonDiffSearchMatches
+    const canSearch =
+      jsonResultView === 'semantic'
+        ? canRenderJSONRich
+        : jsonResultView === 'diff'
+          ? canRenderJSONDiff
+          : false
+    if (!canSearch || targetMatches.length === 0) {
       return
-    }
-
-    if (jsonResultView !== 'rich') {
-      setJSONResultView('rich')
     }
 
     setJSONActiveSearchIndex((prev) =>
       direction === 1
-        ? (prev + 1) % jsonSearchMatches.length
-        : (prev - 1 + jsonSearchMatches.length) % jsonSearchMatches.length,
+        ? (prev + 1) % targetMatches.length
+        : (prev - 1 + targetMatches.length) % targetMatches.length,
     )
   }
 
@@ -3727,9 +4104,16 @@ export function App() {
 
   const renderJSONResultPanel = () => {
     const raw = jsonResult ? renderResult(jsonResult) : ''
-    const showRich = jsonResultView === 'rich' && canRenderJSONRich
-    const canSearchRich = showRich
+    const showDiff = jsonResultView === 'diff' && canRenderJSONDiff && !!jsonDiffTextItems
+    const showSemantic = jsonResultView === 'semantic' && canRenderJSONRich
+    const canSearch =
+      jsonResultView === 'semantic'
+        ? showSemantic
+        : jsonResultView === 'diff'
+          ? showDiff
+          : false
     const activeJSONMatch = jsonSearchMatches[jsonActiveSearchIndex] ?? -1
+    const activeJSONDiffMatch = jsonDiffSearchMatches[jsonActiveSearchIndex] ?? null
     const hasJSONResult = !!jsonResult
     const summary = jsonRichResult?.summary
     const jsonDiffRowIndexMap = new Map<JSONRichDiffItem, number>()
@@ -3747,112 +4131,172 @@ export function App() {
       breaking: summary?.breaking ?? 0,
     })
     const jsonSearchStatus = normalizedJSONSearchQuery
-      ? jsonSearchMatches.length > 0
-        ? `${jsonActiveSearchIndex + 1} / ${jsonSearchMatches.length}`
+      ? (jsonResultView === 'semantic' ? jsonSearchMatches.length : jsonDiffSearchMatches.length) > 0
+        ? `${jsonActiveSearchIndex + 1} / ${
+            jsonResultView === 'semantic'
+              ? jsonSearchMatches.length
+              : jsonDiffSearchMatches.length
+          }`
         : '0 matches'
       : null
 
     return (
-        <CompareResultShell
-          hasResult={hasJSONResult}
+      <CompareResultShell
+        hasResult={hasJSONResult}
         toolbar={
           <CompareResultToolbar
-          primary={
-            <CompareSearchControls
-              value={jsonSearchQuery}
-              placeholder="Search paths or values"
-              statusText={jsonSearchStatus}
-              disabled={!canSearchRich}
-              onChange={setJSONSearchQuery}
-              onPrev={() => moveJSONSearch(-1)}
-              onNext={() => moveJSONSearch(1)}
-              prevDisabled={!canSearchRich || jsonSearchMatches.length === 0}
-              nextDisabled={!canSearchRich || jsonSearchMatches.length === 0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  moveJSONSearch(e.shiftKey ? -1 : 1)
-                  return
+            primary={
+              <CompareSearchControls
+                value={jsonSearchQuery}
+                placeholder={
+                  jsonResultView === 'semantic' ? 'Search paths or values' : 'Search diff'
                 }
+                statusText={jsonSearchStatus}
+                disabled={!canSearch}
+                onChange={setJSONSearchQuery}
+                onPrev={() => moveJSONSearch(-1)}
+                onNext={() => moveJSONSearch(1)}
+                prevDisabled={
+                  !canSearch ||
+                  (jsonResultView === 'semantic'
+                    ? jsonSearchMatches.length === 0
+                    : jsonDiffSearchMatches.length === 0)
+                }
+                nextDisabled={
+                  !canSearch ||
+                  (jsonResultView === 'semantic'
+                    ? jsonSearchMatches.length === 0
+                    : jsonDiffSearchMatches.length === 0)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    moveJSONSearch(e.shiftKey ? -1 : 1)
+                    return
+                  }
 
-                if (e.key === 'Escape') {
-                  setJSONSearchQuery('')
-                }
-              }}
-            />
-          }
-          summary={<CompareStatusBadges items={jsonSummaryItems} />}
-          secondary={
-            <>
-              <Tooltip label="Copy raw output">
-                <ActionIcon
-                  variant="default"
-                  size={28}
-                  aria-label="Copy raw output"
-                  className="text-result-action"
-                  onClick={() => void copyJSONResultRawOutput()}
-                  disabled={jsonCopyBusy || !raw}
-                  loading={jsonCopyBusy}
-                >
-                  <IconCopy size={15} />
-                </ActionIcon>
-              </Tooltip>
-              <ViewSettingsMenu
-                tooltip="View settings"
-                sections={[
-                  {
-                    title: 'Display',
-                    items: [
-                      {
-                        key: 'json-display-rich',
-                        label: 'Rich diff',
-                        active: jsonResultView === 'rich',
-                        disabled: !canRenderJSONRich,
-                        onSelect: () => setJSONResultView('rich'),
-                      },
-                      {
-                        key: 'json-display-raw',
-                        label: 'Raw output',
-                        active: jsonResultView === 'raw',
-                        onSelect: () => setJSONResultView('raw'),
-                      },
-                    ],
-                  },
-                ]}
+                  if (e.key === 'Escape') {
+                    setJSONSearchQuery('')
+                  }
+                }}
               />
-            </>
-          }
-        />
+            }
+            summary={<CompareStatusBadges items={jsonSummaryItems} />}
+            secondary={
+              <>
+                <Tooltip label="Copy raw output">
+                  <ActionIcon
+                    variant="default"
+                    size={28}
+                    aria-label="Copy raw output"
+                    className="text-result-action"
+                    onClick={() => void copyJSONResultRawOutput()}
+                    disabled={jsonCopyBusy || !raw}
+                    loading={jsonCopyBusy}
+                  >
+                    <IconCopy size={15} />
+                  </ActionIcon>
+                </Tooltip>
+                <ViewSettingsMenu
+                  tooltip="View settings"
+                  sections={[
+                    {
+                      title: 'Display',
+                      items: [
+                        {
+                          key: 'json-display-diff',
+                          label: 'Diff',
+                          active: jsonResultView === 'diff',
+                          disabled: !canRenderJSONDiff,
+                          onSelect: () => setJSONResultView('diff'),
+                        },
+                        {
+                          key: 'json-display-semantic',
+                          label: 'Semantic',
+                          active: jsonResultView === 'semantic',
+                          disabled: !canRenderJSONRich,
+                          onSelect: () => setJSONResultView('semantic'),
+                        },
+                        {
+                          key: 'json-display-raw',
+                          label: 'Raw',
+                          active: jsonResultView === 'raw',
+                          onSelect: () => setJSONResultView('raw'),
+                        },
+                      ],
+                    },
+                    {
+                      title: 'Layout',
+                      items: [
+                        {
+                          key: 'json-layout-split',
+                          label: 'Split',
+                          active: textDiffLayout === 'split',
+                          disabled: jsonResultView !== 'diff' || !canRenderJSONDiff,
+                          onSelect: () => setTextDiffLayout('split'),
+                        },
+                        {
+                          key: 'json-layout-unified',
+                          label: 'Unified',
+                          active: textDiffLayout === 'unified',
+                          disabled: jsonResultView !== 'diff' || !canRenderJSONDiff,
+                          onSelect: () => setTextDiffLayout('unified'),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </>
+            }
+          />
         }
       >
-        {showRich ? (
-            <div className="json-diff-table-wrap">
-              {jsonDiffRows.length === 0 ? (
-                <CompareStatusState kind="success-empty" />
-              ) : (
-                <table className="json-diff-table">
-                  <thead>
-                    <tr>
-                      <th>Type</th>
-                      <th>Path</th>
-                      <th>Old</th>
-                      <th>New</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jsonDiffGroups.map((group) => {
-                      const expanded = effectiveJSONExpandedGroups.has(group.key)
-                      return (
-                        <Fragment key={`group-${group.key}`}>
-                          <tr key={`group-${group.key}`} className="json-group-row">
-                            <td colSpan={4}>
-                              <CompareSectionHeader
-                                title={group.key}
-                                countLabel={`${group.items.length} changes`}
-                                collapsed={!expanded}
-                                onToggle={() => toggleJSONGroup(group.key)}
-                                badges={
-                                  <>
+        {showDiff && jsonDiffTextItems ? (
+          textDiffLayout === 'split' ? (
+            renderModeSplitDiffRows(
+              jsonDiffTextItems,
+              'json',
+              jsonDiffSearchMatchIds,
+              activeJSONDiffMatch?.id ?? null,
+              jsonDiffSearchRowRefs,
+            )
+          ) : (
+            renderModeUnifiedDiffRows(
+              jsonDiffTextItems,
+              'json',
+              jsonDiffSearchMatchIds,
+              activeJSONDiffMatch?.id ?? null,
+              jsonDiffSearchRowRefs,
+            )
+          )
+        ) : showSemantic ? (
+          <div className="json-diff-table-wrap">
+            {jsonDiffRows.length === 0 ? (
+              <CompareStatusState kind="success-empty" />
+            ) : (
+              <table className="json-diff-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Path</th>
+                    <th>Old</th>
+                    <th>New</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jsonDiffGroups.map((group) => {
+                    const expanded = effectiveJSONExpandedGroups.has(group.key)
+                    return (
+                      <Fragment key={`group-${group.key}`}>
+                        <tr key={`group-${group.key}`} className="json-group-row">
+                          <td colSpan={4}>
+                            <CompareSectionHeader
+                              title={group.key}
+                              countLabel={`${group.items.length} changes`}
+                              collapsed={!expanded}
+                              onToggle={() => toggleJSONGroup(group.key)}
+                              badges={
+                                <>
                                   {group.summary.added > 0 ? (
                                     <span className="json-group-stat added">+{group.summary.added}</span>
                                   ) : null}
@@ -3872,14 +4316,14 @@ export function App() {
                                       breaking {group.summary.breaking}
                                     </span>
                                   ) : null}
-                                  </>
-                                }
-                              />
-                            </td>
-                          </tr>
+                                </>
+                              }
+                            />
+                          </td>
+                        </tr>
 
-                          {expanded
-                            ? group.items.map((diff) => {
+                        {expanded
+                          ? group.items.map((diff) => {
                               const index = jsonDiffRowIndexMap.get(diff) ?? -1
                               const searchHit = jsonSearchMatchIndexSet.has(index)
                               const activeHit = activeJSONMatch === index
@@ -3927,26 +4371,33 @@ export function App() {
                                 </tr>
                               )
                             })
-                            : null}
-                        </Fragment>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          ) : (
-            <pre className="result-output">{raw}</pre>
-          )}
+                          : null}
+                      </Fragment>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : (
+          <pre className="result-output">{raw}</pre>
+        )}
       </CompareResultShell>
     )
   }
 
   const renderSpecResultPanel = () => {
     const raw = specResult ? renderResult(specResult) : ''
-    const showRich = specResultView === 'rich' && !!specRichResult && !specResult?.error
-    const canSearchRich = showRich
+    const showDiff = specResultView === 'diff' && canRenderSpecDiff && !!specDiffTextItems
+    const showSemantic = specResultView === 'semantic' && !!specRichResult && !specResult?.error
+    const canSearch =
+      specResultView === 'semantic'
+        ? showSemantic
+        : specResultView === 'diff'
+          ? showDiff
+          : false
     const activeSpecMatch = specSearchMatches[specActiveSearchIndex] ?? -1
+    const activeSpecDiffMatch = specDiffSearchMatches[specActiveSearchIndex] ?? null
     const summary = specRichResult?.summary
     const specSummaryItems = buildSpecSummaryBadgeItems({
       hasResult: !!specResult,
@@ -3959,22 +4410,25 @@ export function App() {
       breaking: summary?.breaking ?? 0,
     })
     const specSearchStatus = normalizedSpecSearchQuery
-      ? specSearchMatches.length > 0
-        ? `${specActiveSearchIndex + 1} / ${specSearchMatches.length}`
+      ? (specResultView === 'semantic' ? specSearchMatches.length : specDiffSearchMatches.length) > 0
+        ? `${specActiveSearchIndex + 1} / ${
+            specResultView === 'semantic'
+              ? specSearchMatches.length
+              : specDiffSearchMatches.length
+          }`
         : '0 matches'
       : null
 
     const moveSpecSearch = (direction: 1 | -1) => {
-      if (!canSearchRich || specSearchMatches.length === 0) {
+      const targetMatches =
+        specResultView === 'semantic' ? specSearchMatches : specDiffSearchMatches
+      if (!canSearch || targetMatches.length === 0) {
         return
-      }
-      if (specResultView !== 'rich') {
-        setSpecResultView('rich')
       }
       setSpecActiveSearchIndex((prev) =>
         direction === 1
-          ? (prev + 1) % specSearchMatches.length
-          : (prev - 1 + specSearchMatches.length) % specSearchMatches.length,
+          ? (prev + 1) % targetMatches.length
+          : (prev - 1 + targetMatches.length) % targetMatches.length,
       )
     }
 
@@ -3986,14 +4440,26 @@ export function App() {
             primary={
               <CompareSearchControls
                 value={specSearchQuery}
-                placeholder="Search paths or labels"
+                placeholder={
+                  specResultView === 'semantic' ? 'Search paths or labels' : 'Search diff'
+                }
                 statusText={specSearchStatus}
-                disabled={!canSearchRich}
+                disabled={!canSearch}
                 onChange={setSpecSearchQuery}
                 onPrev={() => moveSpecSearch(-1)}
                 onNext={() => moveSpecSearch(1)}
-                prevDisabled={!canSearchRich || specSearchMatches.length === 0}
-                nextDisabled={!canSearchRich || specSearchMatches.length === 0}
+                prevDisabled={
+                  !canSearch ||
+                  (specResultView === 'semantic'
+                    ? specSearchMatches.length === 0
+                    : specDiffSearchMatches.length === 0)
+                }
+                nextDisabled={
+                  !canSearch ||
+                  (specResultView === 'semantic'
+                    ? specSearchMatches.length === 0
+                    : specDiffSearchMatches.length === 0)
+                }
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -4030,17 +4496,43 @@ export function App() {
                       title: 'Display',
                       items: [
                         {
-                          key: 'spec-display-rich',
-                          label: 'Rich diff',
-                          active: specResultView === 'rich',
+                          key: 'spec-display-diff',
+                          label: 'Diff',
+                          active: specResultView === 'diff',
+                          disabled: !canRenderSpecDiff,
+                          onSelect: () => setSpecResultView('diff'),
+                        },
+                        {
+                          key: 'spec-display-semantic',
+                          label: 'Semantic',
+                          active: specResultView === 'semantic',
                           disabled: !specRichResult || !!specResult?.error,
-                          onSelect: () => setSpecResultView('rich'),
+                          onSelect: () => setSpecResultView('semantic'),
                         },
                         {
                           key: 'spec-display-raw',
-                          label: 'Raw output',
+                          label: 'Raw',
                           active: specResultView === 'raw',
                           onSelect: () => setSpecResultView('raw'),
+                        },
+                      ],
+                    },
+                    {
+                      title: 'Layout',
+                      items: [
+                        {
+                          key: 'spec-layout-split',
+                          label: 'Split',
+                          active: textDiffLayout === 'split',
+                          disabled: specResultView !== 'diff' || !canRenderSpecDiff,
+                          onSelect: () => setTextDiffLayout('split'),
+                        },
+                        {
+                          key: 'spec-layout-unified',
+                          label: 'Unified',
+                          active: textDiffLayout === 'unified',
+                          disabled: specResultView !== 'diff' || !canRenderSpecDiff,
+                          onSelect: () => setTextDiffLayout('unified'),
                         },
                       ],
                     },
@@ -4051,7 +4543,25 @@ export function App() {
           />
         }
       >
-        {showRich && specRichResult ? (
+        {showDiff && specDiffTextItems ? (
+          textDiffLayout === 'split' ? (
+            renderModeSplitDiffRows(
+              specDiffTextItems,
+              'spec',
+              specDiffSearchMatchIds,
+              activeSpecDiffMatch?.id ?? null,
+              specDiffSearchRowRefs,
+            )
+          ) : (
+            renderModeUnifiedDiffRows(
+              specDiffTextItems,
+              'spec',
+              specDiffSearchMatchIds,
+              activeSpecDiffMatch?.id ?? null,
+              specDiffSearchRowRefs,
+            )
+          )
+        ) : showSemantic && specRichResult ? (
           <SpecRichDiffViewer
             diffs={specRichResult.diffs}
             searchQuery={specSearchQuery}
