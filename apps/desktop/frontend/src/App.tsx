@@ -4049,68 +4049,43 @@ export function App() {
       ? getFolderItemActionReason(selectedFolderItemForDetail)
       : null
     const currentPath = res?.currentPath ?? folderCurrentPath
-    const currentPathLabel = currentPath ? `root / ${currentPath}` : 'root'
     const visibleCount =
       folderViewMode === 'tree' ? flattenedFolderTreeRows.length : sortedFolderItems.length
     const canCompareFolders = !!folderLeftRoot && !!folderRightRoot
 
     return (
-      <SectionCard title="Folder Compare">
+      <SectionCard>
         <div className="folder-result-shell">
           <div className="folder-header-bar">
             <div className="folder-header-left">
-              <button
-                type="button"
-                className="button-secondary button-compact"
-                onClick={() => void navigateFolderPath(res?.parentPath || '')}
-                disabled={loading || !res || currentPath === ''}
-              >
-                Up
-              </button>
-              <div className="folder-breadcrumbs">
+              <span className="folder-title">Folder Compare</span>
+              <div className="folder-current-path" aria-label="Current path">
                 {folderBreadcrumbs.map((crumb, index) => (
                   <Fragment key={crumb.path || 'root'}>
-                    <button
-                      type="button"
-                      className={`button-secondary button-compact folder-breadcrumb ${
-                        crumb.path === currentPath ? 'folder-breadcrumb-current' : ''
-                      }`}
-                      onClick={() => void navigateFolderPath(crumb.path)}
-                      disabled={loading || !canCompareFolders}
-                    >
-                      {crumb.label}
-                    </button>
+                    {crumb.path === currentPath ? (
+                      <span className="folder-breadcrumb-current">{crumb.label}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="folder-breadcrumb-link"
+                        onClick={() => void navigateFolderPath(crumb.path)}
+                        disabled={loading || !canCompareFolders}
+                      >
+                        {crumb.label}
+                      </button>
+                    )}
                     {index < folderBreadcrumbs.length - 1 ? (
-                      <IconChevronRight size={14} className="folder-breadcrumb-sep" />
+                      <span className="folder-breadcrumb-sep">/</span>
                     ) : null}
                   </Fragment>
                 ))}
               </div>
-              <span className="folder-current-path">{currentPathLabel}</span>
             </div>
             <div className="folder-header-right">
               <div className="folder-compact-summary">
                 <span>{res?.scannedSummary.total ?? 0} scanned</span>
                 <span>{visibleCount} here</span>
               </div>
-              <button
-                type="button"
-                className="button-secondary button-compact"
-                onClick={() => void browseFolderRoot('left')}
-                disabled={loading}
-                title={folderLeftRoot || 'Left root is not selected'}
-              >
-                {folderLeftRoot ? 'Left root' : 'Pick left'}
-              </button>
-              <button
-                type="button"
-                className="button-secondary button-compact"
-                onClick={() => void browseFolderRoot('right')}
-                disabled={loading}
-                title={folderRightRoot || 'Right root is not selected'}
-              >
-                {folderRightRoot ? 'Right root' : 'Pick right'}
-              </button>
               <div className="folder-view-mode-toggle" role="tablist" aria-label="Folder view mode">
                 <button
                   type="button"
@@ -4141,9 +4116,31 @@ export function App() {
                 onClick={onRun}
                 disabled={loading || !canCompareFolders}
               >
-                {loading ? 'Refreshing...' : 'Refresh'}
+                {loading ? 'Comparing...' : 'Compare'}
               </button>
             </div>
+          </div>
+          <div className="folder-root-bar">
+            <button
+              type="button"
+              className="folder-root-field"
+              onClick={() => void browseFolderRoot('left')}
+              disabled={loading}
+              title={folderLeftRoot || 'Select left folder'}
+            >
+              <span className="folder-root-label">Left</span>
+              <span className="folder-root-path">{folderLeftRoot || 'Select left folder'}</span>
+            </button>
+            <button
+              type="button"
+              className="folder-root-field"
+              onClick={() => void browseFolderRoot('right')}
+              disabled={loading}
+              title={folderRightRoot || 'Select right folder'}
+            >
+              <span className="folder-root-label">Right</span>
+              <span className="folder-root-path">{folderRightRoot || 'Select right folder'}</span>
+            </button>
           </div>
 
           {folderStatus ? <div className="muted">{folderStatus}</div> : null}
