@@ -71,11 +71,11 @@ import {
 import {
   canOpenFolderItem,
   type FolderTreeNode,
-  type FolderViewMode,
 } from './features/folder/folderTree'
 import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
+import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
@@ -115,13 +115,6 @@ const defaultTextCommon: CompareCommon = {
 
 type StructuredResultView = 'diff' | 'semantic' | 'raw'
 type TextInputTarget = 'old' | 'new'
-type FolderReturnContext = {
-  leftRoot: string
-  rightRoot: string
-  currentPath: string
-  selectedPath: string
-  viewMode: FolderViewMode
-}
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
 const APP_MODES: Mode[] = ['text', 'json', 'spec', 'folder', 'scenario']
@@ -386,10 +379,6 @@ export function App() {
   const [folderCurrentPath, setFolderCurrentPath] = useState('')
   const [folderResult, setFolderResult] = useState<CompareFoldersResponse | null>(null)
   const [folderStatus, setFolderStatus] = useState('')
-  const [folderOpenBusyPath, setFolderOpenBusyPath] = useState('')
-  const [folderReturnContext, setFolderReturnContext] = useState<FolderReturnContext | null>(
-    null,
-  )
   const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
   const [scenarioPath, setScenarioPath] = useState('')
@@ -798,190 +787,180 @@ export function App() {
     }
   }
 
-  const openFolderEntryDiff = async (entry: FolderCompareItem) => {
-    if (!canOpenFolderItem(entry)) {
-      return
+  const openFolderJSONDiff = async (entry: FolderCompareItem) => {
+    const richFn = api.compareJSONValuesRich
+    const loader = api.loadTextFile
+    if (!richFn || !loader) {
+      throw new Error('Wails bridge not available (CompareJSONValuesRich/LoadTextFile)')
     }
 
-    setFolderReturnContext({
-      leftRoot: folderLeftRoot,
-      rightRoot: folderRightRoot,
-      currentPath: folderCurrentPath,
-      selectedPath: entry.relativePath,
-      viewMode: folderViewMode,
+    const safeJSONCommon = {
+      ...jsonCommon,
+      ignorePaths: effectiveJSONIgnorePaths,
+      textStyle:
+        jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
+          ? 'semantic'
+          : jsonCommon.textStyle,
+    }
+
+    const oldLoaded: LoadTextFileResponse = await loader({
+      path: entry.leftPath,
+    } satisfies LoadTextFileRequest)
+    const newLoaded: LoadTextFileResponse = await loader({
+      path: entry.rightPath,
+    } satisfies LoadTextFileRequest)
+
+    const richRes: CompareJSONRichResponse = await richFn({
+      oldValue: oldLoaded.content,
+      newValue: newLoaded.content,
+      common: safeJSONCommon,
+      ignoreOrder,
+    } satisfies CompareJSONValuesRequest)
+
+    setJSONOldText(oldLoaded.content)
+    setJSONNewText(newLoaded.content)
+    setJSONOldSourcePath(oldLoaded.path)
+    setJSONNewSourcePath(newLoaded.path)
+    setJSONRichResult(richRes)
+    resetJSONSearch()
+    setJSONResultView(
+      chooseDefaultDisplayModeForMode({
+        mode: 'json',
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
+    setJSONRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: oldLoaded.path,
+        newPath: newLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+    setMode('json')
+    setResult(richRes.result)
+  }
+
+  const openFolderSpecDiff = async (entry: FolderCompareItem) => {
+    const richFn = api.compareSpecValuesRich
+    const loader = api.loadTextFile
+    if (!richFn || !loader) {
+      throw new Error('Wails bridge not available (CompareSpecValuesRich/LoadTextFile)')
+    }
+
+    const safeSpecCommon = {
+      ...specCommon,
+      ignorePaths: effectiveSpecIgnorePaths,
+      textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
+    }
+
+    const oldLoaded: LoadTextFileResponse = await loader({
+      path: entry.leftPath,
+    } satisfies LoadTextFileRequest)
+    const newLoaded: LoadTextFileResponse = await loader({
+      path: entry.rightPath,
+    } satisfies LoadTextFileRequest)
+
+    const richRes: CompareSpecRichResponse = await richFn({
+      oldValue: oldLoaded.content,
+      newValue: newLoaded.content,
+      common: safeSpecCommon,
+    } satisfies CompareSpecValuesRequest)
+
+    setSpecOldText(oldLoaded.content)
+    setSpecNewText(newLoaded.content)
+    setSpecOldSourcePath(oldLoaded.path)
+    setSpecNewSourcePath(newLoaded.path)
+    setSpecRichResult(richRes)
+    resetSpecSearch()
+    setSpecResultView(
+      chooseDefaultDisplayModeForMode({
+        mode: 'spec',
+        hasDiffText: richRes.diffText.trim().length > 0,
+        canRenderSemantic: !richRes.result.error,
+      }),
+    )
+    setSpecRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: oldLoaded.path,
+        newPath: newLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+    setMode('spec')
+    setResult(richRes.result)
+  }
+
+  const openFolderTextDiff = async (entry: FolderCompareItem) => {
+    const loadText = api.loadTextFile
+    const compareText = api.compareText
+    if (!loadText || !compareText) {
+      throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
+    }
+
+    const [leftLoaded, rightLoaded] = await Promise.all([
+      loadText({ path: entry.leftPath } satisfies LoadTextFileRequest),
+      loadText({ path: entry.rightPath } satisfies LoadTextFileRequest),
+    ])
+
+    const oldText = leftLoaded.content
+    const newText = rightLoaded.content
+
+    const res: CompareResponse = await compareText({
+      oldText,
+      newText,
+      common: textCommon,
     })
-    setFolderOpenBusyPath(entry.relativePath)
-    setFolderStatus('')
 
-    try {
-      if (entry.compareModeHint === 'json') {
-        const richFn = api.compareJSONValuesRich
-        const loader = api.loadTextFile
-        if (!richFn || !loader) {
-          throw new Error('Wails bridge not available (CompareJSONValuesRich/LoadTextFile)')
-        }
+    setTextOld(oldText)
+    setTextNew(newText)
+    setTextOldSourcePath(leftLoaded.path)
+    setTextNewSourcePath(rightLoaded.path)
+    setTextResult(res)
+    setTextLastRunOld(oldText)
+    setTextLastRunNew(newText)
+    setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
+    clearTextExpandedSections()
+    resetTextSearch()
+    setTextRecentPairs((prev) =>
+      upsertRecentPair(prev, {
+        oldPath: leftLoaded.path,
+        newPath: rightLoaded.path,
+        usedAt: nowISO(),
+      }),
+    )
+    setMode('text')
+    setResult(res)
+  }
 
-        const safeJSONCommon = {
-          ...jsonCommon,
-          ignorePaths: effectiveJSONIgnorePaths,
-          textStyle:
-            jsonCommon.textStyle === 'patch' && jsonPatchBlockedByFilters
-              ? 'semantic'
-              : jsonCommon.textStyle,
-        }
-
-        const oldLoaded: LoadTextFileResponse = await loader({
-          path: entry.leftPath,
-        } satisfies LoadTextFileRequest)
-        const newLoaded: LoadTextFileResponse = await loader({
-          path: entry.rightPath,
-        } satisfies LoadTextFileRequest)
-
-        const richRes: CompareJSONRichResponse = await richFn({
-          oldValue: oldLoaded.content,
-          newValue: newLoaded.content,
-          common: safeJSONCommon,
-          ignoreOrder,
-        } satisfies CompareJSONValuesRequest)
-
-        setJSONOldText(oldLoaded.content)
-        setJSONNewText(newLoaded.content)
-        setJSONOldSourcePath(oldLoaded.path)
-        setJSONNewSourcePath(newLoaded.path)
-        setJSONRichResult(richRes)
-        resetJSONSearch()
-        setJSONResultView(
-          chooseDefaultDisplayModeForMode({
-            mode: 'json',
-            hasDiffText: richRes.diffText.trim().length > 0,
-            canRenderSemantic: !richRes.result.error,
-          }),
-        )
-        setJSONRecentPairs((prev) =>
-          upsertRecentPair(prev, {
-            oldPath: oldLoaded.path,
-            newPath: newLoaded.path,
-            usedAt: nowISO(),
-          }),
-        )
-        setMode('json')
-        setResult(richRes.result)
-        return
-      }
-
-      if (entry.compareModeHint === 'spec') {
-        const richFn = api.compareSpecValuesRich
-        const loader = api.loadTextFile
-        if (!richFn || !loader) {
-          throw new Error('Wails bridge not available (CompareSpecValuesRich/LoadTextFile)')
-        }
-
-        const safeSpecCommon = {
-          ...specCommon,
-          ignorePaths: effectiveSpecIgnorePaths,
-          textStyle: specCommon.textStyle === 'patch' ? 'semantic' : specCommon.textStyle,
-        }
-
-        const oldLoaded: LoadTextFileResponse = await loader({
-          path: entry.leftPath,
-        } satisfies LoadTextFileRequest)
-        const newLoaded: LoadTextFileResponse = await loader({
-          path: entry.rightPath,
-        } satisfies LoadTextFileRequest)
-
-        const richRes: CompareSpecRichResponse = await richFn({
-          oldValue: oldLoaded.content,
-          newValue: newLoaded.content,
-          common: safeSpecCommon,
-        } satisfies CompareSpecValuesRequest)
-
-        setSpecOldText(oldLoaded.content)
-        setSpecNewText(newLoaded.content)
-        setSpecOldSourcePath(oldLoaded.path)
-        setSpecNewSourcePath(newLoaded.path)
-        setSpecRichResult(richRes)
-        resetSpecSearch()
-        setSpecResultView(
-          chooseDefaultDisplayModeForMode({
-            mode: 'spec',
-            hasDiffText: richRes.diffText.trim().length > 0,
-            canRenderSemantic: !richRes.result.error,
-          }),
-        )
-        setSpecRecentPairs((prev) =>
-          upsertRecentPair(prev, {
-            oldPath: oldLoaded.path,
-            newPath: newLoaded.path,
-            usedAt: nowISO(),
-          }),
-        )
-        setMode('spec')
-        setResult(richRes.result)
-        return
-      }
-
-      const loadText = api.loadTextFile
-      const compareText = api.compareText
-      if (!loadText || !compareText) {
-        throw new Error('Wails bridge not available (LoadTextFile/CompareText)')
-      }
-
-      const [leftLoaded, rightLoaded] = await Promise.all([
-        loadText({ path: entry.leftPath } satisfies LoadTextFileRequest),
-        loadText({ path: entry.rightPath } satisfies LoadTextFileRequest),
-      ])
-
-      const oldText = leftLoaded.content
-      const newText = rightLoaded.content
-
-      const res: CompareResponse = await compareText({
-        oldText,
-        newText,
-        common: textCommon,
-      })
-
-      setTextOld(oldText)
-      setTextNew(newText)
-      setTextOldSourcePath(leftLoaded.path)
-      setTextNewSourcePath(rightLoaded.path)
-      setTextResult(res)
-      setTextLastRunOld(oldText)
-      setTextLastRunNew(newText)
-      setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
-      clearTextExpandedSections()
-      resetTextSearch()
-      setTextRecentPairs((prev) =>
-        upsertRecentPair(prev, {
-          oldPath: leftLoaded.path,
-          newPath: rightLoaded.path,
-          usedAt: nowISO(),
-        }),
-      )
-      setMode('text')
-      setResult(res)
-    } catch (error) {
-      const message = `Failed to open diff: ${formatUnknownError(error)}`
-      setFolderStatus(message)
+  const {
+    folderOpenBusyPath,
+    folderReturnContext,
+    openFolderEntryDiff,
+    returnToFolderCompare,
+  } = useDirectoryCompareChildDiffActions({
+    folderLeftRoot,
+    folderRightRoot,
+    folderCurrentPath,
+    folderViewMode,
+    setFolderLeftRoot,
+    setFolderRightRoot,
+    setFolderCurrentPath,
+    setSelectedFolderItemPath,
+    setFolderViewMode,
+    setFolderStatus,
+    setMode,
+    onOpenJSONDiff: openFolderJSONDiff,
+    onOpenSpecDiff: openFolderSpecDiff,
+    onOpenTextDiff: openFolderTextDiff,
+    onOpenChildDiffError: (message) => {
       notifications.show({
         title: 'Failed to open child diff',
         message,
         color: 'red',
       })
-    } finally {
-      setFolderOpenBusyPath('')
-    }
-  }
-
-  const returnToFolderCompare = () => {
-    if (folderReturnContext) {
-      setFolderLeftRoot(folderReturnContext.leftRoot)
-      setFolderRightRoot(folderReturnContext.rightRoot)
-      setFolderCurrentPath(folderReturnContext.currentPath)
-      setSelectedFolderItemPath(folderReturnContext.selectedPath)
-      setFolderViewMode(folderReturnContext.viewMode)
-    }
-    setMode('folder')
-  }
+    },
+  })
 
   const navigateFolderPath = (nextPath: string) => {
     resetFolderNavigationState()
