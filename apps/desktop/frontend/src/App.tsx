@@ -28,15 +28,11 @@ import type {
   CompareResponse,
   DesktopRecentFolderPair,
   DesktopRecentPair,
-  DesktopRecentScenarioPath,
   DesktopState,
   FolderCompareItem,
   LoadTextFileRequest,
   LoadTextFileResponse,
   Mode,
-  ScenarioCheckListEntry,
-  ScenarioListResponse,
-  ScenarioRunResponse,
 } from './types'
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
@@ -55,7 +51,6 @@ import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
 import {
   upsertRecentFolderPair,
   upsertRecentPair,
-  upsertRecentScenarioPath,
 } from './persistence'
 import {
   getRuntimeClipboardRead,
@@ -81,6 +76,7 @@ import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
 import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
+import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 const defaultJSONCommon: CompareCommon = {
   failOn: 'any',
@@ -182,16 +178,6 @@ function getSpecParseError(input: string, language: 'json' | 'yaml'): string | n
   } catch (error) {
     return error instanceof Error ? error.message : String(error)
   }
-}
-
-function chooseInitialScenarioResult(res: ScenarioRunResponse): string {
-  const results = res.results ?? []
-  if (results.length === 0) return ''
-
-  const firstNonOK = results.find((r) => r.status !== 'ok')
-  if (firstNonOK) return firstNonOK.name
-
-  return results[0].name
 }
 
 function chooseDefaultDisplayModeForMode(options: {
@@ -369,17 +355,6 @@ export function App() {
   const [folderStatus, setFolderStatus] = useState('')
   const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
-  const [scenarioPath, setScenarioPath] = useState('')
-  const [reportFormat, setReportFormat] = useState<'text' | 'json'>('text')
-  const [scenarioChecks, setScenarioChecks] = useState<ScenarioCheckListEntry[]>([])
-  const [selectedChecks, setSelectedChecks] = useState<string[]>([])
-  const [scenarioListStatus, setScenarioListStatus] = useState('')
-  const [scenarioRunResult, setScenarioRunResult] = useState<ScenarioRunResponse | null>(null)
-  const [selectedScenarioResultName, setSelectedScenarioResultName] = useState('')
-  const [scenarioRecentPaths, setScenarioRecentPaths] = useState<DesktopRecentScenarioPath[]>(
-    [],
-  )
-
   const [jsonRecentPairs, setJSONRecentPairs] = useState<DesktopRecentPair[]>([])
   const [specRecentPairs, setSpecRecentPairs] = useState<DesktopRecentPair[]>([])
   const [textRecentPairs, setTextRecentPairs] = useState<DesktopRecentPair[]>([])
@@ -458,6 +433,38 @@ export function App() {
     }),
     [],
   )
+
+  const {
+    scenarioPath,
+    setScenarioPath,
+    reportFormat,
+    setReportFormat,
+    scenarioChecks,
+    selectedChecks,
+    scenarioListStatus,
+    scenarioRunResult,
+    selectedScenarioResultName,
+    setSelectedScenarioResultName,
+    scenarioRecentPaths,
+    setScenarioRecentPaths,
+    loadScenarioRecent,
+    runScenario,
+    onLoadScenarioChecks,
+    toggleScenarioCheck,
+    selectAllScenarioChecks,
+    clearScenarioSelection,
+    setScenarioRunError,
+  } = useScenarioWorkflow({
+    listScenarioChecks: api.listScenarioChecks,
+    runScenario: api.runScenario,
+    onEnterScenarioMode: () => {
+      setMode('scenario')
+    },
+    onScenarioRunCompleted: () => {
+      setSummaryLine('')
+      setOutput('')
+    },
+  })
 
   const {
     folderQuickFilter,
@@ -737,11 +744,6 @@ export function App() {
 
   const updateTextCommon = <K extends keyof CompareCommon>(key: K, value: CompareCommon[K]) => {
     setTextCommon((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const setScenarioRunResultView = (res: ScenarioRunResponse) => {
-    setScenarioRunResult(res)
-    setSelectedScenarioResultName(chooseInitialScenarioResult(res))
   }
 
   const browseAndSet = async (
@@ -1306,42 +1308,6 @@ export function App() {
         }),
       )
     }
-  }
-
-  const loadScenarioRecent = async (entry: DesktopRecentScenarioPath) => {
-    const fn = api.listScenarioChecks
-    if (!fn) {
-      throw new Error('Wails bridge not available (ListScenarioChecks)')
-    }
-
-    const path = entry.path
-    const nextReportFormat = entry.reportFormat === 'json' ? 'json' : 'text'
-    const res: ScenarioListResponse = await fn({
-      scenarioPath: path,
-      reportFormat: nextReportFormat,
-      only: [],
-    })
-
-    setMode('scenario')
-    setScenarioPath(path)
-    setReportFormat(nextReportFormat)
-    if (res.error) {
-      setScenarioChecks([])
-      setSelectedChecks([])
-      setScenarioListStatus(res.error)
-      return
-    }
-
-    setScenarioChecks(res.checks ?? [])
-    setSelectedChecks([])
-    setScenarioListStatus(`loaded ${res.checks?.length ?? 0} checks`)
-    setScenarioRecentPaths((prev) =>
-      upsertRecentScenarioPath(prev, {
-        path,
-        reportFormat: nextReportFormat,
-        usedAt: nowISO(),
-      }),
-    )
   }
 
   const runRecentAction = async (label: string, action: () => Promise<void>) => {
@@ -1915,61 +1881,6 @@ export function App() {
     }
   }
 
-  const loadScenarioChecks = async () => {
-    const fn = api.listScenarioChecks
-    if (!fn) throw new Error('Wails bridge not available (ListScenarioChecks)')
-
-    const res: ScenarioListResponse = await fn({
-      scenarioPath,
-      reportFormat,
-      only: [],
-    })
-
-    if (res.error) {
-      setScenarioChecks([])
-      setSelectedChecks([])
-      setScenarioListStatus(res.error)
-      return
-    }
-
-    setScenarioChecks(res.checks ?? [])
-    setSelectedChecks([])
-    setScenarioListStatus(`loaded ${res.checks?.length ?? 0} checks`)
-    if (scenarioPath.trim()) {
-      setScenarioRecentPaths((prev) =>
-        upsertRecentScenarioPath(prev, {
-          path: scenarioPath,
-          reportFormat,
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
-
-  const runScenario = async () => {
-    const fn = api.runScenario
-    if (!fn) throw new Error('Wails bridge not available (RunScenario)')
-
-    const res: ScenarioRunResponse = await fn({
-      scenarioPath,
-      reportFormat,
-      only: selectedChecks,
-    })
-
-    setScenarioRunResultView(res)
-    setSummaryLine('')
-    setOutput('')
-    if (!res.error && scenarioPath.trim()) {
-      setScenarioRecentPaths((prev) =>
-        upsertRecentScenarioPath(prev, {
-          path: scenarioPath,
-          reportFormat,
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
-
   const runByMode = async () => {
     if (mode === 'json') {
       await runJSON()
@@ -2012,12 +1923,7 @@ export function App() {
       await runByMode()
     } catch (e) {
       if (mode === 'scenario') {
-        const errorText = String(e)
-        setScenarioRunResult({
-          exitCode: 2,
-          error: errorText,
-        })
-        setSelectedScenarioResultName('')
+        setScenarioRunError(String(e))
       } else {
         if (mode === 'text') {
           setTextResult({
@@ -2071,36 +1977,14 @@ export function App() {
     }
   }
 
-  const onLoadScenarioChecks = async () => {
+  const handleLoadScenarioChecks = async () => {
     setLoading(true)
 
     try {
-      await loadScenarioChecks()
-    } catch (e) {
-      setScenarioChecks([])
-      setSelectedChecks([])
-      setScenarioListStatus(String(e))
+      await onLoadScenarioChecks()
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleScenarioCheck = (name: string, checked: boolean) => {
-    setSelectedChecks((prev) => {
-      if (checked) {
-        if (prev.includes(name)) return prev
-        return [...prev, name]
-      }
-      return prev.filter((v) => v !== name)
-    })
-  }
-
-  const selectAllScenarioChecks = () => {
-    setSelectedChecks(scenarioChecks.map((c) => c.name))
-  }
-
-  const clearScenarioSelection = () => {
-    setSelectedChecks([])
   }
 
   const renderScenarioResultPanel = () => (
@@ -2649,7 +2533,7 @@ export function App() {
         </div>
 
         <div className="button-row">
-          <button className="button-secondary" onClick={onLoadScenarioChecks} disabled={loading}>
+          <button className="button-secondary" onClick={handleLoadScenarioChecks} disabled={loading}>
             {loading ? 'Loading...' : 'Load checks'}
           </button>
           <button className="button-primary" onClick={onRun} disabled={loading}>
