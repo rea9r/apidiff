@@ -75,6 +75,7 @@ import {
 } from './features/folder/folderTree'
 import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
+import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
@@ -518,23 +519,38 @@ export function App() {
     },
   })
 
-  useEffect(() => {
-    if (mode !== 'folder') {
-      return
-    }
-    if (!folderResult) {
-      return
-    }
-    if (!folderLeftRoot || !folderRightRoot) {
-      return
-    }
-    const resultPath = folderResult.currentPath ?? ''
-    if (resultPath === folderCurrentPath) {
-      return
-    }
-
-    void runFolderCompare(folderCurrentPath)
-  }, [mode, folderResult, folderCurrentPath, folderLeftRoot, folderRightRoot])
+  const { browseFolderRoot, runFolderCompare } = useDirectoryCompareWorkflow({
+    isFolderMode: mode === 'folder',
+    folderLeftRoot,
+    folderRightRoot,
+    folderNameFilter,
+    folderCurrentPath,
+    folderResult,
+    folderViewMode,
+    pickFolderRoot: api.pickFolderRoot,
+    compareFolders: api.compareFolders,
+    setFolderLeftRoot,
+    setFolderRightRoot,
+    setFolderCurrentPath,
+    setFolderResult,
+    setFolderStatus,
+    setFolderRecentPairs,
+    setSelectedFolderItemPath,
+    onDirectoryPickerUnavailable: () => {
+      notifications.show({
+        title: 'Directory picker unavailable',
+        message: 'Directory picker is not available.',
+        color: 'red',
+      })
+    },
+    onDirectoryPickerError: (message) => {
+      notifications.show({
+        title: 'Failed to pick directory',
+        message,
+        color: 'red',
+      })
+    },
+  })
 
   useEffect(() => {
     let active = true
@@ -780,80 +796,6 @@ export function App() {
         color: 'red',
       })
     }
-  }
-
-  const browseFolderRoot = async (target: 'left' | 'right') => {
-    const picker = api.pickFolderRoot
-
-    if (!picker) {
-      setFolderStatus('Directory picker is not available.')
-      notifications.show({
-        title: 'Directory picker unavailable',
-        message: 'Directory picker is not available.',
-        color: 'red',
-      })
-      return
-    }
-
-    try {
-      const selected = await picker()
-      if (!selected) {
-        return
-      }
-
-      if (target === 'left') {
-        setFolderLeftRoot(selected)
-      } else {
-        setFolderRightRoot(selected)
-      }
-
-      setFolderCurrentPath('')
-      setSelectedFolderItemPath('')
-      setFolderResult(null)
-      setFolderStatus('')
-    } catch (error) {
-      const message = `Failed to pick directory: ${formatUnknownError(error)}`
-      setFolderStatus(message)
-      notifications.show({
-        title: 'Failed to pick directory',
-        message,
-        color: 'red',
-      })
-    }
-  }
-
-  const runFolderCompare = async (nextCurrentPath = folderCurrentPath) => {
-    const fn = api.compareFolders
-    if (!fn) throw new Error('Wails bridge not available (CompareFolders)')
-
-    setFolderStatus('')
-
-    const res: CompareFoldersResponse = await fn({
-      leftRoot: folderLeftRoot,
-      rightRoot: folderRightRoot,
-      currentPath: nextCurrentPath,
-      recursive: true,
-      showSame: true,
-      nameFilter: folderNameFilter,
-    } satisfies CompareFoldersRequest)
-
-    setFolderResult(res)
-    setFolderCurrentPath(res.currentPath ?? nextCurrentPath)
-
-    if (res.error) {
-      setFolderStatus(res.error)
-      return
-    }
-    setFolderStatus('')
-    setFolderRecentPairs((prev) =>
-      upsertRecentFolderPair(prev, {
-        leftRoot: folderLeftRoot,
-        rightRoot: folderRightRoot,
-        currentPath: res.currentPath ?? nextCurrentPath,
-        viewMode: folderViewMode,
-        usedAt: nowISO(),
-      }),
-    )
   }
 
   const openFolderEntryDiff = async (entry: FolderCompareItem) => {
