@@ -2,7 +2,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  type KeyboardEvent,
 } from 'react'
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -14,11 +13,9 @@ import {
 } from '@tabler/icons-react'
 import type {
   CompareCommon,
-  CompareFoldersRequest,
   CompareFoldersResponse,
   DesktopRecentFolderPair,
   DesktopRecentPair,
-  FolderCompareItem,
   Mode,
 } from './types'
 import './style.css'
@@ -28,25 +25,19 @@ import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
-import {
-  upsertRecentFolderPair,
-  upsertRecentPair,
-} from './persistence'
+import { upsertRecentPair } from './persistence'
 import {
   formatUnknownError,
   parseIgnorePaths,
   renderResult,
   summarizeResponse,
 } from './utils/appHelpers'
-import {
-  canOpenFolderItem,
-  type FolderTreeNode,
-} from './features/folder/folderTree'
 import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
 import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
 import { useFolderChildDiffOpeners } from './features/folder/useFolderChildDiffOpeners'
+import { useDirectoryCompareInteractions } from './features/folder/useDirectoryCompareInteractions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { TextCompareSourceWorkspace } from './features/text/TextCompareSourceWorkspace'
@@ -570,7 +561,6 @@ export function App() {
     setOutput(renderResult(res))
   }
 
-  const nowISO = () => new Date().toISOString()
   const browseAndSet = async (
     picker: (() => Promise<string>) | undefined,
     setter: (value: string) => void,
@@ -651,122 +641,31 @@ export function App() {
     },
   })
 
-  const navigateFolderPath = (nextPath: string) => {
-    resetFolderNavigationState()
-    setFolderCurrentPath(nextPath)
-  }
-
-  const handleFolderRowDoubleClick = async (item: FolderCompareItem) => {
-    const enterable = item.isDir && item.status !== 'type-mismatch'
-    if (enterable) {
-      navigateFolderPath(item.relativePath)
-      return
-    }
-
-    if (canOpenFolderItem(item)) {
-      await openFolderEntryDiff(item)
-    }
-  }
-
-  const handleFolderTreeRowDoubleClick = async (node: FolderTreeNode) => {
-    if (node.isDir && node.item.status !== 'type-mismatch') {
-      await toggleFolderTreeNode(node)
-      return
-    }
-    if (canOpenFolderItem(node.item)) {
-      await openFolderEntryDiff(node.item)
-    }
-  }
-
-  const handleFolderTableKeyDown = async (event: KeyboardEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement | null
-    if (!target) {
-      return
-    }
-    const tagName = target.tagName.toLowerCase()
-    if (
-      tagName === 'input' ||
-      tagName === 'textarea' ||
-      tagName === 'select' ||
-      target.isContentEditable
-    ) {
-      return
-    }
-
-    if (sortedFolderItems.length === 0) {
-      return
-    }
-
-    const currentIndex = selectedFolderItem
-      ? sortedFolderItems.findIndex((item) => item.relativePath === selectedFolderItem.relativePath)
-      : -1
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      const nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, sortedFolderItems.length - 1)
-      setSelectedFolderItemPath(sortedFolderItems[nextIndex].relativePath)
-      return
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1
-      setSelectedFolderItemPath(sortedFolderItems[nextIndex].relativePath)
-      return
-    }
-
-    if (event.key === 'Enter' && selectedFolderItem) {
-      event.preventDefault()
-      await handleFolderRowDoubleClick(selectedFolderItem)
-      return
-    }
-
-    if (event.key === 'Backspace' && folderResult?.currentPath) {
-      event.preventDefault()
-      navigateFolderPath(folderResult.parentPath || '')
-    }
-  }
-
-  const runFolderFromRecent = async (entry: DesktopRecentFolderPair) => {
-    const fn = api.compareFolders
-    if (!fn) {
-      throw new Error('Wails bridge not available (CompareFolders)')
-    }
-
-    const leftRoot = entry.leftRoot
-    const rightRoot = entry.rightRoot
-    const currentPath = entry.currentPath
-    const viewMode = entry.viewMode
-
-    const res: CompareFoldersResponse = await fn({
-      leftRoot,
-      rightRoot,
-      currentPath,
-      recursive: true,
-      showSame: true,
-      nameFilter: folderNameFilter,
-    } satisfies CompareFoldersRequest)
-
-    setMode('folder')
-    setFolderLeftRoot(leftRoot)
-    setFolderRightRoot(rightRoot)
-    setFolderCurrentPath(res.currentPath ?? currentPath)
-    setFolderViewMode(viewMode === 'tree' ? 'tree' : 'list')
-    setFolderResult(res)
-    setFolderStatus(res.error ?? '')
-
-    if (!res.error) {
-      setFolderRecentPairs((prev) =>
-        upsertRecentFolderPair(prev, {
-          leftRoot,
-          rightRoot,
-          currentPath: res.currentPath ?? currentPath,
-          viewMode: viewMode === 'tree' ? 'tree' : 'list',
-          usedAt: nowISO(),
-        }),
-      )
-    }
-  }
+  const {
+    navigateFolderPath,
+    handleFolderRowDoubleClick,
+    handleFolderTreeRowDoubleClick,
+    handleFolderTableKeyDown,
+    runFolderFromRecent,
+  } = useDirectoryCompareInteractions({
+    compareFolders: api.compareFolders,
+    folderNameFilter,
+    folderResult,
+    sortedFolderItems,
+    selectedFolderItem,
+    resetFolderNavigationState,
+    openFolderEntryDiff,
+    toggleFolderTreeNode,
+    setFolderLeftRoot,
+    setFolderRightRoot,
+    setFolderCurrentPath,
+    setFolderViewMode,
+    setSelectedFolderItemPath,
+    setFolderResult,
+    setFolderStatus,
+    setFolderRecentPairs,
+    setMode,
+  })
 
   const runRecentAction = async (label: string, action: () => Promise<void>) => {
     setLoading(true)
