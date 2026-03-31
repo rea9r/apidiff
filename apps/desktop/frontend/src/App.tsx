@@ -47,7 +47,6 @@ import { CompareStatusState } from './ui/CompareStatusState'
 import { CompareModeHeaderActions } from './ui/CompareModeHeaderActions'
 import { HeaderRailGroup, HeaderRailPrimaryButton } from './ui/HeaderRail'
 import { CompareTextInputBody } from './ui/CompareTextInputBody'
-import { CompareCodeInputBody } from './ui/CompareCodeInputBody'
 import {
   upsertRecentFolderPair,
   upsertRecentPair,
@@ -73,8 +72,12 @@ import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
+import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
+import { JSONCompareOptionsPanel } from './features/json/JSONCompareOptionsPanel'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
 import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
+import { SpecCompareSourceWorkspace } from './features/spec/SpecCompareSourceWorkspace'
+import { SpecCompareOptionsPanel } from './features/spec/SpecCompareOptionsPanel'
 import { ScenarioControlPanel } from './features/scenario/ScenarioControlPanel'
 import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
@@ -2273,176 +2276,44 @@ export function App() {
 
   const compareOptionsContent =
     mode === 'json' ? (
-      <section className="mode-panel">
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={ignoreOrder}
-            onChange={(e) => setIgnoreOrder(e.target.checked)}
-          />
-          ignore array order
-        </label>
-
-        <section className="options-panel">
-          <h3>Options</h3>
-
-          <div className="field-block">
-            <label className="field-label">Output format</label>
-            <select
-              value={jsonCommon.outputFormat}
-              onChange={(e) => updateJSONCommon('outputFormat', e.target.value)}
-            >
-              <option value="text">text</option>
-              <option value="json">json</option>
-            </select>
-          </div>
-
-          <div className="field-block">
-            <label className="field-label">Text style</label>
-            <select
-              value={jsonCommon.textStyle}
-              disabled={jsonCommon.outputFormat === 'json'}
-              onChange={(e) => updateJSONCommon('textStyle', e.target.value)}
-            >
-              <option value="auto">auto</option>
-              <option value="patch" disabled={jsonPatchBlockedByFilters}>
-                patch
-              </option>
-              <option value="semantic">semantic</option>
-            </select>
-          </div>
-        </section>
-
-        <details className="advanced-panel" open>
-          <summary className="advanced-summary">Advanced options</summary>
-
-          <div className="field-block">
-            <label className="field-label">Fail on</label>
-            <select
-              value={jsonCommon.failOn}
-              onChange={(e) => updateJSONCommon('failOn', e.target.value)}
-            >
-              <option value="none">none</option>
-              <option value="breaking">breaking</option>
-              <option value="any">any</option>
-            </select>
-          </div>
-
-          <div className="field-block">
-            <label className="field-label">Ignore paths</label>
-            <textarea
-              className="ignore-paths-input"
-              value={jsonIgnorePathsDraft}
-              onChange={(e) => setJSONIgnorePathsDraft(e.target.value)}
-              onBlur={(e) =>
-                updateJSONCommon('ignorePaths', parseIgnorePaths(e.target.value))
-              }
-              placeholder={'user.updated_at\nmeta.request_id'}
-            />
-            <div className="helper-text">
-              Enter one canonical path per line (exact match), e.g. <code>user.updated_at</code>.
-            </div>
-          </div>
-
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={jsonCommon.showPaths}
-              onChange={(e) => updateJSONCommon('showPaths', e.target.checked)}
-            />
-            show canonical paths
-          </label>
-
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={jsonCommon.onlyBreaking}
-              onChange={(e) => updateJSONCommon('onlyBreaking', e.target.checked)}
-            />
-            only breaking
-          </label>
-        </details>
-      </section>
+      <JSONCompareOptionsPanel
+        ignoreOrder={ignoreOrder}
+        onIgnoreOrderChange={setIgnoreOrder}
+        outputFormat={jsonCommon.outputFormat}
+        onOutputFormatChange={(value) => updateJSONCommon('outputFormat', value)}
+        textStyle={jsonCommon.textStyle}
+        onTextStyleChange={(value) => updateJSONCommon('textStyle', value)}
+        patchTextStyleDisabled={jsonPatchBlockedByFilters}
+        failOn={jsonCommon.failOn}
+        onFailOnChange={(value) => updateJSONCommon('failOn', value)}
+        ignorePathsDraft={jsonIgnorePathsDraft}
+        onIgnorePathsDraftChange={setJSONIgnorePathsDraft}
+        onIgnorePathsCommit={(value) =>
+          updateJSONCommon('ignorePaths', parseIgnorePaths(value))
+        }
+        showPaths={jsonCommon.showPaths}
+        onShowPathsChange={(checked) => updateJSONCommon('showPaths', checked)}
+        onlyBreaking={jsonCommon.onlyBreaking}
+        onOnlyBreakingChange={(checked) => updateJSONCommon('onlyBreaking', checked)}
+      />
     ) : mode === 'spec' ? (
-      <section className="mode-panel">
-        <section className="options-panel">
-          <h3>Options</h3>
-
-          <div className="field-block">
-            <label className="field-label">Output format</label>
-            <select
-              value={specCommon.outputFormat}
-              onChange={(e) => updateSpecCommon('outputFormat', e.target.value)}
-            >
-              <option value="text">text</option>
-              <option value="json">json</option>
-            </select>
-          </div>
-
-          <div className="field-block">
-            <label className="field-label">Text style</label>
-            <select
-              value={specCommon.textStyle}
-              disabled={specCommon.outputFormat === 'json'}
-              onChange={(e) => updateSpecCommon('textStyle', e.target.value)}
-            >
-              <option value="auto">auto</option>
-              <option value="semantic">semantic</option>
-            </select>
-          </div>
-        </section>
-
-        <details className="advanced-panel" open>
-          <summary className="advanced-summary">Advanced options</summary>
-
-          <div className="field-block">
-            <label className="field-label">Fail on</label>
-            <select
-              value={specCommon.failOn}
-              onChange={(e) => updateSpecCommon('failOn', e.target.value)}
-            >
-              <option value="none">none</option>
-              <option value="breaking">breaking</option>
-              <option value="any">any</option>
-            </select>
-          </div>
-
-          <div className="field-block">
-            <label className="field-label">Ignore paths</label>
-            <textarea
-              className="ignore-paths-input"
-              value={specIgnorePathsDraft}
-              onChange={(e) => setSpecIgnorePathsDraft(e.target.value)}
-              onBlur={(e) =>
-                updateSpecCommon('ignorePaths', parseIgnorePaths(e.target.value))
-              }
-              placeholder={'paths./users.post.requestBody.required'}
-            />
-            <div className="helper-text">
-              Enter one canonical path per line (exact match), e.g.{' '}
-              <code>paths./users.post.requestBody.required</code>.
-            </div>
-          </div>
-
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={specCommon.showPaths}
-              onChange={(e) => updateSpecCommon('showPaths', e.target.checked)}
-            />
-            show canonical paths
-          </label>
-
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={specCommon.onlyBreaking}
-              onChange={(e) => updateSpecCommon('onlyBreaking', e.target.checked)}
-            />
-            only breaking
-          </label>
-        </details>
-      </section>
+      <SpecCompareOptionsPanel
+        outputFormat={specCommon.outputFormat}
+        onOutputFormatChange={(value) => updateSpecCommon('outputFormat', value)}
+        textStyle={specCommon.textStyle}
+        onTextStyleChange={(value) => updateSpecCommon('textStyle', value)}
+        failOn={specCommon.failOn}
+        onFailOnChange={(value) => updateSpecCommon('failOn', value)}
+        ignorePathsDraft={specIgnorePathsDraft}
+        onIgnorePathsDraftChange={setSpecIgnorePathsDraft}
+        onIgnorePathsCommit={(value) =>
+          updateSpecCommon('ignorePaths', parseIgnorePaths(value))
+        }
+        showPaths={specCommon.showPaths}
+        onShowPathsChange={(checked) => updateSpecCommon('showPaths', checked)}
+        onlyBreaking={specCommon.onlyBreaking}
+        onOnlyBreakingChange={(checked) => updateSpecCommon('onlyBreaking', checked)}
+      />
     ) : (
       <section className="mode-panel">
         <section className="options-panel">
@@ -2630,113 +2501,31 @@ export function App() {
         {folderReturnPathBanner}
         <CompareWorkspaceShell
           source={
-          <CompareSourceGrid
-            left={
-              <CompareSourcePane
-                title="Old JSON"
-                sourcePath={jsonOldSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into Old JSON"
-                      onClick={() => void loadJSONFromFile('old')}
-                      disabled={jsonEditorBusy}
-                      loading={jsonFileBusyTarget === 'old'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into Old JSON"
-                      onClick={() => void pasteJSONFromClipboard('old')}
-                      disabled={jsonEditorBusy}
-                      loading={jsonClipboardBusyTarget === 'old'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy Old JSON"
-                      onClick={() => void copyJSONInput('old')}
-                      disabled={jsonEditorBusy || !jsonOldText}
-                      loading={jsonCopyBusyTarget === 'old'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear Old JSON"
-                      onClick={() => clearJSONInput('old')}
-                      disabled={jsonEditorBusy || !jsonOldText}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareCodeInputBody
-                  value={jsonOldText}
-                  onChange={(value) => {
-                    setJSONOldText(value)
-                    if (jsonOldSourcePath) setJSONOldSourcePath('')
-                  }}
-                  language="json"
-                  parseError={jsonOldParseError}
-                />
-              </CompareSourcePane>
-            }
-            right={
-              <CompareSourcePane
-                title="New JSON"
-                sourcePath={jsonNewSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into New JSON"
-                      onClick={() => void loadJSONFromFile('new')}
-                      disabled={jsonEditorBusy}
-                      loading={jsonFileBusyTarget === 'new'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into New JSON"
-                      onClick={() => void pasteJSONFromClipboard('new')}
-                      disabled={jsonEditorBusy}
-                      loading={jsonClipboardBusyTarget === 'new'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy New JSON"
-                      onClick={() => void copyJSONInput('new')}
-                      disabled={jsonEditorBusy || !jsonNewText}
-                      loading={jsonCopyBusyTarget === 'new'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear New JSON"
-                      onClick={() => clearJSONInput('new')}
-                      disabled={jsonEditorBusy || !jsonNewText}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareCodeInputBody
-                  value={jsonNewText}
-                  onChange={(value) => {
-                    setJSONNewText(value)
-                    if (jsonNewSourcePath) setJSONNewSourcePath('')
-                  }}
-                  language="json"
-                  parseError={jsonNewParseError}
-                />
-              </CompareSourcePane>
-            }
-          />
-        }
+            <JSONCompareSourceWorkspace
+              oldSourcePath={jsonOldSourcePath}
+              newSourcePath={jsonNewSourcePath}
+              oldValue={jsonOldText}
+              newValue={jsonNewText}
+              oldParseError={jsonOldParseError}
+              newParseError={jsonNewParseError}
+              busy={jsonEditorBusy}
+              fileBusyTarget={jsonFileBusyTarget}
+              clipboardBusyTarget={jsonClipboardBusyTarget}
+              copyBusyTarget={jsonCopyBusyTarget}
+              onOpenFile={(target) => void loadJSONFromFile(target)}
+              onPasteClipboard={(target) => void pasteJSONFromClipboard(target)}
+              onCopyInput={(target) => void copyJSONInput(target)}
+              onClearInput={clearJSONInput}
+              onOldChange={(value) => {
+                setJSONOldText(value)
+                if (jsonOldSourcePath) setJSONOldSourcePath('')
+              }}
+              onNewChange={(value) => {
+                setJSONNewText(value)
+                if (jsonNewSourcePath) setJSONNewSourcePath('')
+              }}
+            />
+          }
           result={renderJSONResultPanel()}
         />
       </div>
@@ -2745,113 +2534,33 @@ export function App() {
         {folderReturnPathBanner}
         <CompareWorkspaceShell
           source={
-          <CompareSourceGrid
-            left={
-              <CompareSourcePane
-                title="Old Spec"
-                sourcePath={specOldSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into Old Spec"
-                      onClick={() => void loadSpecFromFile('old')}
-                      disabled={specEditorBusy}
-                      loading={specFileBusyTarget === 'old'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into Old Spec"
-                      onClick={() => void pasteSpecFromClipboard('old')}
-                      disabled={specEditorBusy}
-                      loading={specClipboardBusyTarget === 'old'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy Old Spec"
-                      onClick={() => void copySpecInput('old')}
-                      disabled={specEditorBusy || !specOldText}
-                      loading={specCopyBusyTarget === 'old'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear Old Spec"
-                      onClick={() => clearSpecInput('old')}
-                      disabled={specEditorBusy || !specOldText}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareCodeInputBody
-                  value={specOldText}
-                  onChange={(value) => {
-                    setSpecOldText(value)
-                    if (specOldSourcePath) setSpecOldSourcePath('')
-                  }}
-                  language={specOldLanguage}
-                  parseError={specOldParseError}
-                />
-              </CompareSourcePane>
-            }
-            right={
-              <CompareSourcePane
-                title="New Spec"
-                sourcePath={specNewSourcePath}
-                actions={
-                  <ComparePaneActions>
-                    <ComparePaneAction
-                      label="Open file into New Spec"
-                      onClick={() => void loadSpecFromFile('new')}
-                      disabled={specEditorBusy}
-                      loading={specFileBusyTarget === 'new'}
-                    >
-                      <IconFolderOpen size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Paste clipboard into New Spec"
-                      onClick={() => void pasteSpecFromClipboard('new')}
-                      disabled={specEditorBusy}
-                      loading={specClipboardBusyTarget === 'new'}
-                    >
-                      <IconClipboardText size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Copy New Spec"
-                      onClick={() => void copySpecInput('new')}
-                      disabled={specEditorBusy || !specNewText}
-                      loading={specCopyBusyTarget === 'new'}
-                    >
-                      <IconCopy size={14} />
-                    </ComparePaneAction>
-                    <ComparePaneAction
-                      label="Clear New Spec"
-                      onClick={() => clearSpecInput('new')}
-                      disabled={specEditorBusy || !specNewText}
-                      danger
-                    >
-                      <IconBackspace size={14} />
-                    </ComparePaneAction>
-                  </ComparePaneActions>
-                }
-              >
-                <CompareCodeInputBody
-                  value={specNewText}
-                  onChange={(value) => {
-                    setSpecNewText(value)
-                    if (specNewSourcePath) setSpecNewSourcePath('')
-                  }}
-                  language={specNewLanguage}
-                  parseError={specNewParseError}
-                />
-              </CompareSourcePane>
-            }
-          />
-        }
+            <SpecCompareSourceWorkspace
+              oldSourcePath={specOldSourcePath}
+              newSourcePath={specNewSourcePath}
+              oldValue={specOldText}
+              newValue={specNewText}
+              oldLanguage={specOldLanguage}
+              newLanguage={specNewLanguage}
+              oldParseError={specOldParseError}
+              newParseError={specNewParseError}
+              busy={specEditorBusy}
+              fileBusyTarget={specFileBusyTarget}
+              clipboardBusyTarget={specClipboardBusyTarget}
+              copyBusyTarget={specCopyBusyTarget}
+              onOpenFile={(target) => void loadSpecFromFile(target)}
+              onPasteClipboard={(target) => void pasteSpecFromClipboard(target)}
+              onCopyInput={(target) => void copySpecInput(target)}
+              onClearInput={clearSpecInput}
+              onOldChange={(value) => {
+                setSpecOldText(value)
+                if (specOldSourcePath) setSpecOldSourcePath('')
+              }}
+              onNewChange={(value) => {
+                setSpecNewText(value)
+                if (specNewSourcePath) setSpecNewSourcePath('')
+              }}
+            />
+          }
           result={renderSpecResultPanel()}
         />
       </div>
