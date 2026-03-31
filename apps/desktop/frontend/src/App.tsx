@@ -20,6 +20,7 @@ import type {
 } from './types'
 import './style.css'
 import { useDesktopPersistence } from './useDesktopPersistence'
+import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { AppChrome } from './ui/AppChrome'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareStatusState } from './ui/CompareStatusState'
@@ -29,8 +30,6 @@ import { upsertRecentPair } from './persistence'
 import {
   formatUnknownError,
   parseIgnorePaths,
-  renderResult,
-  summarizeResponse,
 } from './utils/appHelpers'
 import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
@@ -556,11 +555,6 @@ export function App() {
     },
   })
 
-  const setResult = (res: unknown) => {
-    setSummaryLine(summarizeResponse(res))
-    setOutput(renderResult(res))
-  }
-
   const browseAndSet = async (
     picker: (() => Promise<string>) | undefined,
     setter: (value: string) => void,
@@ -667,6 +661,33 @@ export function App() {
     setMode,
   })
 
+  const {
+    setResult,
+    onRun,
+    handleLoadScenarioChecks,
+  } = useAppRunOrchestration({
+    mode,
+    setLoading,
+    setSummaryLine,
+    setOutput,
+    runJSON,
+    applyJSONResultView,
+    setJSONRichResult,
+    runSpec,
+    applySpecResultView,
+    setSpecRichResult,
+    runText,
+    setTextResult,
+    setTextLastRunOld,
+    setTextLastRunNew,
+    setTextLastRunOutputFormat,
+    clearTextExpandedSections,
+    runFolderCompare,
+    runScenario,
+    onLoadScenarioChecks,
+    setScenarioRunError,
+  })
+
   const runRecentAction = async (label: string, action: () => Promise<void>) => {
     setLoading(true)
     try {
@@ -688,16 +709,6 @@ export function App() {
     resetTextSearch()
   }
 
-  const runJSONWithViewReset = async () => {
-    const richResult = await runJSON()
-    applyJSONResultView(richResult)
-  }
-
-  const runSpecWithViewReset = async () => {
-    const richResult = await runSpec()
-    applySpecResultView(richResult)
-  }
-
   const runJSONFromRecentWithViewReset = async (pair: DesktopRecentPair) => {
     const richResult = await runJSONFromRecent(pair)
     applyJSONResultView(richResult)
@@ -708,112 +719,6 @@ export function App() {
     const richResult = await runSpecFromRecent(pair)
     applySpecResultView(richResult)
     setMode('spec')
-  }
-
-  const runByMode = async () => {
-    if (mode === 'json') {
-      await runJSONWithViewReset()
-      return
-    }
-    if (mode === 'spec') {
-      await runSpecWithViewReset()
-      return
-    }
-    if (mode === 'text') {
-      await runText()
-      return
-    }
-    if (mode === 'folder') {
-      await runFolderCompare()
-      return
-    }
-    await runScenario()
-  }
-
-  const onRun = async () => {
-    setLoading(true)
-
-    if (mode !== 'scenario') {
-      setSummaryLine('')
-      setOutput('')
-    }
-    if (mode === 'text') {
-      setTextResult(null)
-      setTextLastRunOld('')
-      setTextLastRunNew('')
-      setTextLastRunOutputFormat(null)
-      clearTextExpandedSections()
-    }
-    if (mode === 'spec') {
-      setSpecRichResult(null)
-    }
-
-    try {
-      await runByMode()
-    } catch (e) {
-      if (mode === 'scenario') {
-        setScenarioRunError(String(e))
-      } else {
-        if (mode === 'text') {
-          setTextResult({
-            exitCode: 2,
-            diffFound: false,
-            output: '',
-            error: String(e),
-          })
-        } else if (mode === 'json') {
-          setJSONRichResult({
-            result: {
-              exitCode: 2,
-              diffFound: false,
-              output: '',
-              error: String(e),
-            },
-            diffText: '',
-            summary: {
-              added: 0,
-              removed: 0,
-              changed: 0,
-              typeChanged: 0,
-              breaking: 0,
-            },
-            diffs: [],
-          })
-        } else if (mode === 'spec') {
-          setSpecRichResult({
-            result: {
-              exitCode: 2,
-              diffFound: false,
-              output: '',
-              error: String(e),
-            },
-            diffText: '',
-            summary: {
-              added: 0,
-              removed: 0,
-              changed: 0,
-              typeChanged: 0,
-              breaking: 0,
-            },
-            diffs: [],
-          })
-        }
-        setSummaryLine('error=yes')
-        setOutput(String(e))
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleLoadScenarioChecks = async () => {
-    setLoading(true)
-
-    try {
-      await onLoadScenarioChecks()
-    } finally {
-      setLoading(false)
-    }
   }
 
   const renderScenarioResultPanel = () => (
