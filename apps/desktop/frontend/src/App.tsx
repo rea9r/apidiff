@@ -18,13 +18,12 @@ import type {
   CompareFoldersResponse,
   DesktopRecentFolderPair,
   DesktopRecentPair,
-  DesktopState,
   FolderCompareItem,
   LoadTextFileRequest,
-  LoadTextFileResponse,
   Mode,
 } from './types'
 import './style.css'
+import { useDesktopPersistence } from './useDesktopPersistence'
 import { AppChrome } from './ui/AppChrome'
 import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
 import { CompareStatusState } from './ui/CompareStatusState'
@@ -36,7 +35,6 @@ import {
 } from './persistence'
 import {
   formatUnknownError,
-  ignorePathsToText,
   parseIgnorePaths,
   renderResult,
   summarizeResponse,
@@ -382,7 +380,6 @@ export function App() {
   const [folderStatus, setFolderStatus] = useState('')
   const [folderRecentPairs, setFolderRecentPairs] = useState<DesktopRecentFolderPair[]>([])
 
-  const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
   const [summaryLine, setSummaryLine] = useState('')
   const [output, setOutput] = useState('')
@@ -521,196 +518,77 @@ export function App() {
     },
   })
 
-  useEffect(() => {
-    let active = true
 
-    const hydrate = async () => {
-      const loadDesktopState = api.loadDesktopState as (() => Promise<DesktopState>) | undefined
-      const loadTextFile = api.loadTextFile
 
-      if (!loadDesktopState) {
-        if (active) {
-          setDesktopStateHydrated(true)
-        }
-        return
-      }
-
-      try {
-        const saved = await loadDesktopState()
-        if (!active || !saved) {
-          return
-        }
-
-        if (isMode(saved.lastUsedMode)) {
-          setMode(saved.lastUsedMode)
-        }
-
-        setIgnoreOrder(!!saved.json.ignoreOrder)
-        setJSONCommon(saved.json.common)
-        setJSONIgnorePathsDraft(ignorePathsToText(saved.json.common.ignorePaths))
-        setJSONOldSourcePath(saved.json.oldSourcePath || '')
-        setJSONNewSourcePath(saved.json.newSourcePath || '')
-
-        setSpecCommon(saved.spec.common)
-        setSpecIgnorePathsDraft(ignorePathsToText(saved.spec.common.ignorePaths))
-        setSpecOldSourcePath(saved.spec.oldSourcePath || '')
-        setSpecNewSourcePath(saved.spec.newSourcePath || '')
-
-        setTextCommon(saved.text.common)
-        setTextDiffLayout(saved.text.diffLayout === 'unified' ? 'unified' : 'split')
-        setTextOldSourcePath(saved.text.oldSourcePath || '')
-        setTextNewSourcePath(saved.text.newSourcePath || '')
-
-        setFolderLeftRoot(saved.folder.leftRoot || '')
-        setFolderRightRoot(saved.folder.rightRoot || '')
-        setFolderCurrentPath(saved.folder.currentPath || '')
-        setFolderViewMode(saved.folder.viewMode === 'tree' ? 'tree' : 'list')
-
-        setScenarioPath(saved.scenario.scenarioPath || '')
-        setReportFormat(saved.scenario.reportFormat === 'json' ? 'json' : 'text')
-
-        setJSONRecentPairs(saved.jsonRecentPairs ?? [])
-        setSpecRecentPairs(saved.specRecentPairs ?? [])
-        setTextRecentPairs(saved.textRecentPairs ?? [])
-        setFolderRecentPairs(saved.folderRecentPairs ?? [])
-        setScenarioRecentPaths(saved.scenarioRecentPaths ?? [])
-
-        if (loadTextFile) {
-          const safeLoad = async (path: string): Promise<string> => {
-            const trimmed = path.trim()
-            if (!trimmed) {
-              return ''
-            }
-            try {
-              const loaded: LoadTextFileResponse = await loadTextFile({
-                path: trimmed,
-              } satisfies LoadTextFileRequest)
-              return loaded.content
-            } catch {
-              return ''
-            }
-          }
-
-          const [jsonOld, jsonNew, specOld, specNew, textOldLoaded, textNewLoaded] =
-            await Promise.all([
-              safeLoad(saved.json.oldSourcePath || ''),
-              safeLoad(saved.json.newSourcePath || ''),
-              safeLoad(saved.spec.oldSourcePath || ''),
-              safeLoad(saved.spec.newSourcePath || ''),
-              safeLoad(saved.text.oldSourcePath || ''),
-              safeLoad(saved.text.newSourcePath || ''),
-            ])
-
-          if (!active) {
-            return
-          }
-
-          setJSONOldText(jsonOld)
-          setJSONNewText(jsonNew)
-          setSpecOldText(specOld)
-          setSpecNewText(specNew)
-          setTextOld(textOldLoaded)
-          setTextNew(textNewLoaded)
-        }
-      } catch {
-        // keep app usable even when persistence load fails
-      } finally {
-        if (active) {
-          setDesktopStateHydrated(true)
-        }
-      }
-    }
-
-    void hydrate()
-    return () => {
-      active = false
-    }
-  }, [api.loadDesktopState, api.loadTextFile])
-
-  useEffect(() => {
-    if (!desktopStateHydrated) {
-      return
-    }
-    const saveDesktopState = api.saveDesktopState as
-      | ((state: DesktopState) => Promise<void>)
-      | undefined
-    if (!saveDesktopState) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      const state: DesktopState = {
-        version: 1,
-        lastUsedMode: mode,
-        json: {
-          oldSourcePath: jsonOldSourcePath,
-          newSourcePath: jsonNewSourcePath,
-          ignoreOrder,
-          common: jsonCommon,
-        },
-        spec: {
-          oldSourcePath: specOldSourcePath,
-          newSourcePath: specNewSourcePath,
-          common: specCommon,
-        },
-        text: {
-          oldSourcePath: textOldSourcePath,
-          newSourcePath: textNewSourcePath,
-          common: textCommon,
-          diffLayout: textDiffLayout,
-        },
-        folder: {
-          leftRoot: folderLeftRoot,
-          rightRoot: folderRightRoot,
-          currentPath: folderCurrentPath,
-          viewMode: folderViewMode,
-        },
-        scenario: {
-          scenarioPath,
-          reportFormat,
-        },
-        jsonRecentPairs,
-        specRecentPairs,
-        textRecentPairs,
-        folderRecentPairs,
-        scenarioRecentPaths,
-      }
-
-      void saveDesktopState(state).catch(() => {
-        // keep save errors non-fatal
-      })
-    }, 500)
-
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [
-    api.saveDesktopState,
-    desktopStateHydrated,
-    folderCurrentPath,
-    folderLeftRoot,
-    folderRecentPairs,
-    folderRightRoot,
-    folderViewMode,
-    ignoreOrder,
-    jsonCommon,
-    jsonNewSourcePath,
-    jsonOldSourcePath,
-    jsonRecentPairs,
+  useDesktopPersistence({
     mode,
-    reportFormat,
-    scenarioPath,
-    scenarioRecentPaths,
-    specCommon,
-    specNewSourcePath,
-    specOldSourcePath,
-    specRecentPairs,
-    textCommon,
-    textDiffLayout,
-    textNewSourcePath,
-    textOldSourcePath,
-    textRecentPairs,
-  ])
+    setMode,
+    loadDesktopState: api.loadDesktopState,
+    saveDesktopState: api.saveDesktopState,
+    loadTextFile: api.loadTextFile,
+    json: {
+      oldSourcePath: jsonOldSourcePath,
+      newSourcePath: jsonNewSourcePath,
+      ignoreOrder,
+      common: jsonCommon,
+      recentPairs: jsonRecentPairs,
+      setIgnoreOrder,
+      setCommon: setJSONCommon,
+      setIgnorePathsDraft: setJSONIgnorePathsDraft,
+      setOldSourcePath: setJSONOldSourcePath,
+      setNewSourcePath: setJSONNewSourcePath,
+      setRecentPairs: setJSONRecentPairs,
+      setOldText: setJSONOldText,
+      setNewText: setJSONNewText,
+    },
+    spec: {
+      oldSourcePath: specOldSourcePath,
+      newSourcePath: specNewSourcePath,
+      common: specCommon,
+      recentPairs: specRecentPairs,
+      setCommon: setSpecCommon,
+      setIgnorePathsDraft: setSpecIgnorePathsDraft,
+      setOldSourcePath: setSpecOldSourcePath,
+      setNewSourcePath: setSpecNewSourcePath,
+      setRecentPairs: setSpecRecentPairs,
+      setOldText: setSpecOldText,
+      setNewText: setSpecNewText,
+    },
+    text: {
+      oldSourcePath: textOldSourcePath,
+      newSourcePath: textNewSourcePath,
+      common: textCommon,
+      diffLayout: textDiffLayout,
+      recentPairs: textRecentPairs,
+      setCommon: setTextCommon,
+      setDiffLayout: setTextDiffLayout,
+      setOldSourcePath: setTextOldSourcePath,
+      setNewSourcePath: setTextNewSourcePath,
+      setRecentPairs: setTextRecentPairs,
+      setOldText: setTextOld,
+      setNewText: setTextNew,
+    },
+    folder: {
+      leftRoot: folderLeftRoot,
+      rightRoot: folderRightRoot,
+      currentPath: folderCurrentPath,
+      viewMode: folderViewMode,
+      recentPairs: folderRecentPairs,
+      setLeftRoot: setFolderLeftRoot,
+      setRightRoot: setFolderRightRoot,
+      setCurrentPath: setFolderCurrentPath,
+      setViewMode: setFolderViewMode,
+      setRecentPairs: setFolderRecentPairs,
+    },
+    scenario: {
+      path: scenarioPath,
+      reportFormat,
+      recentPaths: scenarioRecentPaths,
+      setPath: setScenarioPath,
+      setReportFormat,
+      setRecentPaths: setScenarioRecentPaths,
+    },
+  })
 
   const setResult = (res: unknown) => {
     setSummaryLine(summarizeResponse(res))
