@@ -2,9 +2,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconChevronDown } from '@tabler/icons-react'
 import type {
   CompareCommon,
   CompareFoldersResponse,
@@ -19,13 +17,8 @@ import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
 import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { AppChrome } from './ui/AppChrome'
-import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
-import { DesktopSidebarContent } from './ui/DesktopSidebarContent'
-import { DesktopMainContent } from './ui/DesktopMainContent'
-import {
-  formatUnknownError,
-  parseIgnorePaths,
-} from './utils/appHelpers'
+import { useDesktopShellModel } from './useDesktopShellModel'
+import { formatUnknownError } from './utils/appHelpers'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
 import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
@@ -94,6 +87,14 @@ function getInitialMode(): Mode {
 export function App() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
 
+  const jsonWorkflow = useJSONCompareWorkflow({
+    initialCommon: defaultJSONCommon,
+    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
+    getPickJSONFile: () => api.pickJSONFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onJSONCompareCompleted: (res) => setResult(res),
+  })
+
   const {
     jsonOldText,
     setJSONOldText,
@@ -134,12 +135,14 @@ export function App() {
     copyJSONInput,
     clearJSONInput,
     copyJSONResultRawOutput,
-  } = useJSONCompareWorkflow({
-    initialCommon: defaultJSONCommon,
-    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
-    getPickJSONFile: () => api.pickJSONFile,
+  } = jsonWorkflow
+
+  const specWorkflow = useSpecCompareWorkflow({
+    initialCommon: defaultSpecCommon,
+    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
+    getPickSpecFile: () => api.pickSpecFile,
     getLoadTextFile: () => api.loadTextFile,
-    onJSONCompareCompleted: (res) => setResult(res),
+    onSpecCompareCompleted: (res) => setResult(res),
   })
 
   const {
@@ -181,12 +184,14 @@ export function App() {
     copySpecInput,
     clearSpecInput,
     copySpecResultRawOutput,
-  } = useSpecCompareWorkflow({
-    initialCommon: defaultSpecCommon,
-    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
-    getPickSpecFile: () => api.pickSpecFile,
+  } = specWorkflow
+
+  const textWorkflow = useTextCompareWorkflow({
+    initialCommon: defaultTextCommon,
+    getCompareText: () => api.compareText,
+    getPickTextFile: () => api.pickTextFile,
     getLoadTextFile: () => api.loadTextFile,
-    onSpecCompareCompleted: (res) => setResult(res),
+    onTextCompareCompleted: (res) => setResult(res),
   })
 
   const {
@@ -226,12 +231,13 @@ export function App() {
     copyTextInput,
     clearTextInput,
     copyTextResultRawOutput,
-  } = useTextCompareWorkflow({
-    initialCommon: defaultTextCommon,
-    getCompareText: () => api.compareText,
-    getPickTextFile: () => api.pickTextFile,
-    getLoadTextFile: () => api.loadTextFile,
-    onTextCompareCompleted: (res) => setResult(res),
+  } = textWorkflow
+
+  const textDiffViewState = useTextDiffViewState({
+    textResult,
+    textLastRunOld,
+    textLastRunNew,
+    textLastRunOutputFormat,
   })
 
   const {
@@ -256,11 +262,13 @@ export function App() {
     moveTextSearch,
     toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,
-  } = useTextDiffViewState({
-    textResult,
-    textLastRunOld,
-    textLastRunNew,
-    textLastRunOutputFormat,
+  } = textDiffViewState
+
+  const jsonCompareViewState = useJSONCompareViewState({
+    jsonRichResult,
+    jsonOldText,
+    jsonNewText,
+    textDiffLayout,
   })
 
   const {
@@ -288,10 +296,12 @@ export function App() {
     toggleJSONExpandedValue,
     registerJSONDiffSearchRowRef,
     resetJSONSearch,
-  } = useJSONCompareViewState({
-    jsonRichResult,
-    jsonOldText,
-    jsonNewText,
+  } = jsonCompareViewState
+
+  const specCompareViewState = useSpecCompareViewState({
+    specRichResult,
+    specOldText,
+    specNewText,
     textDiffLayout,
   })
 
@@ -313,12 +323,7 @@ export function App() {
     moveSpecSearch,
     registerSpecDiffSearchRowRef,
     resetSpecSearch,
-  } = useSpecCompareViewState({
-    specRichResult,
-    specOldText,
-    specNewText,
-    textDiffLayout,
-  })
+  } = specCompareViewState
 
   const [folderLeftRoot, setFolderLeftRoot] = useState('')
   const [folderRightRoot, setFolderRightRoot] = useState('')
@@ -344,6 +349,18 @@ export function App() {
 
   const api = useDesktopBridge()
 
+  const scenarioWorkflow = useScenarioWorkflow({
+    listScenarioChecks: api.listScenarioChecks,
+    runScenario: api.runScenario,
+    onEnterScenarioMode: () => {
+      setMode('scenario')
+    },
+    onScenarioRunCompleted: () => {
+      setSummaryLine('')
+      setOutput('')
+    },
+  })
+
   const {
     scenarioPath,
     setScenarioPath,
@@ -364,15 +381,23 @@ export function App() {
     selectAllScenarioChecks,
     clearScenarioSelection,
     setScenarioRunError,
-  } = useScenarioWorkflow({
-    listScenarioChecks: api.listScenarioChecks,
-    runScenario: api.runScenario,
-    onEnterScenarioMode: () => {
-      setMode('scenario')
-    },
-    onScenarioRunCompleted: () => {
-      setSummaryLine('')
-      setOutput('')
+  } = scenarioWorkflow
+
+  const directoryCompareViewState = useDirectoryCompareViewState({
+    folderResult,
+    folderLeftRoot,
+    folderRightRoot,
+    folderNameFilter,
+    folderCurrentPath,
+    compareFolders: api.compareFolders,
+    onFolderTreeLoadError: (error) => {
+      const message = `Failed to load directory children: ${formatUnknownError(error)}`
+      setFolderStatus(message)
+      notifications.show({
+        title: 'Failed to load directory',
+        message,
+        color: 'red',
+      })
     },
   })
 
@@ -395,25 +420,9 @@ export function App() {
     folderBreadcrumbs,
     toggleFolderTreeNode,
     resetFolderNavigationState,
-  } = useDirectoryCompareViewState({
-    folderResult,
-    folderLeftRoot,
-    folderRightRoot,
-    folderNameFilter,
-    folderCurrentPath,
-    compareFolders: api.compareFolders,
-    onFolderTreeLoadError: (error) => {
-      const message = `Failed to load directory children: ${formatUnknownError(error)}`
-      setFolderStatus(message)
-      notifications.show({
-        title: 'Failed to load directory',
-        message,
-        color: 'red',
-      })
-    },
-  })
+  } = directoryCompareViewState
 
-  const { browseFolderRoot, runFolderCompare } = useDirectoryCompareWorkflow({
+  const directoryCompareWorkflow = useDirectoryCompareWorkflow({
     isFolderMode: mode === 'folder',
     folderLeftRoot,
     folderRightRoot,
@@ -445,6 +454,12 @@ export function App() {
       })
     },
   })
+
+  const { browseFolderRoot, runFolderCompare } = directoryCompareWorkflow
+
+
+
+
 
 
 
@@ -543,12 +558,7 @@ export function App() {
     setMode,
   })
 
-  const {
-    folderOpenBusyPath,
-    folderReturnContext,
-    openFolderEntryDiff,
-    returnToFolderCompare,
-  } = useDirectoryCompareChildDiffActions({
+  const directoryCompareChildDiffActions = useDirectoryCompareChildDiffActions({
     folderLeftRoot,
     folderRightRoot,
     folderCurrentPath,
@@ -573,12 +583,13 @@ export function App() {
   })
 
   const {
-    navigateFolderPath,
-    handleFolderRowDoubleClick,
-    handleFolderTreeRowDoubleClick,
-    handleFolderTableKeyDown,
-    runFolderFromRecent,
-  } = useDirectoryCompareInteractions({
+    folderOpenBusyPath,
+    folderReturnContext,
+    openFolderEntryDiff,
+    returnToFolderCompare,
+  } = directoryCompareChildDiffActions
+
+  const directoryCompareInteractions = useDirectoryCompareInteractions({
     compareFolders: api.compareFolders,
     folderNameFilter,
     folderResult,
@@ -597,6 +608,14 @@ export function App() {
     setFolderRecentPairs,
     setMode,
   })
+
+  const {
+    navigateFolderPath,
+    handleFolderRowDoubleClick,
+    handleFolderTreeRowDoubleClick,
+    handleFolderTableKeyDown,
+    runFolderFromRecent,
+  } = directoryCompareInteractions
 
   const {
     setResult,
@@ -629,16 +648,9 @@ export function App() {
     setLoading,
   })
 
-  const isCompareCentricMode = mode === 'text' || mode === 'json' || mode === 'spec'
-
-  const compareOptionsTitle =
-    mode === 'text'
-      ? 'Text compare options'
-      : mode === 'json'
-        ? 'JSON compare options'
-        : 'Spec compare options'
   const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
   const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
+  const folderCompareDisabled = !folderLeftRoot || !folderRightRoot
 
   const { headerActions } = useDesktopHeaderActions({
     mode,
@@ -647,7 +659,7 @@ export function App() {
     onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
     jsonCompareDisabled,
     specCompareDisabled,
-    folderCompareDisabled: !folderLeftRoot || !folderRightRoot,
+    folderCompareDisabled,
     onRun,
     jsonRecentPairs,
     onClearJSONRecent: () => setJSONRecentPairs([]),
@@ -669,273 +681,42 @@ export function App() {
     setMode,
   })
 
-  const compareOptionsContent = (
-    <DesktopCompareOptionsContent
-      mode={mode}
-      jsonProps={{
-        ignoreOrder,
-        onIgnoreOrderChange: setIgnoreOrder,
-        outputFormat: jsonCommon.outputFormat,
-        onOutputFormatChange: (value) => updateJSONCommon('outputFormat', value),
-        textStyle: jsonCommon.textStyle,
-        onTextStyleChange: (value) => updateJSONCommon('textStyle', value),
-        patchTextStyleDisabled: jsonPatchBlockedByFilters,
-        failOn: jsonCommon.failOn,
-        onFailOnChange: (value) => updateJSONCommon('failOn', value),
-        ignorePathsDraft: jsonIgnorePathsDraft,
-        onIgnorePathsDraftChange: setJSONIgnorePathsDraft,
-        onIgnorePathsCommit: (value) => updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
-        showPaths: jsonCommon.showPaths,
-        onShowPathsChange: (checked) => updateJSONCommon('showPaths', checked),
-        onlyBreaking: jsonCommon.onlyBreaking,
-        onOnlyBreakingChange: (checked) => updateJSONCommon('onlyBreaking', checked),
-      }}
-      specProps={{
-        outputFormat: specCommon.outputFormat,
-        onOutputFormatChange: (value) => updateSpecCommon('outputFormat', value),
-        textStyle: specCommon.textStyle,
-        onTextStyleChange: (value) => updateSpecCommon('textStyle', value),
-        failOn: specCommon.failOn,
-        onFailOnChange: (value) => updateSpecCommon('failOn', value),
-        ignorePathsDraft: specIgnorePathsDraft,
-        onIgnorePathsDraftChange: setSpecIgnorePathsDraft,
-        onIgnorePathsCommit: (value) => updateSpecCommon('ignorePaths', parseIgnorePaths(value)),
-        showPaths: specCommon.showPaths,
-        onShowPathsChange: (checked) => updateSpecCommon('showPaths', checked),
-        onlyBreaking: specCommon.onlyBreaking,
-        onOnlyBreakingChange: (checked) => updateSpecCommon('onlyBreaking', checked),
-      }}
-      textProps={{
-        outputFormat: textCommon.outputFormat,
-        onOutputFormatChange: (value) => updateTextCommon('outputFormat', value),
-        failOn: textCommon.failOn,
-        onFailOnChange: (value) => updateTextCommon('failOn', value),
-      }}
-    />
-  )
+  const {
+    layoutMode,
+    sidebar,
+    main,
+    inspector,
+    inspectorOpen,
+  } = useDesktopShellModel({
+    mode,
+    loading,
+    compareOptionsOpened,
+    onCloseCompareOptions: () => setCompareOptionsOpened(false),
+    browseAndSet,
+    pickScenarioFile: api.pickScenarioFile,
+    runRecentAction,
+    handleLoadScenarioChecks,
+    onRun,
+    jsonWorkflow,
+    jsonViewState: jsonCompareViewState,
+    specWorkflow,
+    specViewState: specCompareViewState,
+    textWorkflow,
+    textViewState: textDiffViewState,
+    scenarioWorkflow,
+    folderLeftRoot,
+    folderRightRoot,
+    folderNameFilter,
+    setFolderNameFilter,
+    folderCurrentPath,
+    folderResult,
+    folderStatus,
+    folderViewState: directoryCompareViewState,
+    folderWorkflow: directoryCompareWorkflow,
+    folderChildDiffActions: directoryCompareChildDiffActions,
+    folderInteractions: directoryCompareInteractions,
+  })
 
-  const sidebarContent = (
-    <DesktopSidebarContent
-      mode={mode}
-      scenarioProps={{
-        scenarioPath,
-        onScenarioPathChange: setScenarioPath,
-        onBrowseScenario: () => void browseAndSet(api.pickScenarioFile, setScenarioPath),
-        scenarioRecentPaths,
-        onLoadRecentScenario: (entry) =>
-          void runRecentAction('Recent scenario load', () => loadScenarioRecent(entry)),
-        onClearRecentScenarios: () => setScenarioRecentPaths([]),
-        reportFormat,
-        onReportFormatChange: setReportFormat,
-        loading,
-        onLoadChecks: handleLoadScenarioChecks,
-        onRun,
-        scenarioListStatus,
-        scenarioChecks,
-        selectedChecks,
-        onToggleCheck: toggleScenarioCheck,
-        onSelectAllChecks: selectAllScenarioChecks,
-        onClearCheckSelection: clearScenarioSelection,
-      }}
-    />
-  )
-
-  const mainContent = (
-    <DesktopMainContent
-      mode={mode}
-      showFolderReturnBanner={isCompareCentricMode && !!folderReturnContext}
-      onReturnToFolderCompare={returnToFolderCompare}
-      textSourceProps={{
-        oldSourcePath: textOldSourcePath,
-        newSourcePath: textNewSourcePath,
-        oldValue: textOld,
-        newValue: textNew,
-        busy: textEditorBusy,
-        fileBusyTarget: textFileBusyTarget,
-        clipboardBusyTarget: textClipboardBusyTarget,
-        copyBusyTarget: textPaneCopyBusyTarget,
-        onOpenFile: (target) => void loadTextFromFile(target),
-        onPasteClipboard: (target) => void pasteTextFromClipboard(target),
-        onCopyInput: (target) => void copyTextInput(target),
-        onClearInput: clearTextInput,
-        onOldChange: setTextOldInput,
-        onNewChange: setTextNewInput,
-      }}
-      textResultProps={{
-        textResult,
-        textResultView,
-        setTextResultView,
-        textDiffLayout,
-        setTextDiffLayout,
-        textSearchQuery,
-        setTextSearchQuery,
-        textActiveSearchIndex,
-        normalizedTextSearchQuery,
-        textSearchMatches,
-        textRichRows,
-        textRichItems,
-        omittedSectionIds,
-        allOmittedSectionsExpanded,
-        canRenderTextRich,
-        textCopyBusy,
-        copyTextResultRawOutput,
-        moveTextSearch,
-        toggleTextUnchangedSection,
-        toggleAllTextUnchangedSections,
-        isTextSectionExpanded,
-        registerTextSearchRowRef,
-      }}
-      jsonSourceProps={{
-        oldSourcePath: jsonOldSourcePath,
-        newSourcePath: jsonNewSourcePath,
-        oldValue: jsonOldText,
-        newValue: jsonNewText,
-        oldParseError: jsonOldParseError,
-        newParseError: jsonNewParseError,
-        busy: jsonEditorBusy,
-        fileBusyTarget: jsonFileBusyTarget,
-        clipboardBusyTarget: jsonClipboardBusyTarget,
-        copyBusyTarget: jsonCopyBusyTarget,
-        onOpenFile: (target) => void loadJSONFromFile(target),
-        onPasteClipboard: (target) => void pasteJSONFromClipboard(target),
-        onCopyInput: (target) => void copyJSONInput(target),
-        onClearInput: clearJSONInput,
-        onOldChange: setJSONOldInput,
-        onNewChange: setJSONNewInput,
-      }}
-      jsonResultProps={{
-        jsonResult,
-        jsonResultView,
-        setJSONResultView,
-        textDiffLayout,
-        setTextDiffLayout,
-        jsonSearchQuery,
-        setJSONSearchQuery,
-        jsonActiveSearchIndex,
-        normalizedJSONSearchQuery,
-        jsonSearchMatches,
-        jsonDiffSearchMatches,
-        jsonDiffSearchMatchIds,
-        activeJSONDiffSearchMatchId,
-        canRenderJSONRich,
-        canRenderJSONDiff,
-        jsonCopyBusy,
-        copyJSONResultRawOutput,
-        moveJSONSearch,
-        jsonDiffTextItems,
-        jsonDiffRows,
-        jsonSummary: jsonRichResult?.summary,
-        jsonDiffGroups,
-        effectiveJSONExpandedGroups,
-        jsonSearchMatchIndexSet,
-        jsonExpandedValueKeys,
-        toggleJSONGroup,
-        toggleJSONExpandedValue,
-        registerJSONDiffSearchRowRef,
-      }}
-      specSourceProps={{
-        oldSourcePath: specOldSourcePath,
-        newSourcePath: specNewSourcePath,
-        oldValue: specOldText,
-        newValue: specNewText,
-        oldLanguage: specOldLanguage,
-        newLanguage: specNewLanguage,
-        oldParseError: specOldParseError,
-        newParseError: specNewParseError,
-        busy: specEditorBusy,
-        fileBusyTarget: specFileBusyTarget,
-        clipboardBusyTarget: specClipboardBusyTarget,
-        copyBusyTarget: specCopyBusyTarget,
-        onOpenFile: (target) => void loadSpecFromFile(target),
-        onPasteClipboard: (target) => void pasteSpecFromClipboard(target),
-        onCopyInput: (target) => void copySpecInput(target),
-        onClearInput: clearSpecInput,
-        onOldChange: setSpecOldInput,
-        onNewChange: setSpecNewInput,
-      }}
-      specResultProps={{
-        specResult,
-        specRichResult,
-        specResultView,
-        setSpecResultView,
-        textDiffLayout,
-        setTextDiffLayout,
-        specSearchQuery,
-        setSpecSearchQuery,
-        specActiveSearchIndex,
-        normalizedSpecSearchQuery,
-        specSearchMatches,
-        specDiffSearchMatches,
-        specDiffSearchMatchIds,
-        activeSpecDiffSearchMatchId,
-        canRenderSpecDiff,
-        specCopyBusy,
-        copySpecResultRawOutput,
-        moveSpecSearch,
-        specDiffTextItems,
-        specSearchMatchIndexSet,
-        registerSpecDiffSearchRowRef,
-      }}
-      folderResultProps={{
-        folderResult,
-        folderStatus,
-        folderLeftRoot,
-        folderRightRoot,
-        folderNameFilter,
-        folderCurrentPath,
-        folderViewMode,
-        folderQuickFilter,
-        folderQuickFilterCounts,
-        folderSortKey,
-        folderSortDirection,
-        folderOpenBusyPath,
-        folderTreeLoadingPath,
-        selectedFolderItemPath,
-        sortedFolderItems,
-        flattenedFolderTreeRows,
-        selectedFolderItemForDetail,
-        folderBreadcrumbs,
-        loading,
-        onBrowseFolderRoot: browseFolderRoot,
-        onSetFolderNameFilter: setFolderNameFilter,
-        onSetFolderViewMode: setFolderViewMode,
-        onSetFolderQuickFilter: setFolderQuickFilter,
-        onSelectFolderItemPath: setSelectedFolderItemPath,
-        onNavigateFolderPath: navigateFolderPath,
-        onApplyFolderSort: applyFolderSort,
-        onOpenFolderEntryDiff: openFolderEntryDiff,
-        onToggleFolderTreeNode: toggleFolderTreeNode,
-        onFolderRowDoubleClick: handleFolderRowDoubleClick,
-        onFolderTreeRowDoubleClick: handleFolderTreeRowDoubleClick,
-        onFolderTableKeyDown: (event) => void handleFolderTableKeyDown(event),
-      }}
-      scenarioResultProps={{
-        scenarioRunResult,
-        selectedScenarioResultName,
-        setSelectedScenarioResultName,
-      }}
-    />
-  )
-
-  const compareOptionsInspector = isCompareCentricMode ? (
-    <div className="workspace-inspector-panel">
-      <div className="workspace-inspector-header">
-        <h3>{compareOptionsTitle}</h3>
-        <Tooltip label="Close options">
-          <ActionIcon
-            variant="default"
-            size={26}
-            aria-label="Close options"
-            onClick={() => setCompareOptionsOpened(false)}
-          >
-            <IconChevronDown size={14} />
-          </ActionIcon>
-        </Tooltip>
-      </div>
-      <div className="workspace-inspector-body">{compareOptionsContent}</div>
-    </div>
-  ) : null
-  const isMainFirstMode = isCompareCentricMode || mode === 'folder'
 
   return (
     <AppChrome
@@ -946,12 +727,12 @@ export function App() {
           setCompareOptionsOpened(false)
         }
       }}
-      layoutMode={isMainFirstMode ? 'workspace' : 'sidebar'}
-      sidebar={isMainFirstMode ? undefined : sidebarContent}
+      layoutMode={layoutMode}
+      sidebar={sidebar}
       headerActions={headerActions}
-      main={mainContent}
-      inspector={isCompareCentricMode ? compareOptionsInspector : undefined}
-      inspectorOpen={isCompareCentricMode && compareOptionsOpened}
+      main={main}
+      inspector={inspector}
+      inspectorOpen={inspectorOpen}
     />
   )
 }
