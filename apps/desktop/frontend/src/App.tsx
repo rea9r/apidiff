@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useState,
 } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
@@ -13,6 +12,8 @@ import type {
   Mode,
 } from './types'
 import './style.css'
+import { useDesktopBridge } from './useDesktopBridge'
+import { useBrowseAndSet } from './useBrowseAndSet'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
@@ -341,27 +342,7 @@ export function App() {
     }
   }, [mode])
 
-  const api = useMemo(
-    () => ({
-      compareJSONValuesRich: (window as any).go?.main?.App?.CompareJSONValuesRich,
-      compareSpec: (window as any).go?.main?.App?.CompareSpecFiles,
-      compareSpecRich: (window as any).go?.main?.App?.CompareSpecRich,
-      compareSpecValuesRich: (window as any).go?.main?.App?.CompareSpecValuesRich,
-      compareText: (window as any).go?.main?.App?.CompareText,
-      compareFolders: (window as any).go?.main?.App?.CompareFolders,
-      runScenario: (window as any).go?.main?.App?.RunScenario,
-      listScenarioChecks: (window as any).go?.main?.App?.ListScenarioChecks,
-      pickJSONFile: (window as any).go?.main?.App?.PickJSONFile,
-      pickSpecFile: (window as any).go?.main?.App?.PickSpecFile,
-      pickScenarioFile: (window as any).go?.main?.App?.PickScenarioFile,
-      pickTextFile: (window as any).go?.main?.App?.PickTextFile,
-      pickFolderRoot: (window as any).go?.main?.App?.PickFolderRoot,
-      loadTextFile: (window as any).go?.main?.App?.LoadTextFile,
-      loadDesktopState: (window as any).go?.main?.App?.LoadDesktopState,
-      saveDesktopState: (window as any).go?.main?.App?.SaveDesktopState,
-    }),
-    [],
-  )
+  const api = useDesktopBridge()
 
   const {
     scenarioPath,
@@ -537,36 +518,10 @@ export function App() {
     },
   })
 
-  const browseAndSet = async (
-    picker: (() => Promise<string>) | undefined,
-    setter: (value: string) => void,
-  ) => {
-    if (!picker) {
-      setSummaryLine('error=yes')
-      setOutput('Wails bridge not available (file picker)')
-      notifications.show({
-        title: 'File picker unavailable',
-        message: 'Wails bridge not available (file picker)',
-        color: 'red',
-      })
-      return
-    }
-
-    try {
-      const selected = await picker()
-      if (selected) {
-        setter(selected)
-      }
-    } catch (e) {
-      setSummaryLine('error=yes')
-      setOutput(String(e))
-      notifications.show({
-        title: 'Failed to pick file',
-        message: formatUnknownError(e),
-        color: 'red',
-      })
-    }
-  }
+  const { browseAndSet } = useBrowseAndSet({
+    setSummaryLine,
+    setOutput,
+  })
 
   const {
     applyJSONResultView,
