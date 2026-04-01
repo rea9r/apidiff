@@ -5,10 +5,7 @@ import {
 } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import {
-  IconArrowLeft,
-  IconChevronDown,
-} from '@tabler/icons-react'
+import { IconChevronDown } from '@tabler/icons-react'
 import type {
   CompareCommon,
   CompareFoldersResponse,
@@ -20,36 +17,27 @@ import './style.css'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { AppChrome } from './ui/AppChrome'
-import { CompareWorkspaceShell } from './ui/CompareWorkspaceShell'
-import { CompareStatusState } from './ui/CompareStatusState'
 import { DesktopModeHeaderActions } from './ui/DesktopModeHeaderActions'
 import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
 import { DesktopSidebarContent } from './ui/DesktopSidebarContent'
+import { DesktopMainContent } from './ui/DesktopMainContent'
 import type { RecentTargetsMenuItem } from './ui/RecentTargetsMenu'
 import { upsertRecentPair } from './persistence'
 import {
   formatUnknownError,
   parseIgnorePaths,
 } from './utils/appHelpers'
-import { DirectoryCompareResultPanel } from './features/folder/DirectoryCompareResultPanel'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
 import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
 import { useFolderChildDiffOpeners } from './features/folder/useFolderChildDiffOpeners'
 import { useDirectoryCompareInteractions } from './features/folder/useDirectoryCompareInteractions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
-import { TextCompareResultPanel } from './features/text/TextCompareResultPanel'
-import { TextCompareSourceWorkspace } from './features/text/TextCompareSourceWorkspace'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
-import { JSONCompareResultPanel } from './features/json/JSONCompareResultPanel'
-import { JSONCompareSourceWorkspace } from './features/json/JSONCompareSourceWorkspace'
 import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
 import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
-import { SpecCompareResultPanel } from './features/spec/SpecCompareResultPanel'
-import { SpecCompareSourceWorkspace } from './features/spec/SpecCompareSourceWorkspace'
 import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
-import { ScenarioResultPanel } from './features/scenario/ScenarioResultPanel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 const defaultJSONCommon: CompareCommon = {
@@ -717,136 +705,6 @@ export function App() {
     setMode('spec')
   }
 
-  const renderScenarioResultPanel = () => (
-    <ScenarioResultPanel
-      scenarioRunResult={scenarioRunResult}
-      selectedScenarioResultName={selectedScenarioResultName}
-      setSelectedScenarioResultName={setSelectedScenarioResultName}
-    />
-  )
-
-  const renderTextResultPanel = () => (
-    <TextCompareResultPanel
-      textResult={textResult}
-      textResultView={textResultView}
-      setTextResultView={setTextResultView}
-      textDiffLayout={textDiffLayout}
-      setTextDiffLayout={setTextDiffLayout}
-      textSearchQuery={textSearchQuery}
-      setTextSearchQuery={setTextSearchQuery}
-      textActiveSearchIndex={textActiveSearchIndex}
-      normalizedTextSearchQuery={normalizedTextSearchQuery}
-      textSearchMatches={textSearchMatches}
-      textRichRows={textRichRows}
-      textRichItems={textRichItems}
-      omittedSectionIds={omittedSectionIds}
-      allOmittedSectionsExpanded={allOmittedSectionsExpanded}
-      canRenderTextRich={canRenderTextRich}
-      textCopyBusy={textCopyBusy}
-      copyTextResultRawOutput={copyTextResultRawOutput}
-      moveTextSearch={moveTextSearch}
-      toggleTextUnchangedSection={toggleTextUnchangedSection}
-      toggleAllTextUnchangedSections={toggleAllTextUnchangedSections}
-      isTextSectionExpanded={isTextSectionExpanded}
-      registerTextSearchRowRef={registerTextSearchRowRef}
-    />
-  )
-
-  const renderJSONResultPanel = () => (
-    <JSONCompareResultPanel
-      jsonResult={jsonResult}
-      jsonResultView={jsonResultView}
-      setJSONResultView={setJSONResultView}
-      textDiffLayout={textDiffLayout}
-      setTextDiffLayout={setTextDiffLayout}
-      jsonSearchQuery={jsonSearchQuery}
-      setJSONSearchQuery={setJSONSearchQuery}
-      jsonActiveSearchIndex={jsonActiveSearchIndex}
-      normalizedJSONSearchQuery={normalizedJSONSearchQuery}
-      jsonSearchMatches={jsonSearchMatches}
-      jsonDiffSearchMatches={jsonDiffSearchMatches}
-      jsonDiffSearchMatchIds={jsonDiffSearchMatchIds}
-      activeJSONDiffSearchMatchId={activeJSONDiffSearchMatchId}
-      canRenderJSONRich={canRenderJSONRich}
-      canRenderJSONDiff={canRenderJSONDiff}
-      jsonCopyBusy={jsonCopyBusy}
-      copyJSONResultRawOutput={copyJSONResultRawOutput}
-      moveJSONSearch={moveJSONSearch}
-      jsonDiffTextItems={jsonDiffTextItems}
-      jsonDiffRows={jsonDiffRows}
-      jsonSummary={jsonRichResult?.summary}
-      jsonDiffGroups={jsonDiffGroups}
-      effectiveJSONExpandedGroups={effectiveJSONExpandedGroups}
-      jsonSearchMatchIndexSet={jsonSearchMatchIndexSet}
-      jsonExpandedValueKeys={jsonExpandedValueKeys}
-      toggleJSONGroup={toggleJSONGroup}
-      toggleJSONExpandedValue={toggleJSONExpandedValue}
-      registerJSONDiffSearchRowRef={registerJSONDiffSearchRowRef}
-    />
-  )
-
-  const renderSpecResultPanel = () => (
-    <SpecCompareResultPanel
-      specResult={specResult}
-      specRichResult={specRichResult}
-      specResultView={specResultView}
-      setSpecResultView={setSpecResultView}
-      textDiffLayout={textDiffLayout}
-      setTextDiffLayout={setTextDiffLayout}
-      specSearchQuery={specSearchQuery}
-      setSpecSearchQuery={setSpecSearchQuery}
-      specActiveSearchIndex={specActiveSearchIndex}
-      normalizedSpecSearchQuery={normalizedSpecSearchQuery}
-      specSearchMatches={specSearchMatches}
-      specDiffSearchMatches={specDiffSearchMatches}
-      specDiffSearchMatchIds={specDiffSearchMatchIds}
-      activeSpecDiffSearchMatchId={activeSpecDiffSearchMatchId}
-      canRenderSpecDiff={canRenderSpecDiff}
-      specCopyBusy={specCopyBusy}
-      copySpecResultRawOutput={copySpecResultRawOutput}
-      moveSpecSearch={moveSpecSearch}
-      specDiffTextItems={specDiffTextItems}
-      specSearchMatchIndexSet={specSearchMatchIndexSet}
-      registerSpecDiffSearchRowRef={registerSpecDiffSearchRowRef}
-    />
-  )
-
-  const renderFolderResultPanel = () => (
-    <DirectoryCompareResultPanel
-      folderResult={folderResult}
-      folderStatus={folderStatus}
-      folderLeftRoot={folderLeftRoot}
-      folderRightRoot={folderRightRoot}
-      folderNameFilter={folderNameFilter}
-      folderCurrentPath={folderCurrentPath}
-      folderViewMode={folderViewMode}
-      folderQuickFilter={folderQuickFilter}
-      folderQuickFilterCounts={folderQuickFilterCounts}
-      folderSortKey={folderSortKey}
-      folderSortDirection={folderSortDirection}
-      folderOpenBusyPath={folderOpenBusyPath}
-      folderTreeLoadingPath={folderTreeLoadingPath}
-      selectedFolderItemPath={selectedFolderItemPath}
-      sortedFolderItems={sortedFolderItems}
-      flattenedFolderTreeRows={flattenedFolderTreeRows}
-      selectedFolderItemForDetail={selectedFolderItemForDetail}
-      folderBreadcrumbs={folderBreadcrumbs}
-      loading={loading}
-      onBrowseFolderRoot={browseFolderRoot}
-      onSetFolderNameFilter={setFolderNameFilter}
-      onSetFolderViewMode={setFolderViewMode}
-      onSetFolderQuickFilter={setFolderQuickFilter}
-      onSelectFolderItemPath={setSelectedFolderItemPath}
-      onNavigateFolderPath={navigateFolderPath}
-      onApplyFolderSort={applyFolderSort}
-      onOpenFolderEntryDiff={openFolderEntryDiff}
-      onToggleFolderTreeNode={toggleFolderTreeNode}
-      onFolderRowDoubleClick={handleFolderRowDoubleClick}
-      onFolderTreeRowDoubleClick={handleFolderTreeRowDoubleClick}
-      onFolderTableKeyDown={(event) => void handleFolderTableKeyDown(event)}
-    />
-  )
-
   const isCompareCentricMode = mode === 'text' || mode === 'json' || mode === 'spec'
 
   const compareOptionsTitle =
@@ -993,110 +851,182 @@ export function App() {
     />
   )
 
-  const folderReturnPathBanner =
-    isCompareCentricMode && folderReturnContext ? (
-      <div className="folder-return-banner">
-        <button
-          type="button"
-          className="button-secondary button-compact folder-return-button"
-          onClick={returnToFolderCompare}
-        >
-          <IconArrowLeft size={13} />
-          Back to directory compare
-        </button>
-      </div>
-    ) : null
-
-  const mainContent =
-    mode === 'text' ? (
-      <div className="compare-main-shell">
-        {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={
-            <TextCompareSourceWorkspace
-              oldSourcePath={textOldSourcePath}
-              newSourcePath={textNewSourcePath}
-              oldValue={textOld}
-              newValue={textNew}
-              busy={textEditorBusy}
-              fileBusyTarget={textFileBusyTarget}
-              clipboardBusyTarget={textClipboardBusyTarget}
-              copyBusyTarget={textPaneCopyBusyTarget}
-              onOpenFile={(target) => void loadTextFromFile(target)}
-              onPasteClipboard={(target) => void pasteTextFromClipboard(target)}
-              onCopyInput={(target) => void copyTextInput(target)}
-              onClearInput={clearTextInput}
-              onOldChange={setTextOldInput}
-              onNewChange={setTextNewInput}
-            />
-          }
-          result={renderTextResultPanel()}
-        />
-      </div>
-    ) : mode === 'json' ? (
-      <div className="compare-main-shell">
-        {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={
-            <JSONCompareSourceWorkspace
-              oldSourcePath={jsonOldSourcePath}
-              newSourcePath={jsonNewSourcePath}
-              oldValue={jsonOldText}
-              newValue={jsonNewText}
-              oldParseError={jsonOldParseError}
-              newParseError={jsonNewParseError}
-              busy={jsonEditorBusy}
-              fileBusyTarget={jsonFileBusyTarget}
-              clipboardBusyTarget={jsonClipboardBusyTarget}
-              copyBusyTarget={jsonCopyBusyTarget}
-              onOpenFile={(target) => void loadJSONFromFile(target)}
-              onPasteClipboard={(target) => void pasteJSONFromClipboard(target)}
-              onCopyInput={(target) => void copyJSONInput(target)}
-              onClearInput={clearJSONInput}
-              onOldChange={setJSONOldInput}
-              onNewChange={setJSONNewInput}
-            />
-          }
-          result={renderJSONResultPanel()}
-        />
-      </div>
-    ) : mode === 'spec' ? (
-      <div className="compare-main-shell">
-        {folderReturnPathBanner}
-        <CompareWorkspaceShell
-          source={
-            <SpecCompareSourceWorkspace
-              oldSourcePath={specOldSourcePath}
-              newSourcePath={specNewSourcePath}
-              oldValue={specOldText}
-              newValue={specNewText}
-              oldLanguage={specOldLanguage}
-              newLanguage={specNewLanguage}
-              oldParseError={specOldParseError}
-              newParseError={specNewParseError}
-              busy={specEditorBusy}
-              fileBusyTarget={specFileBusyTarget}
-              clipboardBusyTarget={specClipboardBusyTarget}
-              copyBusyTarget={specCopyBusyTarget}
-              onOpenFile={(target) => void loadSpecFromFile(target)}
-              onPasteClipboard={(target) => void pasteSpecFromClipboard(target)}
-              onCopyInput={(target) => void copySpecInput(target)}
-              onClearInput={clearSpecInput}
-              onOldChange={setSpecOldInput}
-              onNewChange={setSpecNewInput}
-            />
-          }
-          result={renderSpecResultPanel()}
-        />
-      </div>
-    ) : mode === 'folder' ? (
-      <div className="result-panel">{renderFolderResultPanel()}</div>
-    ) : (
-      <div className="result-panel">
-        <h2>Result</h2>
-        {renderScenarioResultPanel()}
-      </div>
-    )
+  const mainContent = (
+    <DesktopMainContent
+      mode={mode}
+      showFolderReturnBanner={isCompareCentricMode && !!folderReturnContext}
+      onReturnToFolderCompare={returnToFolderCompare}
+      textSourceProps={{
+        oldSourcePath: textOldSourcePath,
+        newSourcePath: textNewSourcePath,
+        oldValue: textOld,
+        newValue: textNew,
+        busy: textEditorBusy,
+        fileBusyTarget: textFileBusyTarget,
+        clipboardBusyTarget: textClipboardBusyTarget,
+        copyBusyTarget: textPaneCopyBusyTarget,
+        onOpenFile: (target) => void loadTextFromFile(target),
+        onPasteClipboard: (target) => void pasteTextFromClipboard(target),
+        onCopyInput: (target) => void copyTextInput(target),
+        onClearInput: clearTextInput,
+        onOldChange: setTextOldInput,
+        onNewChange: setTextNewInput,
+      }}
+      textResultProps={{
+        textResult,
+        textResultView,
+        setTextResultView,
+        textDiffLayout,
+        setTextDiffLayout,
+        textSearchQuery,
+        setTextSearchQuery,
+        textActiveSearchIndex,
+        normalizedTextSearchQuery,
+        textSearchMatches,
+        textRichRows,
+        textRichItems,
+        omittedSectionIds,
+        allOmittedSectionsExpanded,
+        canRenderTextRich,
+        textCopyBusy,
+        copyTextResultRawOutput,
+        moveTextSearch,
+        toggleTextUnchangedSection,
+        toggleAllTextUnchangedSections,
+        isTextSectionExpanded,
+        registerTextSearchRowRef,
+      }}
+      jsonSourceProps={{
+        oldSourcePath: jsonOldSourcePath,
+        newSourcePath: jsonNewSourcePath,
+        oldValue: jsonOldText,
+        newValue: jsonNewText,
+        oldParseError: jsonOldParseError,
+        newParseError: jsonNewParseError,
+        busy: jsonEditorBusy,
+        fileBusyTarget: jsonFileBusyTarget,
+        clipboardBusyTarget: jsonClipboardBusyTarget,
+        copyBusyTarget: jsonCopyBusyTarget,
+        onOpenFile: (target) => void loadJSONFromFile(target),
+        onPasteClipboard: (target) => void pasteJSONFromClipboard(target),
+        onCopyInput: (target) => void copyJSONInput(target),
+        onClearInput: clearJSONInput,
+        onOldChange: setJSONOldInput,
+        onNewChange: setJSONNewInput,
+      }}
+      jsonResultProps={{
+        jsonResult,
+        jsonResultView,
+        setJSONResultView,
+        textDiffLayout,
+        setTextDiffLayout,
+        jsonSearchQuery,
+        setJSONSearchQuery,
+        jsonActiveSearchIndex,
+        normalizedJSONSearchQuery,
+        jsonSearchMatches,
+        jsonDiffSearchMatches,
+        jsonDiffSearchMatchIds,
+        activeJSONDiffSearchMatchId,
+        canRenderJSONRich,
+        canRenderJSONDiff,
+        jsonCopyBusy,
+        copyJSONResultRawOutput,
+        moveJSONSearch,
+        jsonDiffTextItems,
+        jsonDiffRows,
+        jsonSummary: jsonRichResult?.summary,
+        jsonDiffGroups,
+        effectiveJSONExpandedGroups,
+        jsonSearchMatchIndexSet,
+        jsonExpandedValueKeys,
+        toggleJSONGroup,
+        toggleJSONExpandedValue,
+        registerJSONDiffSearchRowRef,
+      }}
+      specSourceProps={{
+        oldSourcePath: specOldSourcePath,
+        newSourcePath: specNewSourcePath,
+        oldValue: specOldText,
+        newValue: specNewText,
+        oldLanguage: specOldLanguage,
+        newLanguage: specNewLanguage,
+        oldParseError: specOldParseError,
+        newParseError: specNewParseError,
+        busy: specEditorBusy,
+        fileBusyTarget: specFileBusyTarget,
+        clipboardBusyTarget: specClipboardBusyTarget,
+        copyBusyTarget: specCopyBusyTarget,
+        onOpenFile: (target) => void loadSpecFromFile(target),
+        onPasteClipboard: (target) => void pasteSpecFromClipboard(target),
+        onCopyInput: (target) => void copySpecInput(target),
+        onClearInput: clearSpecInput,
+        onOldChange: setSpecOldInput,
+        onNewChange: setSpecNewInput,
+      }}
+      specResultProps={{
+        specResult,
+        specRichResult,
+        specResultView,
+        setSpecResultView,
+        textDiffLayout,
+        setTextDiffLayout,
+        specSearchQuery,
+        setSpecSearchQuery,
+        specActiveSearchIndex,
+        normalizedSpecSearchQuery,
+        specSearchMatches,
+        specDiffSearchMatches,
+        specDiffSearchMatchIds,
+        activeSpecDiffSearchMatchId,
+        canRenderSpecDiff,
+        specCopyBusy,
+        copySpecResultRawOutput,
+        moveSpecSearch,
+        specDiffTextItems,
+        specSearchMatchIndexSet,
+        registerSpecDiffSearchRowRef,
+      }}
+      folderResultProps={{
+        folderResult,
+        folderStatus,
+        folderLeftRoot,
+        folderRightRoot,
+        folderNameFilter,
+        folderCurrentPath,
+        folderViewMode,
+        folderQuickFilter,
+        folderQuickFilterCounts,
+        folderSortKey,
+        folderSortDirection,
+        folderOpenBusyPath,
+        folderTreeLoadingPath,
+        selectedFolderItemPath,
+        sortedFolderItems,
+        flattenedFolderTreeRows,
+        selectedFolderItemForDetail,
+        folderBreadcrumbs,
+        loading,
+        onBrowseFolderRoot: browseFolderRoot,
+        onSetFolderNameFilter: setFolderNameFilter,
+        onSetFolderViewMode: setFolderViewMode,
+        onSetFolderQuickFilter: setFolderQuickFilter,
+        onSelectFolderItemPath: setSelectedFolderItemPath,
+        onNavigateFolderPath: navigateFolderPath,
+        onApplyFolderSort: applyFolderSort,
+        onOpenFolderEntryDiff: openFolderEntryDiff,
+        onToggleFolderTreeNode: toggleFolderTreeNode,
+        onFolderRowDoubleClick: handleFolderRowDoubleClick,
+        onFolderTreeRowDoubleClick: handleFolderTreeRowDoubleClick,
+        onFolderTableKeyDown: (event) => void handleFolderTableKeyDown(event),
+      }}
+      scenarioResultProps={{
+        scenarioRunResult,
+        selectedScenarioResultName,
+        setSelectedScenarioResultName,
+      }}
+    />
+  )
 
   const compareOptionsInspector = isCompareCentricMode ? (
     <div className="workspace-inspector-panel">
