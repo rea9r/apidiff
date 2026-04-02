@@ -34,7 +34,7 @@ func RunJSONFilesDetailed(opts Options) RunResult {
 		func(_ context.Context) (any, error) {
 			return source.LoadJSONFile(opts.NewPath)
 		},
-		opts.CompareOptions(),
+		opts.CompareOptions,
 	)
 }
 
@@ -190,7 +190,7 @@ func validateFileOptions(opts Options) error {
 	if opts.OldPath == "" || opts.NewPath == "" {
 		return errors.New("old and new file paths are required")
 	}
-	return validateCompareOptions(opts.CompareOptions())
+	return validateCompareOptions(opts.CompareOptions)
 }
 
 func validateCompareOptions(opts CompareOptions) error {

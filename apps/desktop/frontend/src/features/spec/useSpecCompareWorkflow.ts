@@ -29,7 +29,7 @@ type CompareSpecValuesRichFn = (
 type PickSpecFileFn = () => Promise<string>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
 
-type UseSpecCompareWorkflowOptions = {
+export type UseSpecCompareWorkflowOptions = {
   initialCommon: CompareCommon
   getCompareSpecValuesRich: () => CompareSpecValuesRichFn | undefined
   getPickSpecFile: () => PickSpecFileFn | undefined

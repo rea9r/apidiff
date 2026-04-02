@@ -44,8 +44,10 @@ func TestRunTextWithOptions_FileInput(t *testing.T) {
 	newPath := writeTextFile(t, "new.txt", "same\n")
 
 	code, out, err := RunTextFiles(Options{
-		Format:  "text",
-		FailOn:  FailOnAny,
+		CompareOptions: CompareOptions{
+			Format: "text",
+			FailOn: FailOnAny,
+		},
 		OldPath: oldPath,
 		NewPath: newPath,
 	})

@@ -26,7 +26,7 @@ func RunTextFilesDetailed(opts Options) RunResult {
 		return finalizeRun(nil, "", err, opts.FailOn)
 	}
 
-	return RunTextValuesDetailed(string(oldData), string(newData), opts.CompareOptions())
+	return RunTextValuesDetailed(string(oldData), string(newData), opts.CompareOptions)
 }
 
 func RunTextValues(oldText, newText string, opts CompareOptions) (int, string, error) {

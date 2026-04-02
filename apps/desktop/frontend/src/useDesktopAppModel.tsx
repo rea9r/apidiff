@@ -1,340 +1,104 @@
-import { notifications } from '@mantine/notifications'
 import { useDesktopBridge } from './useDesktopBridge'
 import { useBrowseAndSet } from './useBrowseAndSet'
-import {
-  defaultJSONCommon,
-  defaultSpecCommon,
-  defaultTextCommon,
-  useDesktopModeState,
-} from './useDesktopModeState'
-import { useFolderCompareState } from './useFolderCompareState'
+import { useDesktopModeState } from './useDesktopModeState'
 import { useDesktopRunUiState } from './useDesktopRunUiState'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useAppRunOrchestration } from './useAppRunOrchestration'
 import { useRecentActionRunner } from './useRecentActionRunner'
 import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { useDesktopShellModel } from './useDesktopShellModel'
-import { formatUnknownError } from './utils/appHelpers'
-import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
-import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
-import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
-import { useFolderChildDiffOpeners } from './features/folder/useFolderChildDiffOpeners'
-import { useDirectoryCompareInteractions } from './features/folder/useDirectoryCompareInteractions'
-import { useTextDiffViewState } from './features/text/useTextDiffViewState'
-import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
-import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
-import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
-import { useSpecCompareViewState } from './features/spec/useSpecCompareViewState'
-import { useSpecCompareWorkflow } from './features/spec/useSpecCompareWorkflow'
+import { useJSONCompareModel } from './features/json/useJSONCompareModel'
+import { useSpecCompareModel } from './features/spec/useSpecCompareModel'
+import { useTextCompareModel } from './features/text/useTextCompareModel'
+import { useFolderCompareModel } from './features/folder/useFolderCompareModel'
 import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 export function useDesktopAppModel() {
-  const {
-    mode,
-    setMode,
-    compareOptionsOpened,
-    setCompareOptionsOpened,
-    onModeChange,
-  } = useDesktopModeState()
-
+  const { mode, setMode, compareOptionsOpened, setCompareOptionsOpened, onModeChange } =
+    useDesktopModeState()
   const api = useDesktopBridge()
+  const { setSummaryLine, setOutput, loading, setLoading } = useDesktopRunUiState()
 
-  const {
-    summaryLine,
-    setSummaryLine,
-    output,
-    setOutput,
-    loading,
-    setLoading,
-  } = useDesktopRunUiState()
+  // --- Domain models ---
+  // NOTE: onXxxCompleted callbacks are closures that capture `setResult`.
+  // They fire asynchronously (never during render), so the forward reference is safe.
 
-  const jsonWorkflow = useJSONCompareWorkflow({
-    initialCommon: defaultJSONCommon,
-    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
-    getPickJSONFile: () => api.pickJSONFile,
-    getLoadTextFile: () => api.loadTextFile,
-    onJSONCompareCompleted: (res) => setResult(res),
-  })
-
-  const {
-    jsonOldText,
-    setJSONOldText,
-    setJSONOldInput,
-    jsonNewText,
-    setJSONNewText,
-    setJSONNewInput,
-    jsonOldSourcePath,
-    setJSONOldSourcePath,
-    jsonNewSourcePath,
-    setJSONNewSourcePath,
-    ignoreOrder,
-    setIgnoreOrder,
-    jsonCommon,
-    setJSONCommon,
-    updateJSONCommon,
-    jsonRichResult,
-    setJSONRichResult,
-    jsonCopyBusy,
-    jsonClipboardBusyTarget,
-    jsonFileBusyTarget,
-    jsonCopyBusyTarget,
-    jsonIgnorePathsDraft,
-    setJSONIgnorePathsDraft,
-    jsonRecentPairs,
-    setJSONRecentPairs,
-    jsonPatchBlockedByFilters,
-    jsonOldParseError,
-    jsonNewParseError,
-    jsonInputInvalid,
-    jsonInputEmpty,
-    jsonEditorBusy,
-    runJSON,
-    runJSONFromRecent,
-    runJSONCompareFromPaths,
-    pasteJSONFromClipboard,
-    loadJSONFromFile,
-    copyJSONInput,
-    clearJSONInput,
-    copyJSONResultRawOutput,
-  } = jsonWorkflow
-
-  const specWorkflow = useSpecCompareWorkflow({
-    initialCommon: defaultSpecCommon,
-    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
-    getPickSpecFile: () => api.pickSpecFile,
-    getLoadTextFile: () => api.loadTextFile,
-    onSpecCompareCompleted: (res) => setResult(res),
-  })
-
-  const {
-    specOldText,
-    setSpecOldText,
-    setSpecOldInput,
-    specNewText,
-    setSpecNewText,
-    setSpecNewInput,
-    specOldSourcePath,
-    setSpecOldSourcePath,
-    specNewSourcePath,
-    setSpecNewSourcePath,
-    specCommon,
-    setSpecCommon,
-    updateSpecCommon,
-    specRichResult,
-    setSpecRichResult,
-    specClipboardBusyTarget,
-    specFileBusyTarget,
-    specCopyBusyTarget,
-    specCopyBusy,
-    specIgnorePathsDraft,
-    setSpecIgnorePathsDraft,
-    specRecentPairs,
-    setSpecRecentPairs,
-    specOldLanguage,
-    specNewLanguage,
-    specOldParseError,
-    specNewParseError,
-    specInputInvalid,
-    specInputEmpty,
-    specEditorBusy,
-    runSpec,
-    runSpecFromRecent,
-    runSpecCompareFromPaths,
-    pasteSpecFromClipboard,
-    loadSpecFromFile,
-    copySpecInput,
-    clearSpecInput,
-    copySpecResultRawOutput,
-  } = specWorkflow
-
-  const textWorkflow = useTextCompareWorkflow({
-    initialCommon: defaultTextCommon,
+  const textModel = useTextCompareModel({
     getCompareText: () => api.compareText,
     getPickTextFile: () => api.pickTextFile,
     getLoadTextFile: () => api.loadTextFile,
     onTextCompareCompleted: (res) => setResult(res),
   })
 
-  const {
-    textOld,
-    setTextOld,
-    setTextOldInput,
-    textNew,
-    setTextNew,
-    setTextNewInput,
-    textOldSourcePath,
-    setTextOldSourcePath,
-    textNewSourcePath,
-    setTextNewSourcePath,
-    textCommon,
-    setTextCommon,
-    updateTextCommon,
-    textResult,
-    setTextResult,
-    textLastRunOld,
-    setTextLastRunOld,
-    textLastRunNew,
-    setTextLastRunNew,
-    textLastRunOutputFormat,
-    setTextLastRunOutputFormat,
-    textClipboardBusyTarget,
-    textFileBusyTarget,
-    textCopyBusy,
-    textPaneCopyBusyTarget,
-    textEditorBusy,
-    textRecentPairs,
-    setTextRecentPairs,
-    runText,
-    runTextFromRecent,
-    runTextCompareWithValues,
-    pasteTextFromClipboard,
-    loadTextFromFile,
-    copyTextInput,
-    clearTextInput,
-    copyTextResultRawOutput,
-  } = textWorkflow
-
-  const textDiffViewState = useTextDiffViewState({
-    textResult,
-    textLastRunOld,
-    textLastRunNew,
-    textLastRunOutputFormat,
+  const jsonModel = useJSONCompareModel({
+    getCompareJSONValuesRich: () => api.compareJSONValuesRich,
+    getPickJSONFile: () => api.pickJSONFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onJSONCompareCompleted: (res) => setResult(res),
+    textDiffLayout: textModel.viewState.textDiffLayout,
   })
 
-  const {
-    textDiffLayout,
-    setTextDiffLayout,
-    clearTextExpandedSections,
-    resetTextSearch,
-  } = textDiffViewState
-
-  const jsonCompareViewState = useJSONCompareViewState({
-    jsonRichResult,
-    jsonOldText,
-    jsonNewText,
-    textDiffLayout,
+  const specModel = useSpecCompareModel({
+    getCompareSpecValuesRich: () => api.compareSpecValuesRich,
+    getPickSpecFile: () => api.pickSpecFile,
+    getLoadTextFile: () => api.loadTextFile,
+    onSpecCompareCompleted: (res) => setResult(res),
+    textDiffLayout: textModel.viewState.textDiffLayout,
   })
-
-  const {
-    setJSONResultView,
-    resetJSONSearch,
-  } = jsonCompareViewState
-
-  const specCompareViewState = useSpecCompareViewState({
-    specRichResult,
-    specOldText,
-    specNewText,
-    textDiffLayout,
-  })
-
-  const {
-    setSpecResultView,
-    resetSpecSearch,
-  } = specCompareViewState
-
-  const {
-    folderLeftRoot,
-    setFolderLeftRoot,
-    folderRightRoot,
-    setFolderRightRoot,
-    folderNameFilter,
-    setFolderNameFilter,
-    folderCurrentPath,
-    setFolderCurrentPath,
-    folderResult,
-    setFolderResult,
-    folderStatus,
-    setFolderStatus,
-    folderRecentPairs,
-    setFolderRecentPairs,
-  } = useFolderCompareState()
 
   const scenarioWorkflow = useScenarioWorkflow({
     listScenarioChecks: api.listScenarioChecks,
     runScenario: api.runScenario,
-    onEnterScenarioMode: () => {
-      setMode('scenario')
-    },
+    onEnterScenarioMode: () => setMode('scenario'),
     onScenarioRunCompleted: () => {
       setSummaryLine('')
       setOutput('')
     },
   })
 
-  const {
-    scenarioPath,
-    setScenarioPath,
-    reportFormat,
-    setReportFormat,
-    scenarioRecentPaths,
-    setScenarioRecentPaths,
-    runScenario,
-    onLoadScenarioChecks,
-    setScenarioRunError,
-  } = scenarioWorkflow
-
-  const directoryCompareViewState = useDirectoryCompareViewState({
-    folderResult,
-    folderLeftRoot,
-    folderRightRoot,
-    folderNameFilter,
-    folderCurrentPath,
+  const folderModel = useFolderCompareModel({
+    mode,
+    setMode,
+    loadTextFile: api.loadTextFile,
     compareFolders: api.compareFolders,
-    onFolderTreeLoadError: (error) => {
-      const message = `Failed to load directory children: ${formatUnknownError(error)}`
-      setFolderStatus(message)
-      notifications.show({
-        title: 'Failed to load directory',
-        message,
-        color: 'red',
-      })
-    },
-  })
-
-  const {
-    folderViewMode,
-    setFolderViewMode,
-    setSelectedFolderItemPath,
-    sortedFolderItems,
-    selectedFolderItem,
-    toggleFolderTreeNode,
-    resetFolderNavigationState,
-  } = directoryCompareViewState
-
-  const directoryCompareWorkflow = useDirectoryCompareWorkflow({
-    isFolderMode: mode === 'folder',
-    folderLeftRoot,
-    folderRightRoot,
-    folderNameFilter,
-    folderCurrentPath,
-    folderResult,
-    folderViewMode,
     pickFolderRoot: api.pickFolderRoot,
-    compareFolders: api.compareFolders,
-    setFolderLeftRoot,
-    setFolderRightRoot,
-    setFolderCurrentPath,
-    setFolderResult,
-    setFolderStatus,
-    setFolderRecentPairs,
-    setSelectedFolderItemPath,
-    onDirectoryPickerUnavailable: () => {
-      notifications.show({
-        title: 'Directory picker unavailable',
-        message: 'Directory picker is not available.',
-        color: 'red',
-      })
-    },
-    onDirectoryPickerError: (message) => {
-      notifications.show({
-        title: 'Failed to pick directory',
-        message,
-        color: 'red',
-      })
-    },
+    runJSONCompareFromPaths: jsonModel.workflow.runJSONCompareFromPaths,
+    runSpecCompareFromPaths: specModel.workflow.runSpecCompareFromPaths,
+    runTextCompareWithValues: textModel.workflow.runTextCompareWithValues,
+    resetJSONSearch: jsonModel.viewState.resetJSONSearch,
+    setJSONResultView: jsonModel.viewState.setJSONResultView,
+    resetSpecSearch: specModel.viewState.resetSpecSearch,
+    setSpecResultView: specModel.viewState.setSpecResultView,
+    clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
+    resetTextSearch: textModel.viewState.resetTextSearch,
   })
 
-  const { runFolderCompare } = directoryCompareWorkflow
+  // --- Orchestration ---
+
+  const { setResult, onRun, handleLoadScenarioChecks } = useAppRunOrchestration({
+    mode,
+    setLoading,
+    setSummaryLine,
+    setOutput,
+    runJSON: jsonModel.workflow.runJSON,
+    applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
+    setJSONRichResult: jsonModel.workflow.setJSONRichResult,
+    runSpec: specModel.workflow.runSpec,
+    applySpecResultView: folderModel.childDiffOpeners.applySpecResultView,
+    setSpecRichResult: specModel.workflow.setSpecRichResult,
+    runText: textModel.workflow.runText,
+    setTextResult: textModel.workflow.setTextResult,
+    setTextLastRunOld: textModel.workflow.setTextLastRunOld,
+    setTextLastRunNew: textModel.workflow.setTextLastRunNew,
+    setTextLastRunOutputFormat: textModel.workflow.setTextLastRunOutputFormat,
+    clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
+    runFolderCompare: folderModel.workflow.runFolderCompare,
+    runScenario: scenarioWorkflow.runScenario,
+    onLoadScenarioChecks: scenarioWorkflow.onLoadScenarioChecks,
+    setScenarioRunError: scenarioWorkflow.setScenarioRunError,
+  })
+
+  // --- Persistence ---
 
   useDesktopPersistence({
     mode,
@@ -343,217 +107,104 @@ export function useDesktopAppModel() {
     saveDesktopState: api.saveDesktopState,
     loadTextFile: api.loadTextFile,
     json: {
-      oldSourcePath: jsonOldSourcePath,
-      newSourcePath: jsonNewSourcePath,
-      ignoreOrder,
-      common: jsonCommon,
-      recentPairs: jsonRecentPairs,
-      setIgnoreOrder,
-      setCommon: setJSONCommon,
-      setIgnorePathsDraft: setJSONIgnorePathsDraft,
-      setOldSourcePath: setJSONOldSourcePath,
-      setNewSourcePath: setJSONNewSourcePath,
-      setRecentPairs: setJSONRecentPairs,
-      setOldText: setJSONOldText,
-      setNewText: setJSONNewText,
+      oldSourcePath: jsonModel.workflow.jsonOldSourcePath,
+      newSourcePath: jsonModel.workflow.jsonNewSourcePath,
+      ignoreOrder: jsonModel.workflow.ignoreOrder,
+      common: jsonModel.workflow.jsonCommon,
+      recentPairs: jsonModel.workflow.jsonRecentPairs,
+      setIgnoreOrder: jsonModel.workflow.setIgnoreOrder,
+      setCommon: jsonModel.workflow.setJSONCommon,
+      setIgnorePathsDraft: jsonModel.workflow.setJSONIgnorePathsDraft,
+      setOldSourcePath: jsonModel.workflow.setJSONOldSourcePath,
+      setNewSourcePath: jsonModel.workflow.setJSONNewSourcePath,
+      setRecentPairs: jsonModel.workflow.setJSONRecentPairs,
+      setOldText: jsonModel.workflow.setJSONOldText,
+      setNewText: jsonModel.workflow.setJSONNewText,
     },
     spec: {
-      oldSourcePath: specOldSourcePath,
-      newSourcePath: specNewSourcePath,
-      common: specCommon,
-      recentPairs: specRecentPairs,
-      setCommon: setSpecCommon,
-      setIgnorePathsDraft: setSpecIgnorePathsDraft,
-      setOldSourcePath: setSpecOldSourcePath,
-      setNewSourcePath: setSpecNewSourcePath,
-      setRecentPairs: setSpecRecentPairs,
-      setOldText: setSpecOldText,
-      setNewText: setSpecNewText,
+      oldSourcePath: specModel.workflow.specOldSourcePath,
+      newSourcePath: specModel.workflow.specNewSourcePath,
+      common: specModel.workflow.specCommon,
+      recentPairs: specModel.workflow.specRecentPairs,
+      setCommon: specModel.workflow.setSpecCommon,
+      setIgnorePathsDraft: specModel.workflow.setSpecIgnorePathsDraft,
+      setOldSourcePath: specModel.workflow.setSpecOldSourcePath,
+      setNewSourcePath: specModel.workflow.setSpecNewSourcePath,
+      setRecentPairs: specModel.workflow.setSpecRecentPairs,
+      setOldText: specModel.workflow.setSpecOldText,
+      setNewText: specModel.workflow.setSpecNewText,
     },
     text: {
-      oldSourcePath: textOldSourcePath,
-      newSourcePath: textNewSourcePath,
-      common: textCommon,
-      diffLayout: textDiffLayout,
-      recentPairs: textRecentPairs,
-      setCommon: setTextCommon,
-      setDiffLayout: setTextDiffLayout,
-      setOldSourcePath: setTextOldSourcePath,
-      setNewSourcePath: setTextNewSourcePath,
-      setRecentPairs: setTextRecentPairs,
-      setOldText: setTextOld,
-      setNewText: setTextNew,
+      oldSourcePath: textModel.workflow.textOldSourcePath,
+      newSourcePath: textModel.workflow.textNewSourcePath,
+      common: textModel.workflow.textCommon,
+      diffLayout: textModel.viewState.textDiffLayout,
+      recentPairs: textModel.workflow.textRecentPairs,
+      setCommon: textModel.workflow.setTextCommon,
+      setDiffLayout: textModel.viewState.setTextDiffLayout,
+      setOldSourcePath: textModel.workflow.setTextOldSourcePath,
+      setNewSourcePath: textModel.workflow.setTextNewSourcePath,
+      setRecentPairs: textModel.workflow.setTextRecentPairs,
+      setOldText: textModel.workflow.setTextOld,
+      setNewText: textModel.workflow.setTextNew,
     },
     folder: {
-      leftRoot: folderLeftRoot,
-      rightRoot: folderRightRoot,
-      currentPath: folderCurrentPath,
-      viewMode: folderViewMode,
-      recentPairs: folderRecentPairs,
-      setLeftRoot: setFolderLeftRoot,
-      setRightRoot: setFolderRightRoot,
-      setCurrentPath: setFolderCurrentPath,
-      setViewMode: setFolderViewMode,
-      setRecentPairs: setFolderRecentPairs,
+      leftRoot: folderModel.state.folderLeftRoot,
+      rightRoot: folderModel.state.folderRightRoot,
+      currentPath: folderModel.state.folderCurrentPath,
+      viewMode: folderModel.viewState.folderViewMode,
+      recentPairs: folderModel.state.folderRecentPairs,
+      setLeftRoot: folderModel.state.setFolderLeftRoot,
+      setRightRoot: folderModel.state.setFolderRightRoot,
+      setCurrentPath: folderModel.state.setFolderCurrentPath,
+      setViewMode: folderModel.viewState.setFolderViewMode,
+      setRecentPairs: folderModel.state.setFolderRecentPairs,
     },
     scenario: {
-      path: scenarioPath,
-      reportFormat,
-      recentPaths: scenarioRecentPaths,
-      setPath: setScenarioPath,
-      setReportFormat,
-      setRecentPaths: setScenarioRecentPaths,
+      path: scenarioWorkflow.scenarioPath,
+      reportFormat: scenarioWorkflow.reportFormat,
+      recentPaths: scenarioWorkflow.scenarioRecentPaths,
+      setPath: scenarioWorkflow.setScenarioPath,
+      setReportFormat: scenarioWorkflow.setReportFormat,
+      setRecentPaths: scenarioWorkflow.setScenarioRecentPaths,
     },
   })
 
-  const { browseAndSet } = useBrowseAndSet({
-    setSummaryLine,
-    setOutput,
-  })
+  // --- UI chrome ---
 
-  const {
-    applyJSONResultView,
-    applySpecResultView,
-    openFolderJSONDiff,
-    openFolderSpecDiff,
-    openFolderTextDiff,
-  } = useFolderChildDiffOpeners({
-    loadTextFile: api.loadTextFile,
-    runJSONCompareFromPaths,
-    runSpecCompareFromPaths,
-    runTextCompareWithValues,
-    resetJSONSearch,
-    setJSONResultView,
-    resetSpecSearch,
-    setSpecResultView,
-    clearTextExpandedSections,
-    resetTextSearch,
-    setMode,
-  })
-
-  const directoryCompareChildDiffActions = useDirectoryCompareChildDiffActions({
-    folderLeftRoot,
-    folderRightRoot,
-    folderCurrentPath,
-    folderViewMode,
-    setFolderLeftRoot,
-    setFolderRightRoot,
-    setFolderCurrentPath,
-    setSelectedFolderItemPath,
-    setFolderViewMode,
-    setFolderStatus,
-    setMode,
-    onOpenJSONDiff: openFolderJSONDiff,
-    onOpenSpecDiff: openFolderSpecDiff,
-    onOpenTextDiff: openFolderTextDiff,
-    onOpenChildDiffError: (message) => {
-      notifications.show({
-        title: 'Failed to open child diff',
-        message,
-        color: 'red',
-      })
-    },
-  })
-
-  const {
-    openFolderEntryDiff,
-  } = directoryCompareChildDiffActions
-
-  const directoryCompareInteractions = useDirectoryCompareInteractions({
-    compareFolders: api.compareFolders,
-    folderNameFilter,
-    folderResult,
-    sortedFolderItems,
-    selectedFolderItem,
-    resetFolderNavigationState,
-    openFolderEntryDiff,
-    toggleFolderTreeNode,
-    setFolderLeftRoot,
-    setFolderRightRoot,
-    setFolderCurrentPath,
-    setFolderViewMode,
-    setSelectedFolderItemPath,
-    setFolderResult,
-    setFolderStatus,
-    setFolderRecentPairs,
-    setMode,
-  })
-
-  const {
-    runFolderFromRecent,
-  } = directoryCompareInteractions
-
-  const {
-    setResult,
-    onRun,
-    handleLoadScenarioChecks,
-  } = useAppRunOrchestration({
-    mode,
-    setLoading,
-    setSummaryLine,
-    setOutput,
-    runJSON,
-    applyJSONResultView,
-    setJSONRichResult,
-    runSpec,
-    applySpecResultView,
-    setSpecRichResult,
-    runText,
-    setTextResult,
-    setTextLastRunOld,
-    setTextLastRunNew,
-    setTextLastRunOutputFormat,
-    clearTextExpandedSections,
-    runFolderCompare,
-    runScenario,
-    onLoadScenarioChecks,
-    setScenarioRunError,
-  })
-
-  const { runRecentAction } = useRecentActionRunner({
-    setLoading,
-  })
-
-  const jsonCompareDisabled = jsonEditorBusy || jsonInputEmpty || jsonInputInvalid
-  const specCompareDisabled = specEditorBusy || specInputEmpty || specInputInvalid
-  const folderCompareDisabled = !folderLeftRoot || !folderRightRoot
+  const { browseAndSet } = useBrowseAndSet({ setSummaryLine, setOutput })
+  const { runRecentAction } = useRecentActionRunner({ setLoading })
 
   const { headerActions } = useDesktopHeaderActions({
     mode,
     loading,
     compareOptionsOpened,
     onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
-    jsonCompareDisabled,
-    specCompareDisabled,
-    folderCompareDisabled,
+    jsonCompareDisabled: jsonModel.compareDisabled,
+    specCompareDisabled: specModel.compareDisabled,
+    folderCompareDisabled: folderModel.compareDisabled,
     onRun,
-    jsonRecentPairs,
-    onClearJSONRecent: () => setJSONRecentPairs([]),
-    specRecentPairs,
-    onClearSpecRecent: () => setSpecRecentPairs([]),
-    textRecentPairs,
-    onClearTextRecent: () => setTextRecentPairs([]),
-    folderRecentPairs,
-    onClearFolderRecent: () => setFolderRecentPairs([]),
+    jsonRecentPairs: jsonModel.workflow.jsonRecentPairs,
+    onClearJSONRecent: () => jsonModel.workflow.setJSONRecentPairs([]),
+    specRecentPairs: specModel.workflow.specRecentPairs,
+    onClearSpecRecent: () => specModel.workflow.setSpecRecentPairs([]),
+    textRecentPairs: textModel.workflow.textRecentPairs,
+    onClearTextRecent: () => textModel.workflow.setTextRecentPairs([]),
+    folderRecentPairs: folderModel.state.folderRecentPairs,
+    onClearFolderRecent: () => folderModel.state.setFolderRecentPairs([]),
     runRecentAction,
-    runTextFromRecent,
-    clearTextExpandedSections,
-    resetTextSearch,
-    runJSONFromRecent,
-    applyJSONResultView,
-    runSpecFromRecent,
-    applySpecResultView,
-    runFolderFromRecent,
+    runTextFromRecent: textModel.workflow.runTextFromRecent,
+    clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
+    resetTextSearch: textModel.viewState.resetTextSearch,
+    runJSONFromRecent: jsonModel.workflow.runJSONFromRecent,
+    applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
+    runSpecFromRecent: specModel.workflow.runSpecFromRecent,
+    applySpecResultView: folderModel.childDiffOpeners.applySpecResultView,
+    runFolderFromRecent: folderModel.interactions.runFolderFromRecent,
     setMode,
   })
 
-  const {
-    layoutMode,
-    sidebar,
-    main,
-    inspector,
-    inspectorOpen,
-  } = useDesktopShellModel({
+  const { layoutMode, sidebar, main, inspector, inspectorOpen } = useDesktopShellModel({
     mode,
     loading,
     compareOptionsOpened,
@@ -563,24 +214,24 @@ export function useDesktopAppModel() {
     runRecentAction,
     handleLoadScenarioChecks,
     onRun,
-    jsonWorkflow,
-    jsonViewState: jsonCompareViewState,
-    specWorkflow,
-    specViewState: specCompareViewState,
-    textWorkflow,
-    textViewState: textDiffViewState,
+    jsonWorkflow: jsonModel.workflow,
+    jsonViewState: jsonModel.viewState,
+    specWorkflow: specModel.workflow,
+    specViewState: specModel.viewState,
+    textWorkflow: textModel.workflow,
+    textViewState: textModel.viewState,
     scenarioWorkflow,
-    folderLeftRoot,
-    folderRightRoot,
-    folderNameFilter,
-    setFolderNameFilter,
-    folderCurrentPath,
-    folderResult,
-    folderStatus,
-    folderViewState: directoryCompareViewState,
-    folderWorkflow: directoryCompareWorkflow,
-    folderChildDiffActions: directoryCompareChildDiffActions,
-    folderInteractions: directoryCompareInteractions,
+    folderLeftRoot: folderModel.state.folderLeftRoot,
+    folderRightRoot: folderModel.state.folderRightRoot,
+    folderNameFilter: folderModel.state.folderNameFilter,
+    setFolderNameFilter: folderModel.state.setFolderNameFilter,
+    folderCurrentPath: folderModel.state.folderCurrentPath,
+    folderResult: folderModel.state.folderResult,
+    folderStatus: folderModel.state.folderStatus,
+    folderViewState: folderModel.viewState,
+    folderWorkflow: folderModel.workflow,
+    folderChildDiffActions: folderModel.childDiffActions,
+    folderInteractions: folderModel.interactions,
   })
 
   return {

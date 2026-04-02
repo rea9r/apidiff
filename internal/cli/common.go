@@ -50,15 +50,9 @@ func (c *commonFlagValues) compareOptions() runner.CompareOptions {
 
 func (c *commonFlagValues) fileOptions(oldPath, newPath string) runner.Options {
 	return runner.Options{
-		Format:       c.outputFormat,
-		FailOn:       c.failOn,
-		IgnorePaths:  append([]string(nil), c.ignorePaths...),
-		OnlyBreaking: c.onlyBreaking,
-		TextStyle:    c.textStyle,
-		ShowPaths:    c.showPaths,
-		UseColor:     c.useColor(),
-		OldPath:      oldPath,
-		NewPath:      newPath,
+		CompareOptions: c.compareOptions(),
+		OldPath:        oldPath,
+		NewPath:        newPath,
 	}
 }
 

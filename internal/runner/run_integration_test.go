@@ -12,9 +12,9 @@ func TestRun_WithDiff_DefaultText(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:  "text",
-		OldPath: oldPath,
-		NewPath: newPath,
+		CompareOptions: CompareOptions{Format: "text"},
+		OldPath:        oldPath,
+		NewPath:        newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -32,9 +32,9 @@ func TestRun_NoDiff_JSONFormat(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Taro"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:  "json",
-		OldPath: oldPath,
-		NewPath: newPath,
+		CompareOptions: CompareOptions{Format: "json"},
+		OldPath:        oldPath,
+		NewPath:        newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -52,11 +52,13 @@ func TestRun_OnlyBreakingAndIgnorePath(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:       "text",
-		IgnorePaths:  []string{"user.email"},
-		OnlyBreaking: true,
-		OldPath:      oldPath,
-		NewPath:      newPath,
+		CompareOptions: CompareOptions{
+			Format:       "text",
+			IgnorePaths:  []string{"user.email"},
+			OnlyBreaking: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -80,10 +82,12 @@ func TestRun_IgnorePath_TextMode_NoDifferencesAfterFilter(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:      "text",
-		IgnorePaths: []string{"user.name"},
-		OldPath:     oldPath,
-		NewPath:     newPath,
+		CompareOptions: CompareOptions{
+			Format:      "text",
+			IgnorePaths: []string{"user.name"},
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -101,10 +105,12 @@ func TestRun_OnlyBreaking_TextMode_HidesNonBreakingDiffs(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:       "text",
-		OnlyBreaking: true,
-		OldPath:      oldPath,
-		NewPath:      newPath,
+		CompareOptions: CompareOptions{
+			Format:       "text",
+			OnlyBreaking: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -119,9 +125,9 @@ func TestRun_OnlyBreaking_TextMode_HidesNonBreakingDiffs(t *testing.T) {
 
 func TestRun_InvalidPath(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		Format:  "text",
-		OldPath: "not-found-old.json",
-		NewPath: "not-found-new.json",
+		CompareOptions: CompareOptions{Format: "text"},
+		OldPath:        "not-found-old.json",
+		NewPath:        "not-found-new.json",
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -136,9 +142,9 @@ func TestRun_InvalidPath(t *testing.T) {
 
 func TestRun_InvalidFormat(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		Format:  "yaml",
-		OldPath: "old.json",
-		NewPath: "new.json",
+		CompareOptions: CompareOptions{Format: "yaml"},
+		OldPath:        "old.json",
+		NewPath:        "new.json",
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -153,7 +159,7 @@ func TestRun_InvalidFormat(t *testing.T) {
 
 func TestRun_MissingPaths(t *testing.T) {
 	code, out, err := RunJSONFiles(Options{
-		Format: "text",
+		CompareOptions: CompareOptions{Format: "text"},
 	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -171,8 +177,10 @@ func TestRun_FailOnNone_WithDiffs(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, _, err := RunJSONFiles(Options{
-		Format:  "text",
-		FailOn:  FailOnNone,
+		CompareOptions: CompareOptions{
+			Format: "text",
+			FailOn: FailOnNone,
+		},
 		OldPath: oldPath,
 		NewPath: newPath,
 	})
@@ -189,8 +197,10 @@ func TestRun_FailOnBreaking_WithOnlyChanged(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:  "text",
-		FailOn:  FailOnBreaking,
+		CompareOptions: CompareOptions{
+			Format: "text",
+			FailOn: FailOnBreaking,
+		},
 		OldPath: oldPath,
 		NewPath: newPath,
 	})
@@ -210,8 +220,10 @@ func TestRun_FailOnBreaking_WithBreakingDiff(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"age":20}}`, "new.json")
 
 	code, _, err := RunJSONFiles(Options{
-		Format:  "text",
-		FailOn:  FailOnBreaking,
+		CompareOptions: CompareOptions{
+			Format: "text",
+			FailOn: FailOnBreaking,
+		},
 		OldPath: oldPath,
 		NewPath: newPath,
 	})
@@ -228,10 +240,12 @@ func TestRun_IgnoreOrder_ReorderOnly_NoDifferences(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:      "text",
-		IgnoreOrder: true,
-		OldPath:     oldPath,
-		NewPath:     newPath,
+		CompareOptions: CompareOptions{
+			Format:      "text",
+			IgnoreOrder: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -249,10 +263,12 @@ func TestRun_IgnoreOrder_UsesSemanticTextOutput(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[{"k":2},{"k":3}]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:      "text",
-		IgnoreOrder: true,
-		OldPath:     oldPath,
-		NewPath:     newPath,
+		CompareOptions: CompareOptions{
+			Format:      "text",
+			IgnoreOrder: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -273,10 +289,12 @@ func TestRun_TextStyleSemantic_ForJSONUsesSemanticOutput(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:    "text",
-		TextStyle: TextStyleSemantic,
-		OldPath:   oldPath,
-		NewPath:   newPath,
+		CompareOptions: CompareOptions{
+			Format:    "text",
+			TextStyle: TextStyleSemantic,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -297,11 +315,13 @@ func TestRun_TextStylePatchWithIgnoreOrder_ReturnsError(t *testing.T) {
 	newPath := writeTempJSON(t, `{"items":[3,2,1]}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:      "text",
-		TextStyle:   TextStylePatch,
-		IgnoreOrder: true,
-		OldPath:     oldPath,
-		NewPath:     newPath,
+		CompareOptions: CompareOptions{
+			Format:      "text",
+			TextStyle:   TextStylePatch,
+			IgnoreOrder: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -322,10 +342,12 @@ func TestRun_InvalidTextStyle_ReturnsError(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako"}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:    "text",
-		TextStyle: "fancy",
-		OldPath:   oldPath,
-		NewPath:   newPath,
+		CompareOptions: CompareOptions{
+			Format:    "text",
+			TextStyle: "fancy",
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -346,11 +368,13 @@ func TestRun_ShowPaths_RespectsIgnorePathFilter(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":21}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:      "json",
-		ShowPaths:   true,
-		IgnorePaths: []string{"user.name"},
-		OldPath:     oldPath,
-		NewPath:     newPath,
+		CompareOptions: CompareOptions{
+			Format:      "json",
+			ShowPaths:   true,
+			IgnorePaths: []string{"user.name"},
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)
@@ -368,11 +392,13 @@ func TestRun_ShowPaths_WithOnlyBreaking(t *testing.T) {
 	newPath := writeTempJSON(t, `{"user":{"name":"Hanako","age":20}}`, "new.json")
 
 	code, out, err := RunJSONFiles(Options{
-		Format:       "text",
-		ShowPaths:    true,
-		OnlyBreaking: true,
-		OldPath:      oldPath,
-		NewPath:      newPath,
+		CompareOptions: CompareOptions{
+			Format:       "text",
+			ShowPaths:    true,
+			OnlyBreaking: true,
+		},
+		OldPath: oldPath,
+		NewPath: newPath,
 	})
 	if err != nil {
 		t.Fatalf("Run returned unexpected error: %v", err)

@@ -28,7 +28,7 @@ type CompareJSONValuesRichFn = (
 type PickJSONFileFn = () => Promise<string>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
 
-type UseJSONCompareWorkflowOptions = {
+export type UseJSONCompareWorkflowOptions = {
   initialCommon: CompareCommon
   initialIgnoreOrder?: boolean
   getCompareJSONValuesRich: () => CompareJSONValuesRichFn | undefined

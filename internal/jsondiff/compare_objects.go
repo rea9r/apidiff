@@ -1,7 +1,9 @@
 package jsondiff
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/rea9r/xdiff/internal/delta"
 )
@@ -58,7 +60,20 @@ func sortedKeys(m map[string]any) []string {
 	return keys
 }
 
+// needsBracket reports whether a JSON key must be wrapped in bracket notation
+// to avoid ambiguity with dot-separated paths or array indices.
+func needsBracket(key string) bool {
+	return strings.ContainsAny(key, ".[]")
+}
+
 func joinPath(base, key string) string {
+	if needsBracket(key) {
+		bracket := fmt.Sprintf(`["%s"]`, key)
+		if base == "" {
+			return bracket
+		}
+		return base + bracket
+	}
 	if base == "" {
 		return key
 	}

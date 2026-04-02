@@ -67,6 +67,39 @@ func TestCompare(t *testing.T) {
 				{Type: delta.Added, Path: "items[1]"},
 			},
 		},
+		{
+			name: "key containing dot uses bracket notation",
+			old:  `{"a.b": 1}`,
+			new:  `{"a.b": 2}`,
+			want: []delta.Diff{
+				{Type: delta.Changed, Path: `["a.b"]`},
+			},
+		},
+		{
+			name: "nested key containing dot uses bracket notation",
+			old:  `{"outer": {"inner.key": "old"}}`,
+			new:  `{"outer": {"inner.key": "new"}}`,
+			want: []delta.Diff{
+				{Type: delta.Changed, Path: `outer["inner.key"]`},
+			},
+		},
+		{
+			name: "key containing bracket uses bracket notation",
+			old:  `{"a[0]": 1}`,
+			new:  `{"a[0]": 2}`,
+			want: []delta.Diff{
+				{Type: delta.Changed, Path: `["a[0]"]`},
+			},
+		},
+		{
+			name: "dot key vs nested key produce distinct paths",
+			old:  `{"a.b": 1, "a": {"b": 10}}`,
+			new:  `{"a.b": 2, "a": {"b": 20}}`,
+			want: []delta.Diff{
+				{Type: delta.Changed, Path: "a.b"},
+				{Type: delta.Changed, Path: `["a.b"]`},
+			},
+		},
 	}
 
 	for _, tt := range tests {

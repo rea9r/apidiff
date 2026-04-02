@@ -149,3 +149,75 @@ func TestParsePathRef_PathContainsMethodLikeToken_ResponseSchemaType(t *testing.
 		t.Fatalf("unexpected human path: %s", parsed.human())
 	}
 }
+
+func TestPathRefRoundTrip_Parameter(t *testing.T) {
+	ref := parameterPath("/users", "get", "query", "page")
+
+	raw := ref.raw()
+	if raw != "paths./users.get.parameters.query.page" {
+		t.Fatalf("unexpected raw path: %s", raw)
+	}
+
+	parsed, ok := parsePathRef(raw)
+	if !ok {
+		t.Fatal("expected parse success")
+	}
+
+	if parsed.human() != "GET /users parameter query page" {
+		t.Fatalf("unexpected human path: %s", parsed.human())
+	}
+}
+
+func TestPathRefRoundTrip_SchemaProperty(t *testing.T) {
+	ref := schemaPropertyPath("/users", "post", "requestBody", "name")
+
+	raw := ref.raw()
+	if raw != "paths./users.post.requestBody.schema.properties.name" {
+		t.Fatalf("unexpected raw path: %s", raw)
+	}
+
+	parsed, ok := parsePathRef(raw)
+	if !ok {
+		t.Fatal("expected parse success")
+	}
+
+	if parsed.human() != "POST /users requestBody schema property name" {
+		t.Fatalf("unexpected human path: %s", parsed.human())
+	}
+}
+
+func TestPathRefRoundTrip_SchemaRequired(t *testing.T) {
+	ref := schemaRequiredPath("/users", "post", "requestBody", "email")
+
+	raw := ref.raw()
+	if raw != "paths./users.post.requestBody.schema.required.email" {
+		t.Fatalf("unexpected raw path: %s", raw)
+	}
+
+	parsed, ok := parsePathRef(raw)
+	if !ok {
+		t.Fatal("expected parse success")
+	}
+
+	if parsed.human() != "POST /users requestBody schema required email" {
+		t.Fatalf("unexpected human path: %s", parsed.human())
+	}
+}
+
+func TestPathRefRoundTrip_ResponseSchemaProperty(t *testing.T) {
+	ref := schemaPropertyPath("/users", "get", "responses.200.content.application/json", "name")
+
+	raw := ref.raw()
+	if raw != "paths./users.get.responses.200.content.application/json.schema.properties.name" {
+		t.Fatalf("unexpected raw path: %s", raw)
+	}
+
+	parsed, ok := parsePathRef(raw)
+	if !ok {
+		t.Fatal("expected parse success")
+	}
+
+	if parsed.human() != "GET /users responses.200.content.application/json schema property name" {
+		t.Fatalf("unexpected human path: %s", parsed.human())
+	}
+}

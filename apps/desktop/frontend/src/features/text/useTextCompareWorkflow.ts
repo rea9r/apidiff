@@ -26,7 +26,7 @@ type CompareTextFn = (req: {
 type PickTextFileFn = () => Promise<string>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
 
-type UseTextCompareWorkflowOptions = {
+export type UseTextCompareWorkflowOptions = {
   initialCommon: CompareCommon
   getCompareText: () => CompareTextFn | undefined
   getPickTextFile: () => PickTextFileFn | undefined

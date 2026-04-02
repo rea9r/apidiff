@@ -51,29 +51,16 @@ func runCheck(check ResolvedCheck) Result {
 	switch check.Kind {
 	case KindJSON:
 		return resultFromRun(check, runner.RunJSONFilesDetailed(runner.Options{
-			Format:       check.Compare.Format,
-			FailOn:       check.Compare.FailOn,
-			IgnorePaths:  check.Compare.IgnorePaths,
-			OnlyBreaking: check.Compare.OnlyBreaking,
-			IgnoreOrder:  check.Compare.IgnoreOrder,
-			TextStyle:    check.Compare.TextStyle,
-			ShowPaths:    check.Compare.ShowPaths,
-			UseColor:     check.Compare.UseColor,
-			OldPath:      check.Old,
-			NewPath:      check.New,
+			CompareOptions: check.Compare,
+			OldPath:        check.Old,
+			NewPath:        check.New,
 		}))
 
 	case KindText:
 		return resultFromRun(check, runner.RunTextFilesDetailed(runner.Options{
-			Format:       check.Compare.Format,
-			FailOn:       check.Compare.FailOn,
-			IgnorePaths:  check.Compare.IgnorePaths,
-			OnlyBreaking: check.Compare.OnlyBreaking,
-			TextStyle:    check.Compare.TextStyle,
-			ShowPaths:    check.Compare.ShowPaths,
-			UseColor:     check.Compare.UseColor,
-			OldPath:      check.Old,
-			NewPath:      check.New,
+			CompareOptions: check.Compare,
+			OldPath:        check.Old,
+			NewPath:        check.New,
 		}))
 
 	case KindURL:

@@ -1,0 +1,187 @@
+package desktopapi
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/rea9r/xdiff/internal/output"
+	"github.com/rea9r/xdiff/internal/runner"
+)
+
+type jsonMachineDiffItem struct {
+	Type     string `json:"type"`
+	Path     string `json:"path"`
+	OldValue any    `json:"old_value,omitempty"`
+	NewValue any    `json:"new_value,omitempty"`
+}
+
+type jsonMachineResult struct {
+	Diffs []jsonMachineDiffItem `json:"diffs"`
+}
+
+func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, error) {
+	opts := runner.Options{
+		CompareOptions: runner.CompareOptions{
+			Format:       normalizeOutputFormat(req.Common.OutputFormat),
+			FailOn:       req.Common.FailOn,
+			IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
+			ShowPaths:    req.Common.ShowPaths,
+			OnlyBreaking: req.Common.OnlyBreaking,
+			TextStyle:    req.Common.TextStyle,
+			IgnoreOrder:  req.IgnoreOrder,
+			UseColor:     guiUseColor(),
+		},
+		OldPath: req.OldPath,
+		NewPath: req.NewPath,
+	}
+
+	res := runner.RunJSONFilesDetailed(opts)
+	return &CompareResponse{
+		ExitCode:  res.ExitCode,
+		DiffFound: res.DiffFound,
+		Output:    res.Output,
+		Error:     errString(res.Err),
+	}, nil
+}
+
+func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichResponse, error) {
+	rawResult, err := s.CompareJSONFiles(req)
+	if err != nil {
+		return nil, err
+	}
+
+	diffReq := req
+	diffReq.Common.OutputFormat = "text"
+	diffReq.Common.TextStyle = "patch"
+	diffReq.Common.NoColor = true
+	diffResult, err := s.CompareJSONFiles(diffReq)
+	if err != nil {
+		return nil, err
+	}
+
+	structuredReq := req
+	structuredReq.Common.OutputFormat = output.JSONFormat
+	structuredReq.Common.ShowPaths = false
+	structuredReq.Common.NoColor = true
+
+	structuredResult, err := s.CompareJSONFiles(structuredReq)
+	if err != nil {
+		return nil, err
+	}
+
+	diffs, err := parseJSONMachineDiffs(structuredResult.Output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CompareJSONRichResponse{
+		Result:   *rawResult,
+		DiffText: pickDiffText(diffResult.Output, rawResult.Output),
+		Summary:  summarizeJSONRichDiffs(diffs),
+		Diffs:    diffs,
+	}, nil
+}
+
+func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJSONRichResponse, error) {
+	var oldValue any
+	if err := json.Unmarshal([]byte(req.OldValue), &oldValue); err != nil {
+		return nil, fmt.Errorf("invalid old JSON: %w", err)
+	}
+
+	var newValue any
+	if err := json.Unmarshal([]byte(req.NewValue), &newValue); err != nil {
+		return nil, fmt.Errorf("invalid new JSON: %w", err)
+	}
+
+	rawOpts := runner.CompareOptions{
+		Format:       normalizeOutputFormat(req.Common.OutputFormat),
+		FailOn:       req.Common.FailOn,
+		IgnorePaths:  append([]string(nil), req.Common.IgnorePaths...),
+		ShowPaths:    req.Common.ShowPaths,
+		OnlyBreaking: req.Common.OnlyBreaking,
+		TextStyle:    req.Common.TextStyle,
+		IgnoreOrder:  req.IgnoreOrder,
+		UseColor:     guiUseColor(),
+	}
+	rawRun := runner.RunJSONValuesDetailed(oldValue, newValue, rawOpts)
+	rawResult := CompareResponse{
+		ExitCode:  rawRun.ExitCode,
+		DiffFound: rawRun.DiffFound,
+		Output:    rawRun.Output,
+		Error:     errString(rawRun.Err),
+	}
+
+	structuredOpts := rawOpts
+	structuredOpts.Format = output.JSONFormat
+	structuredOpts.ShowPaths = false
+	structuredOpts.UseColor = false
+	structuredRun := runner.RunJSONValuesDetailed(oldValue, newValue, structuredOpts)
+
+	diffOpts := rawOpts
+	diffOpts.Format = output.TextFormat
+	diffOpts.TextStyle = "patch"
+	diffOpts.ShowPaths = false
+	diffOpts.UseColor = false
+	diffRun := runner.RunJSONValuesDetailed(oldValue, newValue, diffOpts)
+
+	diffs, err := parseJSONMachineDiffs(structuredRun.Output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CompareJSONRichResponse{
+		Result:   rawResult,
+		DiffText: pickDiffText(diffRun.Output, rawResult.Output),
+		Summary:  summarizeJSONRichDiffs(diffs),
+		Diffs:    diffs,
+	}, nil
+}
+
+func parseJSONMachineDiffs(raw string) ([]JSONRichDiffItem, error) {
+	diffs := make([]JSONRichDiffItem, 0)
+	if strings.TrimSpace(raw) == "" {
+		return diffs, nil
+	}
+
+	var parsed jsonMachineResult
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse structured JSON diff output: %w", err)
+	}
+
+	diffs = make([]JSONRichDiffItem, 0, len(parsed.Diffs))
+	for _, item := range parsed.Diffs {
+		breaking := item.Type == "removed" || item.Type == "type_changed"
+		diffs = append(diffs, JSONRichDiffItem{
+			Type:     item.Type,
+			Path:     item.Path,
+			OldValue: item.OldValue,
+			NewValue: item.NewValue,
+			Breaking: breaking,
+		})
+	}
+
+	return diffs, nil
+}
+
+func summarizeJSONRichDiffs(diffs []JSONRichDiffItem) JSONRichSummary {
+	summary := JSONRichSummary{}
+	for _, diff := range diffs {
+		switch diff.Type {
+		case "added":
+			summary.Added++
+		case "removed":
+			summary.Removed++
+		case "changed":
+			summary.Changed++
+		case "type_changed":
+			summary.TypeChanged++
+		}
+
+		if diff.Breaking {
+			summary.Breaking++
+		}
+	}
+
+	return summary
+}
