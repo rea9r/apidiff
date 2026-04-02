@@ -532,7 +532,7 @@ func writeCLIFile(t *testing.T, content string, fileName string) string {
 
 	path := filepath.Join(t.TempDir(), fileName)
 	normalized := strings.TrimSpace(content) + "\n"
-	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(normalized), 0o600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	return path
@@ -547,7 +547,7 @@ func writeCLIFileInDir(t *testing.T, dir string, content string, fileName string
 
 	path := filepath.Join(dir, fileName)
 	normalized := strings.TrimSpace(content) + "\n"
-	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(normalized), 0o600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	return path
@@ -558,7 +558,7 @@ func writeCLIScenario(t *testing.T, dir string, fileName string, content string)
 
 	path := filepath.Join(dir, fileName)
 	normalized := strings.TrimSpace(content) + "\n"
-	if err := os.WriteFile(path, []byte(normalized), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(normalized), 0o600); err != nil {
 		t.Fatalf("failed to write scenario file: %v", err)
 	}
 	return path

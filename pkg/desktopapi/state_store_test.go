@@ -28,7 +28,7 @@ func TestDesktopStateStoreLoadMissingFile(t *testing.T) {
 func TestDesktopStateStoreLoadMalformedJSONRecoverable(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "desktop-state.json")
-	if err := os.WriteFile(path, []byte("{"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("{"), 0o600); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 

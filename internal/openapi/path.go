@@ -192,7 +192,7 @@ func parsePathRef(path string) (pathRef, bool) {
 			return responseSchemaTypePath(apiPath, method, statusCode, contentType), true
 		}
 
-		const schemaPropToken = ".schema.properties."
+		const schemaPropToken = ".schema.properties." //nolint:gosec // G101: not a credential
 		schemaIdx := strings.Index(contentAndSuffix, schemaPropToken)
 		if schemaIdx >= 0 {
 			contentType := contentAndSuffix[:schemaIdx]
@@ -219,7 +219,7 @@ func parsePathRef(path string) (pathRef, bool) {
 		return pathRef{}, false
 	case strings.HasPrefix(rest, ".requestBody."):
 		tail := strings.TrimPrefix(rest, ".requestBody.")
-		const schemaPropToken = "schema.properties."
+		const schemaPropToken = "schema.properties." //nolint:gosec // G101: not a credential
 		if strings.HasPrefix(tail, schemaPropToken) {
 			propName := strings.TrimPrefix(tail, schemaPropToken)
 			if propName == "" {

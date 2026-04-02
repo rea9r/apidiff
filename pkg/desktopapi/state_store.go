@@ -53,7 +53,7 @@ func (s *desktopStateStore) Load() (DesktopState, error) {
 func (s *desktopStateStore) Save(state DesktopState) error {
 	normalized := normalizeDesktopState(state)
 
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o750); err != nil {
 		return err
 	}
 

@@ -7,10 +7,19 @@ linters:
   default: none
   enable:
     - errcheck
+    - exhaustive
+    - gosec
     - govet
     - ineffassign
     - staticcheck
     - unused
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+
+formatters:
+  enable:
+    - goimports
 
 issues:
   max-issues-per-linter: 0

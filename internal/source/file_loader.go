@@ -7,7 +7,7 @@ import (
 )
 
 func LoadJSONFile(path string) (any, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G304: path is user-provided CLI input
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %q: %w", path, err)
 	}

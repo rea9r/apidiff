@@ -22,7 +22,7 @@ func readGolden(t *testing.T, name string) string {
 	t.Helper()
 
 	path := filepath.Join("testdata", name)
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G304: test golden file path
 	if err != nil {
 		t.Fatalf("failed to read golden file %q: %v", path, err)
 	}

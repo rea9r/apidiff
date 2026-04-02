@@ -35,7 +35,7 @@ checks:
 
 func TestResolve_RelativePathsBasedOnScenarioDir(t *testing.T) {
 	scenarioDir := filepath.Join(t.TempDir(), "configs")
-	if err := os.MkdirAll(scenarioDir, 0o755); err != nil {
+	if err := os.MkdirAll(scenarioDir, 0o750); err != nil {
 		t.Fatalf("failed to create scenario dir: %v", err)
 	}
 
@@ -534,7 +534,7 @@ func TestResolve_InvalidTimeout(t *testing.T) {
 func writeScenarioFile(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "xdiff.yaml")
-	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(content)+"\n"), 0o600); err != nil {
 		t.Fatalf("failed to write scenario file: %v", err)
 	}
 	return path
@@ -543,7 +543,7 @@ func writeScenarioFile(t *testing.T, content string) string {
 func writeFile(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write %s: %v", name, err)
 	}
 	return path

@@ -86,7 +86,7 @@ func writeTextFile(t *testing.T, name, content string) string {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), name)
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write file: %v", err)
 	}
 	return path

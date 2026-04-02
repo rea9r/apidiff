@@ -9,7 +9,7 @@ import (
 
 func TestLoadJSONFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "sample.json")
-	if err := os.WriteFile(path, []byte(`{"age":20}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"age":20}`), 0o600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
@@ -29,7 +29,7 @@ func TestLoadJSONFile(t *testing.T) {
 
 func TestLoadJSONFile_InvalidJSON(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invalid.json")
-	if err := os.WriteFile(path, []byte(`{"a":1}{"b":2}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"a":1}{"b":2}`), 0o600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 

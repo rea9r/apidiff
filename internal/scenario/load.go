@@ -8,7 +8,7 @@ import (
 )
 
 func LoadFile(path string) (Config, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G304: path is user-provided CLI input
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to read scenario file %q: %w", path, err)
 	}

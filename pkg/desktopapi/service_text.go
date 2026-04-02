@@ -35,7 +35,7 @@ func (s *Service) LoadTextFile(req LoadTextFileRequest) (*LoadTextFileResponse, 
 		return nil, fmt.Errorf("path is required")
 	}
 
-	body, err := os.ReadFile(path)
+	body, err := os.ReadFile(path) //nolint:gosec // G304: path is user-provided desktop input
 	if err != nil {
 		return nil, err
 	}

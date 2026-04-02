@@ -200,7 +200,7 @@ func classifyFolderPath(path string) (string, int64, error) {
 }
 
 func compareFileContents(leftPath, rightPath string) (_ bool, err error) {
-	left, err := os.Open(leftPath)
+	left, err := os.Open(leftPath) //nolint:gosec // G304: path from user-selected directory
 	if err != nil {
 		return false, err
 	}
@@ -210,7 +210,7 @@ func compareFileContents(leftPath, rightPath string) (_ bool, err error) {
 		}
 	}()
 
-	right, err := os.Open(rightPath)
+	right, err := os.Open(rightPath) //nolint:gosec // G304: path from user-selected directory
 	if err != nil {
 		return false, err
 	}

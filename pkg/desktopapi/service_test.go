@@ -9,10 +9,10 @@ import (
 
 func writeFile(t *testing.T, path, body string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		t.Fatalf("mkdir failed: %v", err)
 	}
-	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("write failed: %v", err)
 	}
 }
@@ -800,7 +800,7 @@ func TestLoadTextFile(t *testing.T) {
 	path := filepath.Join(dir, "sample.txt")
 	want := "hello\nworld\n"
 
-	if err := os.WriteFile(path, []byte(want), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(want), 0o600); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
@@ -823,7 +823,7 @@ func TestLoadTextFileRejectsNonUTF8(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "binary.bin")
 
-	if err := os.WriteFile(path, []byte{0xff, 0xfe, 0xfd}, 0o644); err != nil {
+	if err := os.WriteFile(path, []byte{0xff, 0xfe, 0xfd}, 0o600); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
