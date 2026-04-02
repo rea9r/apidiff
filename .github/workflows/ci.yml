@@ -21,7 +21,7 @@ jobs:
           cache: true
 
       - name: Run unit tests
-        run: go test ./...
+        run: go test -race ./...
 
   golangci:
     runs-on: ubuntu-latest
