@@ -6,8 +6,16 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  go-test:
+    name: Go test
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +41,7 @@ jobs:
           path: coverage.out
 
   frontend-test:
+    name: Frontend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,31 +54,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20
-          package-manager-cache: false
-
-      - name: Pin npm version
-        run: npm i -g npm@10.8.2
+          node-version: 20.19.0
+          cache: npm
+          cache-dependency-path: apps/desktop/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: |
-          for attempt in 1 2 3; do
-            echo "npm ci attempt ${attempt}"
-            rm -rf node_modules
-            if npm ci --include=dev --no-audit --no-fund; then
-              exit 0
-            fi
-            if [ "${attempt}" -eq 3 ]; then
-              exit 1
-            fi
-            npm cache verify || true
-            sleep 5
-          done
-
-      - name: Verify frontend toolchain
-        run: |
-          npm ls vitest --depth=0
-          test -x node_modules/.bin/vitest
+        run: npm ci --include=dev --no-audit --no-fund
 
       - name: Run frontend tests
         run: npm run test:run
@@ -78,6 +68,7 @@ jobs:
         run: npm run build
 
   golangci:
+    name: golangci-lint
     runs-on: ubuntu-latest
 
     steps:
