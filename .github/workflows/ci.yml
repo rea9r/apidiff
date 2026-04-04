@@ -50,7 +50,9 @@ jobs:
           cache-dependency-path: apps/desktop/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --include=dev --no-audit --no-fund
+        env:
+          NODE_ENV: development
 
       - name: Run frontend tests
         run: npm run test:run
