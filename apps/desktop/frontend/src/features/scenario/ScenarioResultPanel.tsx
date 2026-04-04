@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import type { ScenarioResult, ScenarioRunResponse } from '../../types'
 import { CompareResultShell } from '../../ui/CompareResultShell'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
@@ -105,6 +105,50 @@ export function ScenarioResultPanel({
     })
   }
 
+  const selectedIndex = selectedScenarioResultName
+    ? filteredByStatusResults.findIndex((result) => result.name === selectedScenarioResultName)
+    : -1
+
+  const moveScenarioSelection = (key: 'ArrowDown' | 'ArrowUp' | 'Home' | 'End') => {
+    if (filteredByStatusResults.length === 0) {
+      return
+    }
+
+    if (key === 'Home') {
+      setSelectedScenarioResultName(filteredByStatusResults[0].name)
+      return
+    }
+    if (key === 'End') {
+      setSelectedScenarioResultName(filteredByStatusResults[filteredByStatusResults.length - 1].name)
+      return
+    }
+
+    if (key === 'ArrowDown') {
+      const nextIndex =
+        selectedIndex >= 0 ? (selectedIndex + 1) % filteredByStatusResults.length : 0
+      setSelectedScenarioResultName(filteredByStatusResults[nextIndex].name)
+      return
+    }
+
+    const nextIndex =
+      selectedIndex >= 0
+        ? (selectedIndex - 1 + filteredByStatusResults.length) % filteredByStatusResults.length
+        : filteredByStatusResults.length - 1
+    setSelectedScenarioResultName(filteredByStatusResults[nextIndex].name)
+  }
+
+  const handleResultsListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'ArrowUp' ||
+      event.key === 'Home' ||
+      event.key === 'End'
+    ) {
+      event.preventDefault()
+      moveScenarioSelection(event.key)
+    }
+  }
+
   const summaryBadges: CompareStatusBadgeItem[] = summary
     ? [
         { key: 'ok', label: `ok ${summary.ok}`, tone: 'neutral' },
@@ -208,13 +252,26 @@ export function ScenarioResultPanel({
       ) : null}
 
       <div className="scenario-results-layout">
-        <div className="scenario-results-list">
+        <div
+          className="scenario-results-list"
+          role="listbox"
+          aria-label="Scenario results list"
+          aria-activedescendant={selected?.name ? `scenario-result-${selected.name}` : undefined}
+          tabIndex={0}
+          onKeyDown={handleResultsListKeyDown}
+        >
+          {filteredByStatusResults.length === 0 ? (
+            <div className="muted">(no results for current filter)</div>
+          ) : null}
           {filteredByStatusResults.map((r) => (
             <button
+              id={`scenario-result-${r.name}`}
               key={r.name}
               className={`scenario-result-item ${selected?.name === r.name ? 'active' : ''}`}
               onClick={() => setSelectedScenarioResultName(r.name)}
               type="button"
+              role="option"
+              aria-selected={selected?.name === r.name}
             >
               <div className="scenario-result-item-top">
                 <span>{r.name}</span>

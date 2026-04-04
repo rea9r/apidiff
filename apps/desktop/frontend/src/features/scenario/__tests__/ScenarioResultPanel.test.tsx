@@ -21,16 +21,21 @@ const runResult: ScenarioRunResponse = {
 }
 
 describe('ScenarioResultPanel', () => {
-  function renderPanel() {
-    return render(
+  function renderPanel(
+    scenarioRunResult: ScenarioRunResponse | null = runResult,
+    selectedScenarioResultName = '',
+  ) {
+    const setSelectedScenarioResultName = vi.fn()
+    const view = render(
       <MantineProvider>
         <ScenarioResultPanel
-          scenarioRunResult={runResult}
-          selectedScenarioResultName=""
-          setSelectedScenarioResultName={vi.fn()}
+          scenarioRunResult={scenarioRunResult}
+          selectedScenarioResultName={selectedScenarioResultName}
+          setSelectedScenarioResultName={setSelectedScenarioResultName}
         />
       </MantineProvider>,
     )
+    return { ...view, setSelectedScenarioResultName }
   }
 
   it('renders toolbar with status filter and search controls', () => {
@@ -51,5 +56,40 @@ describe('ScenarioResultPanel', () => {
     expect(screen.queryByText('check-ok')).toBeNull()
     expect(screen.queryByText('check-diff')).toBeNull()
     expect(screen.getAllByText('check-error').length).toBeGreaterThan(0)
+  })
+
+  it('supports keyboard selection on results list', () => {
+    const { setSelectedScenarioResultName } = renderPanel()
+    const list = screen.getByRole('listbox', { name: 'Scenario results list' })
+
+    fireEvent.keyDown(list, { key: 'ArrowDown' })
+    fireEvent.keyDown(list, { key: 'End' })
+    fireEvent.keyDown(list, { key: 'Home' })
+
+    expect(setSelectedScenarioResultName).toHaveBeenNthCalledWith(1, 'check-ok')
+    expect(setSelectedScenarioResultName).toHaveBeenNthCalledWith(2, 'check-error')
+    expect(setSelectedScenarioResultName).toHaveBeenNthCalledWith(3, 'check-ok')
+  })
+
+  it('shows empty state when current status filter has no matches', () => {
+    const okOnlyResult: ScenarioRunResponse = {
+      ...runResult,
+      summary: {
+        total: 1,
+        ok: 1,
+        diff: 0,
+        error: 0,
+        exitCode: 0,
+      },
+      results: [{ name: 'check-only-ok', kind: 'json', status: 'ok', exitCode: 0, diffFound: false }],
+    }
+    renderPanel(okOnlyResult)
+
+    fireEvent.change(screen.getByDisplayValue('all statuses'), {
+      target: { value: 'error' },
+    })
+
+    expect(screen.getByText('(no results for current filter)')).toBeInTheDocument()
+    expect(screen.getByText('(no selected result)')).toBeInTheDocument()
   })
 })
