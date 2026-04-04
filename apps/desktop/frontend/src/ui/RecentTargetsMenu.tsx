@@ -1,6 +1,6 @@
-import { Menu } from '@mantine/core'
+import { Menu, Tooltip } from '@mantine/core'
 import { IconHistory } from '@tabler/icons-react'
-import { HeaderRailPrimaryButton } from './HeaderRail'
+import { HeaderRailAction } from './HeaderRail'
 
 export type RecentTargetsMenuItem = {
   key: string
@@ -26,13 +26,11 @@ export function RecentTargetsMenu({
   return (
     <Menu position="bottom-end" withinPortal>
       <Menu.Target>
-        <HeaderRailPrimaryButton
-          variant="default"
-          leftSection={<IconHistory size={14} />}
-          disabled={disabled}
-        >
-          {buttonLabel}
-        </HeaderRailPrimaryButton>
+        <Tooltip label={buttonLabel}>
+          <HeaderRailAction aria-label={buttonLabel} disabled={disabled}>
+            <IconHistory size={14} />
+          </HeaderRailAction>
+        </Tooltip>
       </Menu.Target>
       <Menu.Dropdown>
         {items.map((item) => (
