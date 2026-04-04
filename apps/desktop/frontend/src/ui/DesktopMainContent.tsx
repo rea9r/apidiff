@@ -10,6 +10,7 @@ import type { JSONCompareSourceWorkspaceProps } from '../features/json/JSONCompa
 import type { SpecCompareResultPanelProps } from '../features/spec/SpecCompareResultPanel'
 import type { SpecCompareSourceWorkspaceProps } from '../features/spec/SpecCompareSourceWorkspace'
 import type { ScenarioResultPanelProps } from '../features/scenario/ScenarioResultPanel'
+import type { ScenarioSourceWorkspaceProps } from '../features/scenario/ScenarioSourceWorkspace'
 
 const DirectoryCompareResultPanel = lazy(() =>
   import('../features/folder/DirectoryCompareResultPanel').then((module) => ({
@@ -51,6 +52,11 @@ const ScenarioResultPanel = lazy(() =>
     default: module.ScenarioResultPanel,
   })),
 )
+const ScenarioSourceWorkspace = lazy(() =>
+  import('../features/scenario/ScenarioSourceWorkspace').then((module) => ({
+    default: module.ScenarioSourceWorkspace,
+  })),
+)
 
 function MainContentLoadingFallback() {
   return <div className="muted">Loading view...</div>
@@ -67,6 +73,7 @@ type DesktopMainContentProps = {
   specSourceProps: SpecCompareSourceWorkspaceProps
   specResultProps: SpecCompareResultPanelProps
   folderResultProps: DirectoryCompareResultPanelProps
+  scenarioSourceProps: ScenarioSourceWorkspaceProps
   scenarioResultProps: ScenarioResultPanelProps
 }
 
@@ -81,6 +88,7 @@ export function DesktopMainContent({
   specSourceProps,
   specResultProps,
   folderResultProps,
+  scenarioSourceProps,
   scenarioResultProps,
 }: DesktopMainContentProps) {
   const folderReturnPathBanner = showFolderReturnBanner ? (
@@ -149,10 +157,12 @@ export function DesktopMainContent({
   }
 
   return (
-    <div className="result-panel">
-      <h2>Result</h2>
+    <div className="compare-main-shell">
       <Suspense fallback={<MainContentLoadingFallback />}>
-        <ScenarioResultPanel {...scenarioResultProps} />
+        <CompareWorkspaceShell
+          source={<ScenarioSourceWorkspace {...scenarioSourceProps} />}
+          result={<ScenarioResultPanel {...scenarioResultProps} />}
+        />
       </Suspense>
     </div>
   )

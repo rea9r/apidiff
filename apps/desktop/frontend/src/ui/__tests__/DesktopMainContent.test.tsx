@@ -232,6 +232,26 @@ const scenarioResultProps = {
   setSelectedScenarioResultName: noop,
 }
 
+const scenarioSourceProps = {
+  scenarioPath: '',
+  onScenarioPathChange: noop,
+  onBrowseScenario: noop,
+  scenarioRecentPaths: [],
+  onLoadRecentScenario: noop,
+  onClearRecentScenarios: noop,
+  reportFormat: 'text' as const,
+  onReportFormatChange: noop,
+  loading: false,
+  onLoadChecks: noop,
+  onRun: noop,
+  scenarioListStatus: '',
+  scenarioChecks: [],
+  selectedChecks: [],
+  onToggleCheck: noop,
+  onSelectAllChecks: noop,
+  onClearCheckSelection: noop,
+}
+
 describe('DesktopMainContent', () => {
   it('renders text mode content and return banner action', async () => {
     const onReturnToFolderCompare = vi.fn()
@@ -248,6 +268,7 @@ describe('DesktopMainContent', () => {
         specSourceProps={specSourceProps}
         specResultProps={specResultProps}
         folderResultProps={folderResultProps}
+        scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}
       />,
     )
@@ -271,6 +292,7 @@ describe('DesktopMainContent', () => {
         specSourceProps={specSourceProps}
         specResultProps={specResultProps}
         folderResultProps={folderResultProps}
+        scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}
       />,
     )
@@ -291,11 +313,12 @@ describe('DesktopMainContent', () => {
         specSourceProps={specSourceProps}
         specResultProps={specResultProps}
         folderResultProps={folderResultProps}
+        scenarioSourceProps={scenarioSourceProps}
         scenarioResultProps={scenarioResultProps}
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Result' })).toBeInTheDocument()
+    expect(await screen.findByText('Scenario path')).toBeInTheDocument()
     expect(await screen.findByText('(no scenario run yet)')).toBeInTheDocument()
   })
 })

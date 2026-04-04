@@ -10,7 +10,6 @@ import { useBrowseAndSet } from './useBrowseAndSet'
 import { useDesktopBridge } from './useDesktopBridge'
 import { useRecentActionRunner } from './useRecentActionRunner'
 import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
-import { DesktopSidebarContent } from './ui/DesktopSidebarContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
@@ -149,36 +148,31 @@ export function useDesktopShellModel({
     />
   )
 
-  const sidebar = isCompareCentricMode || mode === 'folder'
-    ? undefined
-    : (
-      <DesktopSidebarContent
-        mode={mode}
-        scenarioProps={{
-          scenarioPath: scenarioWorkflow.scenarioPath,
-          onScenarioPathChange: scenarioWorkflow.setScenarioPath,
-          onBrowseScenario: () =>
-            void browseAndSet(pickScenarioFile, scenarioWorkflow.setScenarioPath),
-          scenarioRecentPaths: scenarioWorkflow.scenarioRecentPaths,
-          onLoadRecentScenario: (entry) =>
-            void runRecentAction('Recent scenario load', () =>
-              scenarioWorkflow.loadScenarioRecent(entry),
-            ),
-          onClearRecentScenarios: () => scenarioWorkflow.setScenarioRecentPaths([]),
-          reportFormat: scenarioWorkflow.reportFormat,
-          onReportFormatChange: scenarioWorkflow.setReportFormat,
-          loading,
-          onLoadChecks: handleLoadScenarioChecks,
-          onRun,
-          scenarioListStatus: scenarioWorkflow.scenarioListStatus,
-          scenarioChecks: scenarioWorkflow.scenarioChecks,
-          selectedChecks: scenarioWorkflow.selectedChecks,
-          onToggleCheck: scenarioWorkflow.toggleScenarioCheck,
-          onSelectAllChecks: scenarioWorkflow.selectAllScenarioChecks,
-          onClearCheckSelection: scenarioWorkflow.clearScenarioSelection,
-        }}
-      />
-    )
+  const scenarioSourceProps = {
+    scenarioPath: scenarioWorkflow.scenarioPath,
+    onScenarioPathChange: scenarioWorkflow.setScenarioPath,
+    onBrowseScenario: () =>
+      void browseAndSet(pickScenarioFile, scenarioWorkflow.setScenarioPath),
+    scenarioRecentPaths: scenarioWorkflow.scenarioRecentPaths,
+    onLoadRecentScenario: (entry: (typeof scenarioWorkflow.scenarioRecentPaths)[number]) =>
+      void runRecentAction('Recent scenario load', () =>
+        scenarioWorkflow.loadScenarioRecent(entry),
+      ),
+    onClearRecentScenarios: () => scenarioWorkflow.setScenarioRecentPaths([]),
+    reportFormat: scenarioWorkflow.reportFormat,
+    onReportFormatChange: scenarioWorkflow.setReportFormat,
+    loading,
+    onLoadChecks: handleLoadScenarioChecks,
+    onRun,
+    scenarioListStatus: scenarioWorkflow.scenarioListStatus,
+    scenarioChecks: scenarioWorkflow.scenarioChecks,
+    selectedChecks: scenarioWorkflow.selectedChecks,
+    onToggleCheck: scenarioWorkflow.toggleScenarioCheck,
+    onSelectAllChecks: scenarioWorkflow.selectAllScenarioChecks,
+    onClearCheckSelection: scenarioWorkflow.clearScenarioSelection,
+  }
+
+  const sidebar = undefined
 
   const main = (
     <DesktopMainContent
@@ -350,6 +344,7 @@ export function useDesktopShellModel({
         onFolderTableKeyDown: (event) =>
           void folderInteractions.handleFolderTableKeyDown(event),
       }}
+      scenarioSourceProps={scenarioSourceProps}
       scenarioResultProps={{
         scenarioRunResult: scenarioWorkflow.scenarioRunResult,
         selectedScenarioResultName: scenarioWorkflow.selectedScenarioResultName,
@@ -378,7 +373,10 @@ export function useDesktopShellModel({
   ) : undefined
 
   return {
-    layoutMode: isCompareCentricMode || mode === 'folder' ? 'workspace' : 'sidebar',
+    layoutMode:
+      isCompareCentricMode || mode === 'folder' || mode === 'scenario'
+        ? 'workspace'
+        : 'sidebar',
     sidebar,
     main,
     inspector,

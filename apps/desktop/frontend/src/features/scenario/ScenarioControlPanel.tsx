@@ -1,7 +1,7 @@
 import { Menu } from '@mantine/core'
 import type { DesktopRecentScenarioPath, ScenarioCheckListEntry } from '../../types'
 
-type ScenarioControlPanelProps = {
+export type ScenarioControlPanelProps = {
   scenarioPath: string
   onScenarioPathChange: (value: string) => void
   onBrowseScenario: () => void
