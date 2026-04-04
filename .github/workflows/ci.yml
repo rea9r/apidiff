@@ -43,8 +43,6 @@ jobs:
   frontend-test:
     name: Frontend
     runs-on: ubuntu-latest
-    env:
-      NODE_ENV: test
     defaults:
       run:
         working-directory: apps/desktop/frontend
@@ -59,6 +57,7 @@ jobs:
           node-version: 20.19.0
           cache: npm
           cache-dependency-path: apps/desktop/frontend/package-lock.json
+          registry-url: https://registry.npmjs.org
 
       - name: Install frontend dependencies
         run: npm ci
