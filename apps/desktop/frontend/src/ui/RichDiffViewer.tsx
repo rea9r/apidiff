@@ -1,4 +1,4 @@
-import type { MutableRefObject, ReactNode } from 'react'
+import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from 'react'
 import {
   buildExpandedContextRow,
   buildTextSearchRowIDForItem,
@@ -30,12 +30,14 @@ type RichDiffViewerProps = {
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
   splitHeaderLabels?: SplitHeaderLabels
+  initialVisibleItems?: number
 }
 
 const DEFAULT_SPLIT_HEADER_LABELS: SplitHeaderLabels = {
   left: 'Old',
   right: 'New',
 }
+const DEFAULT_INITIAL_VISIBLE_ITEMS = 400
 
 export function createSearchRowRefRegistrar(
   rowRefs: MutableRefObject<Record<string, HTMLDivElement | null>>,
@@ -409,23 +411,69 @@ export function RichDiffViewer({
   registerSearchRowRef,
   omittedSections,
   splitHeaderLabels,
+  initialVisibleItems = DEFAULT_INITIAL_VISIBLE_ITEMS,
 }: RichDiffViewerProps) {
+  const [visibleItemsCount, setVisibleItemsCount] = useState(() => initialVisibleItems)
+
+  useEffect(() => {
+    setVisibleItemsCount(initialVisibleItems)
+  }, [initialVisibleItems, items.length, keyPrefix, layout])
+
+  const shouldRenderAllItems = (searchMatchIds?.size ?? 0) > 0
+  const renderedItems = useMemo(() => {
+    if (shouldRenderAllItems) {
+      return items
+    }
+    return items.slice(0, visibleItemsCount)
+  }, [items, shouldRenderAllItems, visibleItemsCount])
+  const hasMoreItems = !shouldRenderAllItems && renderedItems.length < items.length
+
   return layout === 'split'
-    ? renderSplitRows({
-        items,
-        keyPrefix,
-        searchMatchIds,
-        activeMatchId,
-        registerSearchRowRef,
-        omittedSections,
-        splitHeaderLabels,
-      })
-    : renderUnifiedRows({
-        items,
-        keyPrefix,
-        searchMatchIds,
-        activeMatchId,
-        registerSearchRowRef,
-        omittedSections,
-      })
+    ? (
+        <>
+          {renderSplitRows({
+            items: renderedItems,
+            keyPrefix,
+            searchMatchIds,
+            activeMatchId,
+            registerSearchRowRef,
+            omittedSections,
+            splitHeaderLabels,
+          })}
+          {hasMoreItems ? (
+            <div className="result-load-more">
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={() => setVisibleItemsCount((prev) => prev + initialVisibleItems)}
+              >
+                Show more ({items.length - renderedItems.length} remaining)
+              </button>
+            </div>
+          ) : null}
+        </>
+      )
+    : (
+        <>
+          {renderUnifiedRows({
+            items: renderedItems,
+            keyPrefix,
+            searchMatchIds,
+            activeMatchId,
+            registerSearchRowRef,
+            omittedSections,
+          })}
+          {hasMoreItems ? (
+            <div className="result-load-more">
+              <button
+                type="button"
+                className="button-secondary button-compact"
+                onClick={() => setVisibleItemsCount((prev) => prev + initialVisibleItems)}
+              >
+                Show more ({items.length - renderedItems.length} remaining)
+              </button>
+            </div>
+          ) : null}
+        </>
+      )
 }

@@ -1,4 +1,4 @@
-import { Fragment, type KeyboardEventHandler } from 'react'
+import { Fragment, useEffect, useMemo, useState, type KeyboardEventHandler } from 'react'
 import { ActionIcon } from '@mantine/core'
 import {
   IconBinaryTree2,
@@ -36,6 +36,7 @@ const QUICK_FILTERS: FolderQuickFilter[] = [
   'error',
   'same',
 ]
+const DEFAULT_FOLDER_VISIBLE_ROWS = 300
 
 type DirectoryCompareResultPanelProps = {
   folderResult: CompareFoldersResponse | null
@@ -118,6 +119,22 @@ export function DirectoryCompareResultPanel({
   onFolderTreeRowDoubleClick,
   onFolderTableKeyDown,
 }: DirectoryCompareResultPanelProps) {
+  const [visibleListRows, setVisibleListRows] = useState(DEFAULT_FOLDER_VISIBLE_ROWS)
+  const [visibleTreeRows, setVisibleTreeRows] = useState(DEFAULT_FOLDER_VISIBLE_ROWS)
+
+  useEffect(() => {
+    setVisibleListRows(DEFAULT_FOLDER_VISIBLE_ROWS)
+    setVisibleTreeRows(DEFAULT_FOLDER_VISIBLE_ROWS)
+  }, [
+    folderCurrentPath,
+    folderNameFilter,
+    folderQuickFilter,
+    folderSortDirection,
+    folderSortKey,
+    folderViewMode,
+    folderResult?.currentPath,
+  ])
+
   const detailActionReason = selectedFolderItemForDetail
     ? getFolderItemActionReason(selectedFolderItemForDetail)
     : null
@@ -127,6 +144,28 @@ export function DirectoryCompareResultPanel({
   const canCompareFolders = !!folderLeftRoot && !!folderRightRoot
   const shouldShowFolderDetail =
     folderViewMode === 'list' && !!selectedFolderItemForDetail
+  const selectedListIndex = useMemo(
+    () => sortedFolderItems.findIndex((item) => item.relativePath === selectedFolderItemPath),
+    [selectedFolderItemPath, sortedFolderItems],
+  )
+  const selectedTreeIndex = useMemo(
+    () => flattenedFolderTreeRows.findIndex((row) => row.node.path === selectedFolderItemPath),
+    [flattenedFolderTreeRows, selectedFolderItemPath],
+  )
+  const effectiveVisibleListRows =
+    selectedListIndex >= 0 ? Math.max(visibleListRows, selectedListIndex + 1) : visibleListRows
+  const effectiveVisibleTreeRows =
+    selectedTreeIndex >= 0 ? Math.max(visibleTreeRows, selectedTreeIndex + 1) : visibleTreeRows
+  const visibleListItems = useMemo(
+    () => sortedFolderItems.slice(0, effectiveVisibleListRows),
+    [effectiveVisibleListRows, sortedFolderItems],
+  )
+  const visibleTreeItems = useMemo(
+    () => flattenedFolderTreeRows.slice(0, effectiveVisibleTreeRows),
+    [effectiveVisibleTreeRows, flattenedFolderTreeRows],
+  )
+  const hasMoreListItems = visibleListItems.length < sortedFolderItems.length
+  const hasMoreTreeItems = visibleTreeItems.length < flattenedFolderTreeRows.length
 
   return (
     <SectionCard>
@@ -341,14 +380,14 @@ export function DirectoryCompareResultPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedFolderItems.length === 0 ? (
+                    {visibleListItems.length === 0 ? (
                       <tr>
                         <td colSpan={5}>
                           <div className="muted">No entries to show.</div>
                         </td>
                       </tr>
                     ) : (
-                      sortedFolderItems.map((item) => {
+                      visibleListItems.map((item) => {
                         const openable = canOpenFolderItem(item)
                         const enterable = item.isDir && item.status !== 'type-mismatch'
                         const actionReason = getFolderItemActionReason(item)
@@ -432,14 +471,25 @@ export function DirectoryCompareResultPanel({
                     )}
                   </tbody>
                 </table>
+                {hasMoreListItems ? (
+                  <div className="result-load-more">
+                    <button
+                      type="button"
+                      className="button-secondary button-compact"
+                      onClick={() => setVisibleListRows((prev) => prev + DEFAULT_FOLDER_VISIBLE_ROWS)}
+                    >
+                      Show more ({sortedFolderItems.length - visibleListItems.length} remaining)
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="folder-tree-wrap">
-                {flattenedFolderTreeRows.length === 0 ? (
+                {visibleTreeItems.length === 0 ? (
                   <div className="muted">No entries to show.</div>
                 ) : (
                   <div className="folder-tree" role="tree">
-                    {flattenedFolderTreeRows.map(({ node, depth }) => {
+                    {visibleTreeItems.map(({ node, depth }) => {
                       const openable = canOpenFolderItem(node.item)
                       const enterable = node.isDir && node.item.status !== 'type-mismatch'
                       const actionReason = getFolderItemActionReason(node.item)
@@ -532,6 +582,17 @@ export function DirectoryCompareResultPanel({
                     })}
                   </div>
                 )}
+                {hasMoreTreeItems ? (
+                  <div className="result-load-more">
+                    <button
+                      type="button"
+                      className="button-secondary button-compact"
+                      onClick={() => setVisibleTreeRows((prev) => prev + DEFAULT_FOLDER_VISIBLE_ROWS)}
+                    >
+                      Show more ({flattenedFolderTreeRows.length - visibleTreeItems.length} remaining)
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )
           ) : (

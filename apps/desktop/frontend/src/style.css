@@ -241,6 +241,12 @@ body {
   height: calc(100vh - 92px);
 }
 
+.result-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
 .workspace-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
