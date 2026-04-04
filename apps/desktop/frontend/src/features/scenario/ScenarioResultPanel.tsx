@@ -1,4 +1,9 @@
+import { useEffect, useMemo, useState } from 'react'
 import type { ScenarioResult, ScenarioRunResponse } from '../../types'
+import { CompareResultShell } from '../../ui/CompareResultShell'
+import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
+import { CompareSearchControls } from '../../ui/CompareSearchControls'
+import { CompareStatusBadges, type CompareStatusBadgeItem } from '../../ui/CompareStatusBadges'
 import { StatusBadge } from '../../ui/StatusBadge'
 
 export type ScenarioResultPanelProps = {
@@ -19,11 +24,27 @@ function toneForScenarioStatus(status: string): 'success' | 'warning' | 'danger'
 }
 
 function getSelectedScenarioResult(
-  scenarioRunResult: ScenarioRunResponse | null,
+  results: ScenarioResult[],
   selectedScenarioResultName: string,
 ): ScenarioResult | null {
-  if (!scenarioRunResult?.results || !selectedScenarioResultName) return null
-  return scenarioRunResult.results.find((r) => r.name === selectedScenarioResultName) ?? null
+  if (!selectedScenarioResultName) return null
+  return results.find((r) => r.name === selectedScenarioResultName) ?? null
+}
+
+function matchesScenarioSearch(result: ScenarioResult, normalizedSearchQuery: string): boolean {
+  if (!normalizedSearchQuery) {
+    return true
+  }
+
+  const haystacks = [
+    result.name,
+    result.kind,
+    result.status,
+    result.output ?? '',
+    result.errorMessage ?? '',
+  ]
+
+  return haystacks.some((value) => value.toLowerCase().includes(normalizedSearchQuery))
 }
 
 export function ScenarioResultPanel({
@@ -31,29 +52,141 @@ export function ScenarioResultPanel({
   selectedScenarioResultName,
   setSelectedScenarioResultName,
 }: ScenarioResultPanelProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ok' | 'diff' | 'error'>('all')
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0)
+
+  const summary = scenarioRunResult?.summary
+  const allResults = scenarioRunResult?.results ?? []
+  const filteredByStatusResults = useMemo(
+    () => allResults.filter((result) => statusFilter === 'all' || result.status === statusFilter),
+    [allResults, statusFilter],
+  )
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const searchMatches = useMemo(
+    () =>
+      filteredByStatusResults.filter((result) =>
+        matchesScenarioSearch(result, normalizedSearchQuery),
+      ),
+    [filteredByStatusResults, normalizedSearchQuery],
+  )
+
+  useEffect(() => {
+    setActiveSearchIndex(0)
+  }, [normalizedSearchQuery, statusFilter, scenarioRunResult])
+
+  useEffect(() => {
+    if (!normalizedSearchQuery || searchMatches.length === 0) {
+      return
+    }
+
+    const activeMatch = searchMatches[activeSearchIndex]
+    if (!activeMatch) {
+      return
+    }
+
+    setSelectedScenarioResultName(activeMatch.name)
+  }, [activeSearchIndex, normalizedSearchQuery, searchMatches, setSelectedScenarioResultName])
+
+  const moveScenarioSearch = (direction: 1 | -1) => {
+    if (!normalizedSearchQuery || searchMatches.length === 0) {
+      return
+    }
+
+    setActiveSearchIndex((current) => {
+      const next = current + direction
+      if (next < 0) {
+        return searchMatches.length - 1
+      }
+      if (next >= searchMatches.length) {
+        return 0
+      }
+      return next
+    })
+  }
+
+  const summaryBadges: CompareStatusBadgeItem[] = summary
+    ? [
+        { key: 'ok', label: `ok ${summary.ok}`, tone: 'neutral' },
+        { key: 'diff', label: `diff ${summary.diff}`, tone: 'changed' },
+        { key: 'error', label: `error ${summary.error}`, tone: 'error' },
+      ]
+    : []
+
+  const toolbar = (
+    <CompareResultToolbar
+      primary={
+        <>
+          <label className="field-label">Scenario results</label>
+          <CompareStatusBadges items={summaryBadges} />
+        </>
+      }
+      secondary={
+        <>
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as 'all' | 'ok' | 'diff' | 'error')
+            }
+          >
+            <option value="all">all statuses</option>
+            <option value="ok">ok</option>
+            <option value="diff">diff</option>
+            <option value="error">error</option>
+          </select>
+          <CompareSearchControls
+            value={searchQuery}
+            placeholder="Search scenario results"
+            statusText={
+              normalizedSearchQuery
+                ? searchMatches.length > 0
+                  ? `${activeSearchIndex + 1} / ${searchMatches.length}`
+                  : '0 matches'
+                : null
+            }
+            onChange={setSearchQuery}
+            onPrev={() => moveScenarioSearch(-1)}
+            onNext={() => moveScenarioSearch(1)}
+            prevDisabled={!normalizedSearchQuery || searchMatches.length === 0}
+            nextDisabled={!normalizedSearchQuery || searchMatches.length === 0}
+          />
+        </>
+      }
+    />
+  )
+
   if (!scenarioRunResult) {
-    return <div className="muted">(no scenario run yet)</div>
+    return (
+      <CompareResultShell
+        toolbar={toolbar}
+        hasResult={false}
+        emptyState={<div className="muted">(no scenario run yet)</div>}
+      >
+        <></>
+      </CompareResultShell>
+    )
   }
 
   if (scenarioRunResult.error) {
     return (
-      <div className="scenario-result-detail">
-        <StatusBadge tone="danger">error</StatusBadge>
-        <pre>{scenarioRunResult.error}</pre>
-      </div>
+      <CompareResultShell toolbar={toolbar} hasResult>
+        <div className="scenario-result-detail">
+          <StatusBadge tone="danger">error</StatusBadge>
+          <pre>{scenarioRunResult.error}</pre>
+        </div>
+      </CompareResultShell>
     )
   }
 
-  const summary = scenarioRunResult.summary
-  const results = scenarioRunResult.results ?? []
   const selected =
-    getSelectedScenarioResult(scenarioRunResult, selectedScenarioResultName) ??
-    results.find((r) => r.status !== 'ok') ??
-    results[0] ??
+    getSelectedScenarioResult(filteredByStatusResults, selectedScenarioResultName) ??
+    filteredByStatusResults.find((r) => r.status !== 'ok') ??
+    filteredByStatusResults[0] ??
     null
 
   return (
-    <div className="scenario-result-shell">
+    <CompareResultShell toolbar={toolbar} hasResult>
+      <div className="scenario-result-shell">
       {summary ? (
         <div className="scenario-summary-grid">
           <div>
@@ -76,7 +209,7 @@ export function ScenarioResultPanel({
 
       <div className="scenario-results-layout">
         <div className="scenario-results-list">
-          {results.map((r) => (
+          {filteredByStatusResults.map((r) => (
             <button
               key={r.name}
               className={`scenario-result-item ${selected?.name === r.name ? 'active' : ''}`}
@@ -116,6 +249,7 @@ export function ScenarioResultPanel({
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </CompareResultShell>
   )
 }
