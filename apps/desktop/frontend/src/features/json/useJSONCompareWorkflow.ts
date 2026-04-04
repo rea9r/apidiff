@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { notifications } from '@mantine/notifications'
 import { upsertRecentPair } from '../../persistence'
 import type {
   CompareCommon,
@@ -18,6 +17,12 @@ import {
   parseIgnorePaths,
   renderResult,
 } from '../../utils/appHelpers'
+import {
+  showClipboardEmptyNotification,
+  showClipboardUnavailableNotification,
+  showErrorNotification,
+  showSuccessNotification,
+} from '../../utils/notifications'
 
 export type JSONTextInputTarget = 'old' | 'new'
 
@@ -253,11 +258,7 @@ export function useJSONCompareWorkflow({
   const pasteJSONFromClipboard = useCallback(async (target: JSONTextInputTarget) => {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -266,11 +267,7 @@ export function useJSONCompareWorkflow({
     try {
       const pasted = await readClipboard()
       if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
+        showClipboardEmptyNotification()
         return
       }
 
@@ -282,11 +279,10 @@ export function useJSONCompareWorkflow({
         setJSONNewSourcePath('')
       }
     } catch (error) {
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Failed to paste from clipboard',
+        `Failed to read clipboard: ${formatUnknownError(error)}`,
+      )
     } finally {
       setJSONClipboardBusyTarget(null)
     }
@@ -297,11 +293,7 @@ export function useJSONCompareWorkflow({
       const pickJSONFile = getPickJSONFile()
       const loadTextFile = getLoadTextFile()
       if (!pickJSONFile || !loadTextFile) {
-        notifications.show({
-          title: 'JSON loader unavailable',
-          message: 'JSON file loader is not available.',
-          color: 'red',
-        })
+        showErrorNotification('JSON loader unavailable', 'JSON file loader is not available.')
         return
       }
 
@@ -325,11 +317,10 @@ export function useJSONCompareWorkflow({
           setJSONNewSourcePath(loaded.path)
         }
       } catch (error) {
-        notifications.show({
-          title: 'Failed to load JSON file',
-          message: `Failed to load JSON file: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification(
+          'Failed to load JSON file',
+          `Failed to load JSON file: ${formatUnknownError(error)}`,
+        )
       } finally {
         setJSONFileBusyTarget(null)
       }
@@ -341,11 +332,7 @@ export function useJSONCompareWorkflow({
     async (target: JSONTextInputTarget) => {
       const writeClipboard = getRuntimeClipboardWrite()
       if (!writeClipboard) {
-        notifications.show({
-          title: 'Clipboard unavailable',
-          message: 'Clipboard runtime is not available.',
-          color: 'red',
-        })
+        showClipboardUnavailableNotification()
         return
       }
 
@@ -358,25 +345,19 @@ export function useJSONCompareWorkflow({
       try {
         const ok = await writeClipboard(value)
         if (!ok) {
-          notifications.show({
-            title: 'Copy failed',
-            message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} JSON.`,
-            color: 'red',
-          })
+          showErrorNotification(
+            'Copy failed',
+            `Failed to copy ${target === 'old' ? 'Old' : 'New'} JSON.`,
+          )
           return
         }
 
-        notifications.show({
-          title: 'Copied',
-          message: `${target === 'old' ? 'Old' : 'New'} JSON copied to clipboard.`,
-          color: 'green',
-        })
+        showSuccessNotification(
+          'Copied',
+          `${target === 'old' ? 'Old' : 'New'} JSON copied to clipboard.`,
+        )
       } catch (error) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy JSON: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', `Failed to copy JSON: ${formatUnknownError(error)}`)
       } finally {
         setJSONCopyBusyTarget(null)
       }
@@ -398,11 +379,7 @@ export function useJSONCompareWorkflow({
   const copyJSONResultRawOutput = useCallback(async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -416,25 +393,16 @@ export function useJSONCompareWorkflow({
     try {
       const ok = await writeClipboard(raw)
       if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', 'Failed to copy raw output.')
         return
       }
 
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
+      showSuccessNotification('Copied', 'Raw output copied to clipboard.')
     } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy raw output: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Copy failed',
+        `Failed to copy raw output: ${formatUnknownError(error)}`,
+      )
     } finally {
       setJSONCopyBusy(false)
     }

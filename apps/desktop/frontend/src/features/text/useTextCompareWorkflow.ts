@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import { notifications } from '@mantine/notifications'
 import { upsertRecentPair } from '../../persistence'
 import type {
   CompareCommon,
@@ -14,6 +13,12 @@ import {
   getRuntimeClipboardWrite,
   renderResult,
 } from '../../utils/appHelpers'
+import {
+  showClipboardEmptyNotification,
+  showClipboardUnavailableNotification,
+  showErrorNotification,
+  showSuccessNotification,
+} from '../../utils/notifications'
 
 export type TextInputTarget = 'old' | 'new'
 
@@ -181,11 +186,7 @@ export function useTextCompareWorkflow({
   const pasteTextFromClipboard = useCallback(async (target: TextInputTarget) => {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -194,11 +195,7 @@ export function useTextCompareWorkflow({
     try {
       const pasted = await readClipboard()
       if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
+        showClipboardEmptyNotification()
         return
       }
 
@@ -210,11 +207,10 @@ export function useTextCompareWorkflow({
         setTextNewSourcePath('')
       }
     } catch (error) {
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Failed to paste from clipboard',
+        `Failed to read clipboard: ${formatUnknownError(error)}`,
+      )
     } finally {
       setTextClipboardBusyTarget(null)
     }
@@ -225,11 +221,7 @@ export function useTextCompareWorkflow({
       const pickTextFile = getPickTextFile()
       const loadTextFile = getLoadTextFile()
       if (!pickTextFile || !loadTextFile) {
-        notifications.show({
-          title: 'Text loader unavailable',
-          message: 'Text file loader is not available.',
-          color: 'red',
-        })
+        showErrorNotification('Text loader unavailable', 'Text file loader is not available.')
         return
       }
 
@@ -253,11 +245,10 @@ export function useTextCompareWorkflow({
           setTextNewSourcePath(loaded.path)
         }
       } catch (error) {
-        notifications.show({
-          title: 'Failed to load text file',
-          message: `Failed to load text file: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification(
+          'Failed to load text file',
+          `Failed to load text file: ${formatUnknownError(error)}`,
+        )
       } finally {
         setTextFileBusyTarget(null)
       }
@@ -280,11 +271,7 @@ export function useTextCompareWorkflow({
     async (target: TextInputTarget) => {
       const writeClipboard = getRuntimeClipboardWrite()
       if (!writeClipboard) {
-        notifications.show({
-          title: 'Clipboard unavailable',
-          message: 'Clipboard runtime is not available.',
-          color: 'red',
-        })
+        showClipboardUnavailableNotification()
         return
       }
 
@@ -298,25 +285,19 @@ export function useTextCompareWorkflow({
       try {
         const ok = await writeClipboard(value)
         if (!ok) {
-          notifications.show({
-            title: 'Copy failed',
-            message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} text.`,
-            color: 'red',
-          })
+          showErrorNotification(
+            'Copy failed',
+            `Failed to copy ${target === 'old' ? 'Old' : 'New'} text.`,
+          )
           return
         }
 
-        notifications.show({
-          title: 'Copied',
-          message: `${target === 'old' ? 'Old' : 'New'} text copied to clipboard.`,
-          color: 'green',
-        })
+        showSuccessNotification(
+          'Copied',
+          `${target === 'old' ? 'Old' : 'New'} text copied to clipboard.`,
+        )
       } catch (error) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy text: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', `Failed to copy text: ${formatUnknownError(error)}`)
       } finally {
         setTextPaneCopyBusyTarget(null)
       }
@@ -327,11 +308,7 @@ export function useTextCompareWorkflow({
   const copyTextResultRawOutput = useCallback(async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -345,25 +322,16 @@ export function useTextCompareWorkflow({
     try {
       const ok = await writeClipboard(raw)
       if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', 'Failed to copy raw output.')
         return
       }
 
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
+      showSuccessNotification('Copied', 'Raw output copied to clipboard.')
     } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy raw output: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Copy failed',
+        `Failed to copy raw output: ${formatUnknownError(error)}`,
+      )
     } finally {
       setTextCopyBusy(false)
     }

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
-import { notifications } from '@mantine/notifications'
 import { formatUnknownError } from './utils/appHelpers'
+import { showErrorNotification } from './utils/notifications'
 
 type UseRecentActionRunnerOptions = {
   setLoading: (value: boolean) => void
@@ -13,11 +13,7 @@ export function useRecentActionRunner({ setLoading }: UseRecentActionRunnerOptio
       try {
         await action()
       } catch (error) {
-        notifications.show({
-          title: `${label} failed`,
-          message: formatUnknownError(error),
-          color: 'red',
-        })
+        showErrorNotification(`${label} failed`, formatUnknownError(error))
       } finally {
         setLoading(false)
       }

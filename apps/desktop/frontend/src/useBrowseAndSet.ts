@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
-import { notifications } from '@mantine/notifications'
 import { formatUnknownError } from './utils/appHelpers'
+import { showErrorNotification } from './utils/notifications'
 
 type Picker = (() => Promise<string>) | undefined
 
@@ -20,11 +20,7 @@ export function useBrowseAndSet({
       if (!picker) {
         setSummaryLine('error=yes')
         setOutput('Wails bridge not available (file picker)')
-        notifications.show({
-          title: 'File picker unavailable',
-          message: 'Wails bridge not available (file picker)',
-          color: 'red',
-        })
+        showErrorNotification('File picker unavailable', 'Wails bridge not available (file picker)')
         return
       }
 
@@ -36,11 +32,7 @@ export function useBrowseAndSet({
       } catch (e) {
         setSummaryLine('error=yes')
         setOutput(String(e))
-        notifications.show({
-          title: 'Failed to pick file',
-          message: formatUnknownError(e),
-          color: 'red',
-        })
+        showErrorNotification('Failed to pick file', formatUnknownError(e))
       }
     },
     [setOutput, setSummaryLine],

@@ -1,4 +1,3 @@
-import { notifications } from '@mantine/notifications'
 import { useFolderCompareState } from '../../useFolderCompareState'
 import { useDirectoryCompareViewState } from './useDirectoryCompareViewState'
 import { useDirectoryCompareWorkflow } from './useDirectoryCompareWorkflow'
@@ -6,6 +5,7 @@ import { useDirectoryCompareChildDiffActions } from './useDirectoryCompareChildD
 import { useFolderChildDiffOpeners } from './useFolderChildDiffOpeners'
 import { useDirectoryCompareInteractions } from './useDirectoryCompareInteractions'
 import { formatUnknownError } from '../../utils/appHelpers'
+import { showErrorNotification } from '../../utils/notifications'
 import type { Mode } from '../../types'
 
 export type FolderCompareModelDeps = {
@@ -55,11 +55,7 @@ export function useFolderCompareModel(deps: FolderCompareModelDeps) {
     onFolderTreeLoadError: (error) => {
       const message = `Failed to load directory children: ${formatUnknownError(error)}`
       setFolderStatus(message)
-      notifications.show({
-        title: 'Failed to load directory',
-        message,
-        color: 'red',
-      })
+      showErrorNotification('Failed to load directory', message)
     },
   })
 
@@ -91,18 +87,10 @@ export function useFolderCompareModel(deps: FolderCompareModelDeps) {
     setFolderRecentPairs,
     setSelectedFolderItemPath,
     onDirectoryPickerUnavailable: () => {
-      notifications.show({
-        title: 'Directory picker unavailable',
-        message: 'Directory picker is not available.',
-        color: 'red',
-      })
+      showErrorNotification('Directory picker unavailable', 'Directory picker is not available.')
     },
     onDirectoryPickerError: (message) => {
-      notifications.show({
-        title: 'Failed to pick directory',
-        message,
-        color: 'red',
-      })
+      showErrorNotification('Failed to pick directory', message)
     },
   })
 
@@ -136,11 +124,7 @@ export function useFolderCompareModel(deps: FolderCompareModelDeps) {
     onOpenSpecDiff: childDiffOpeners.openFolderSpecDiff,
     onOpenTextDiff: childDiffOpeners.openFolderTextDiff,
     onOpenChildDiffError: (message) => {
-      notifications.show({
-        title: 'Failed to open child diff',
-        message,
-        color: 'red',
-      })
+      showErrorNotification('Failed to open child diff', message)
     },
   })
 

@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import YAML from 'yaml'
-import { notifications } from '@mantine/notifications'
 import { upsertRecentPair } from '../../persistence'
 import type {
   CompareCommon,
@@ -19,6 +18,12 @@ import {
   parseIgnorePaths,
   renderResult,
 } from '../../utils/appHelpers'
+import {
+  showClipboardEmptyNotification,
+  showClipboardUnavailableNotification,
+  showErrorNotification,
+  showSuccessNotification,
+} from '../../utils/notifications'
 
 export type SpecTextInputTarget = 'old' | 'new'
 
@@ -270,11 +275,7 @@ export function useSpecCompareWorkflow({
   const pasteSpecFromClipboard = useCallback(async (target: SpecTextInputTarget) => {
     const readClipboard = getRuntimeClipboardRead()
     if (!readClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -282,11 +283,7 @@ export function useSpecCompareWorkflow({
     try {
       const pasted = await readClipboard()
       if (!pasted) {
-        notifications.show({
-          title: 'Clipboard is empty',
-          message: 'Nothing to paste.',
-          color: 'yellow',
-        })
+        showClipboardEmptyNotification()
         return
       }
 
@@ -298,11 +295,10 @@ export function useSpecCompareWorkflow({
         setSpecNewSourcePath('')
       }
     } catch (error) {
-      notifications.show({
-        title: 'Failed to paste from clipboard',
-        message: `Failed to read clipboard: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Failed to paste from clipboard',
+        `Failed to read clipboard: ${formatUnknownError(error)}`,
+      )
     } finally {
       setSpecClipboardBusyTarget(null)
     }
@@ -313,11 +309,7 @@ export function useSpecCompareWorkflow({
       const pickSpecFile = getPickSpecFile()
       const loadTextFile = getLoadTextFile()
       if (!pickSpecFile || !loadTextFile) {
-        notifications.show({
-          title: 'Spec loader unavailable',
-          message: 'Spec file loader is not available.',
-          color: 'red',
-        })
+        showErrorNotification('Spec loader unavailable', 'Spec file loader is not available.')
         return
       }
 
@@ -340,11 +332,10 @@ export function useSpecCompareWorkflow({
           setSpecNewSourcePath(loaded.path)
         }
       } catch (error) {
-        notifications.show({
-          title: 'Failed to load spec file',
-          message: `Failed to load spec file: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification(
+          'Failed to load spec file',
+          `Failed to load spec file: ${formatUnknownError(error)}`,
+        )
       } finally {
         setSpecFileBusyTarget(null)
       }
@@ -356,11 +347,7 @@ export function useSpecCompareWorkflow({
     async (target: SpecTextInputTarget) => {
       const writeClipboard = getRuntimeClipboardWrite()
       if (!writeClipboard) {
-        notifications.show({
-          title: 'Clipboard unavailable',
-          message: 'Clipboard runtime is not available.',
-          color: 'red',
-        })
+        showClipboardUnavailableNotification()
         return
       }
 
@@ -373,25 +360,19 @@ export function useSpecCompareWorkflow({
       try {
         const ok = await writeClipboard(value)
         if (!ok) {
-          notifications.show({
-            title: 'Copy failed',
-            message: `Failed to copy ${target === 'old' ? 'Old' : 'New'} spec.`,
-            color: 'red',
-          })
+          showErrorNotification(
+            'Copy failed',
+            `Failed to copy ${target === 'old' ? 'Old' : 'New'} spec.`,
+          )
           return
         }
 
-        notifications.show({
-          title: 'Copied',
-          message: `${target === 'old' ? 'Old' : 'New'} spec copied to clipboard.`,
-          color: 'green',
-        })
+        showSuccessNotification(
+          'Copied',
+          `${target === 'old' ? 'Old' : 'New'} spec copied to clipboard.`,
+        )
       } catch (error) {
-        notifications.show({
-          title: 'Copy failed',
-          message: `Failed to copy spec: ${formatUnknownError(error)}`,
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', `Failed to copy spec: ${formatUnknownError(error)}`)
       } finally {
         setSpecCopyBusyTarget(null)
       }
@@ -413,11 +394,7 @@ export function useSpecCompareWorkflow({
   const copySpecResultRawOutput = useCallback(async () => {
     const writeClipboard = getRuntimeClipboardWrite()
     if (!writeClipboard) {
-      notifications.show({
-        title: 'Clipboard unavailable',
-        message: 'Clipboard runtime is not available.',
-        color: 'red',
-      })
+      showClipboardUnavailableNotification()
       return
     }
 
@@ -430,25 +407,16 @@ export function useSpecCompareWorkflow({
     try {
       const ok = await writeClipboard(raw)
       if (!ok) {
-        notifications.show({
-          title: 'Copy failed',
-          message: 'Failed to copy raw output.',
-          color: 'red',
-        })
+        showErrorNotification('Copy failed', 'Failed to copy raw output.')
         return
       }
 
-      notifications.show({
-        title: 'Copied',
-        message: 'Raw output copied to clipboard.',
-        color: 'green',
-      })
+      showSuccessNotification('Copied', 'Raw output copied to clipboard.')
     } catch (error) {
-      notifications.show({
-        title: 'Copy failed',
-        message: `Failed to copy raw output: ${formatUnknownError(error)}`,
-        color: 'red',
-      })
+      showErrorNotification(
+        'Copy failed',
+        `Failed to copy raw output: ${formatUnknownError(error)}`,
+      )
     } finally {
       setSpecCopyBusy(false)
     }
