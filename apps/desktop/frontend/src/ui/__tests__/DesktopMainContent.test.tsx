@@ -34,6 +34,8 @@ const textResultProps = {
   setTextResultView: noop,
   textDiffLayout: 'unified' as const,
   setTextDiffLayout: noop,
+  textWrap: true,
+  setTextWrap: noop,
   textSearchQuery: '',
   setTextSearchQuery: noop,
   textActiveSearchIndex: 0,

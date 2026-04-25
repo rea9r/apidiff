@@ -25,6 +25,7 @@ type RichDiffViewerProps = {
   items: RichDiffItem[]
   layout: 'split' | 'unified'
   keyPrefix: string
+  wrap?: boolean
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
   navMatchIds?: Set<string>
@@ -145,6 +146,7 @@ function renderSplitDiffCell(
 function renderUnifiedRows(params: {
   items: RichDiffItem[]
   keyPrefix: string
+  wrap: boolean
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
   navMatchIds?: Set<string>
@@ -155,6 +157,7 @@ function renderUnifiedRows(params: {
   const {
     items,
     keyPrefix,
+    wrap,
     searchMatchIds,
     activeMatchId,
     navMatchIds,
@@ -165,9 +168,10 @@ function renderUnifiedRows(params: {
   const showHunkHeaders = shouldShowTextHunkHeaders(items)
   const isSectionExpanded = omittedSections?.isExpanded ?? (() => true)
   const renderSectionAction = omittedSections?.renderAction
+  const gridClassName = `text-diff-grid${wrap ? '' : ' no-wrap'}`
 
   return (
-    <div className="text-diff-grid">
+    <div className={gridClassName}>
       {items.map((item, idx) => {
         if (item.kind === 'omitted') {
           const expanded = isSectionExpanded(item.sectionId)
@@ -259,6 +263,7 @@ function renderUnifiedRows(params: {
 function renderSplitRows(params: {
   items: RichDiffItem[]
   keyPrefix: string
+  wrap: boolean
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
   navMatchIds?: Set<string>
@@ -270,6 +275,7 @@ function renderSplitRows(params: {
   const {
     items,
     keyPrefix,
+    wrap,
     searchMatchIds,
     activeMatchId,
     navMatchIds,
@@ -468,8 +474,10 @@ function renderSplitRows(params: {
     index = end
   }
 
+  const gridClassName = `split-diff-grid${wrap ? '' : ' no-wrap'}`
+
   return (
-    <div className="split-diff-grid">
+    <div className={gridClassName}>
       <div className="split-diff-header">
         <div className="split-diff-header-cell">{labels.left}</div>
         <div className="split-diff-header-cell">{labels.right}</div>
@@ -483,6 +491,7 @@ export function RichDiffViewer({
   items,
   layout,
   keyPrefix,
+  wrap = true,
   searchMatchIds,
   activeMatchId,
   navMatchIds,
@@ -514,6 +523,7 @@ export function RichDiffViewer({
           {renderSplitRows({
             items: renderedItems,
             keyPrefix,
+            wrap,
             searchMatchIds,
             activeMatchId,
             navMatchIds,
@@ -540,6 +550,7 @@ export function RichDiffViewer({
           {renderUnifiedRows({
             items: renderedItems,
             keyPrefix,
+            wrap,
             searchMatchIds,
             activeMatchId,
             navMatchIds,

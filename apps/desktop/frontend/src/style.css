@@ -1296,6 +1296,13 @@ button {
   font-size: 12px;
 }
 
+.text-diff-grid.no-wrap .text-diff-content,
+.split-diff-grid.no-wrap .split-diff-content {
+  white-space: pre;
+  word-break: normal;
+  overflow-x: auto;
+}
+
 .split-diff-header {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1373,6 +1380,8 @@ button {
   word-break: break-word;
   font-size: var(--xdiff-mono-font-size);
   line-height: var(--xdiff-mono-line-height);
+  tab-size: 2;
+  -moz-tab-size: 2;
 }
 
 .split-omitted-block {
@@ -1446,6 +1455,8 @@ button {
   word-break: break-word;
   font-size: var(--xdiff-mono-font-size);
   line-height: var(--xdiff-mono-line-height);
+  tab-size: 2;
+  -moz-tab-size: 2;
 }
 
 .text-omitted-block {
@@ -1474,18 +1485,27 @@ button {
 
 .text-inline-add,
 .text-inline-remove {
-  padding: 0 1px;
+  padding: 0 2px;
   border-radius: var(--xdiff-radius-sm);
+  font-weight: 600;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
 .text-inline-add {
-  background: var(--xdiff-diff-add-bg-strong);
+  background: color-mix(in srgb, var(--mantine-color-diffAdd-6) 55%, transparent);
 }
 
 .text-inline-remove {
-  background: var(--xdiff-diff-remove-bg-strong);
+  background: color-mix(in srgb, var(--mantine-color-diffRemove-6) 55%, transparent);
+}
+
+[data-mantine-color-scheme='dark'] .text-inline-add {
+  background: color-mix(in srgb, var(--mantine-color-diffAdd-7) 55%, transparent);
+}
+
+[data-mantine-color-scheme='dark'] .text-inline-remove {
+  background: color-mix(in srgb, var(--mantine-color-diffRemove-7) 55%, transparent);
 }
 
 .folder-result-shell {

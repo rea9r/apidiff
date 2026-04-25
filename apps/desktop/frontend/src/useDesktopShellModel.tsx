@@ -127,6 +127,8 @@ export function useDesktopShellModel({
         setTextResultView: textViewState.setTextResultView,
         textDiffLayout: textViewState.textDiffLayout,
         setTextDiffLayout: textViewState.setTextDiffLayout,
+        textWrap: textViewState.textWrap,
+        setTextWrap: textViewState.setTextWrap,
         textSearchQuery: textViewState.textSearchQuery,
         setTextSearchQuery: textViewState.setTextSearchQuery,
         textActiveSearchIndex: textViewState.textActiveSearchIndex,

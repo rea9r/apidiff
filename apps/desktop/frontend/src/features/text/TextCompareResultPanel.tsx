@@ -29,6 +29,8 @@ export type TextCompareResultPanelProps = {
   setTextResultView: (value: TextResultView) => void
   textDiffLayout: TextDiffLayout
   setTextDiffLayout: (value: TextDiffLayout) => void
+  textWrap: boolean
+  setTextWrap: (value: boolean) => void
   textSearchQuery: string
   setTextSearchQuery: (value: string) => void
   textActiveSearchIndex: number
@@ -87,6 +89,8 @@ export function TextCompareResultPanel({
   setTextResultView,
   textDiffLayout,
   setTextDiffLayout,
+  textWrap,
+  setTextWrap,
   textSearchQuery,
   setTextSearchQuery,
   textActiveSearchIndex,
@@ -239,6 +243,13 @@ export function TextCompareResultPanel({
                         disabled: textResultView !== 'diff' || !canRenderTextRich,
                         onSelect: () => setTextDiffLayout('unified'),
                       },
+                      {
+                        key: 'text-layout-wrap',
+                        label: 'Wrap lines',
+                        active: textWrap,
+                        disabled: textResultView !== 'diff' || !canRenderTextRich,
+                        onSelect: () => setTextWrap(!textWrap),
+                      },
                     ],
                   },
                   {
@@ -268,6 +279,7 @@ export function TextCompareResultPanel({
         <RichDiffViewer
           items={textRichItems}
           layout={textDiffLayout}
+          wrap={textWrap}
           keyPrefix="text"
           searchMatchIds={textSearchMatchIds}
           activeMatchId={activeTextSearchMatchId}

@@ -26,6 +26,7 @@ export function useTextDiffViewState({
 }: UseTextDiffViewStateParams) {
   const [textResultView, setTextResultView] = useState<TextResultView>('diff')
   const [textDiffLayout, setTextDiffLayout] = useState<TextDiffLayout>('split')
+  const [textWrap, setTextWrap] = useState(true)
   const [textExpandedUnchangedSectionIds, setTextExpandedUnchangedSectionIds] = useState<
     string[]
   >([])
@@ -225,6 +226,8 @@ export function useTextDiffViewState({
     setTextResultView,
     textDiffLayout,
     setTextDiffLayout,
+    textWrap,
+    setTextWrap,
     textSearchQuery,
     setTextSearchQuery,
     textActiveSearchIndex,
