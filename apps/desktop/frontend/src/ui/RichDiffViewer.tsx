@@ -27,6 +27,8 @@ type RichDiffViewerProps = {
   keyPrefix: string
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
+  navMatchIds?: Set<string>
+  activeNavMatchId?: string | null
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
   splitHeaderLabels?: SplitHeaderLabels
@@ -64,12 +66,32 @@ function getSearchClassName(
   return activeMatchId === matchId ? 'active-search-hit' : 'search-hit'
 }
 
+function getNavClassName(
+  navMatchIds: Set<string> | undefined,
+  activeNavMatchId: string | null | undefined,
+  matchId: string,
+): string {
+  if (!navMatchIds?.has(matchId) || activeNavMatchId !== matchId) {
+    return ''
+  }
+
+  return 'active-diff-hit'
+}
+
+function combineRowClassNames(...names: string[]): string {
+  return names.filter(Boolean).join(' ')
+}
+
 function maybeRegisterSearchRowRef(
   registerSearchRowRef: SearchRowRefRegistrar | undefined,
   searchMatchIds: Set<string> | undefined,
+  navMatchIds: Set<string> | undefined,
   matchId: string,
 ): ((node: HTMLDivElement | null) => void) | undefined {
-  if (!registerSearchRowRef || !searchMatchIds?.has(matchId)) {
+  if (!registerSearchRowRef) {
+    return undefined
+  }
+  if (!searchMatchIds?.has(matchId) && !navMatchIds?.has(matchId)) {
     return undefined
   }
 
@@ -101,7 +123,7 @@ function renderSplitDiffCell(
   row: UnifiedDiffRow | null,
   side: 'left' | 'right',
   keyBase: string,
-  searchClassName = '',
+  highlightClassName = '',
   rowRef?: (node: HTMLDivElement | null) => void,
 ) {
   const lineNumber = side === 'left' ? row?.oldLine : row?.newLine
@@ -110,7 +132,7 @@ function renderSplitDiffCell(
   return (
     <div
       ref={rowRef}
-      className={['split-diff-cell', kindClass, searchClassName].filter(Boolean).join(' ')}
+      className={combineRowClassNames('split-diff-cell', kindClass, highlightClassName)}
     >
       <div className="split-diff-line">{lineNumber ?? ''}</div>
       <pre className="split-diff-content">
@@ -125,11 +147,21 @@ function renderUnifiedRows(params: {
   keyPrefix: string
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
+  navMatchIds?: Set<string>
+  activeNavMatchId?: string | null
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
 }) {
-  const { items, keyPrefix, searchMatchIds, activeMatchId, registerSearchRowRef, omittedSections } =
-    params
+  const {
+    items,
+    keyPrefix,
+    searchMatchIds,
+    activeMatchId,
+    navMatchIds,
+    activeNavMatchId,
+    registerSearchRowRef,
+    omittedSections,
+  } = params
   const showHunkHeaders = shouldShowTextHunkHeaders(items)
   const isSectionExpanded = omittedSections?.isExpanded ?? (() => true)
   const renderSectionAction = omittedSections?.renderAction
@@ -160,6 +192,7 @@ function renderUnifiedRows(params: {
                       activeMatchId,
                       matchId,
                     )
+                    const navClassName = getNavClassName(navMatchIds, activeNavMatchId, matchId)
 
                     return (
                       <div
@@ -167,11 +200,15 @@ function renderUnifiedRows(params: {
                         ref={maybeRegisterSearchRowRef(
                           registerSearchRowRef,
                           searchMatchIds,
+                          navMatchIds,
                           matchId,
                         )}
-                        className={['text-diff-row', row.kind, searchClassName]
-                          .filter(Boolean)
-                          .join(' ')}
+                        className={combineRowClassNames(
+                          'text-diff-row',
+                          row.kind,
+                          searchClassName,
+                          navClassName,
+                        )}
                       >
                         <div className="text-diff-line">{row.oldLine ?? ''}</div>
                         <div className="text-diff-line">{row.newLine ?? ''}</div>
@@ -194,12 +231,18 @@ function renderUnifiedRows(params: {
 
         const matchId = buildTextSearchRowIDForItem(idx)
         const searchClassName = getSearchClassName(searchMatchIds, activeMatchId, matchId)
+        const navClassName = getNavClassName(navMatchIds, activeNavMatchId, matchId)
 
         return (
           <div
             key={`${keyPrefix}-${idx}-${row.kind}`}
-            ref={maybeRegisterSearchRowRef(registerSearchRowRef, searchMatchIds, matchId)}
-            className={['text-diff-row', row.kind, searchClassName].filter(Boolean).join(' ')}
+            ref={maybeRegisterSearchRowRef(
+              registerSearchRowRef,
+              searchMatchIds,
+              navMatchIds,
+              matchId,
+            )}
+            className={combineRowClassNames('text-diff-row', row.kind, searchClassName, navClassName)}
           >
             <div className="text-diff-line">{row.oldLine ?? ''}</div>
             <div className="text-diff-line">{row.newLine ?? ''}</div>
@@ -218,6 +261,8 @@ function renderSplitRows(params: {
   keyPrefix: string
   searchMatchIds?: Set<string>
   activeMatchId?: string | null
+  navMatchIds?: Set<string>
+  activeNavMatchId?: string | null
   registerSearchRowRef?: SearchRowRefRegistrar
   omittedSections?: OmittedSectionConfig
   splitHeaderLabels?: SplitHeaderLabels
@@ -227,6 +272,8 @@ function renderSplitRows(params: {
     keyPrefix,
     searchMatchIds,
     activeMatchId,
+    navMatchIds,
+    activeNavMatchId,
     registerSearchRowRef,
     omittedSections,
     splitHeaderLabels,
@@ -262,6 +309,8 @@ function renderSplitRows(params: {
                 )
                 const matchId = buildTextSearchRowIDForOmitted(item.sectionId, lineIndex)
                 const searchClassName = getSearchClassName(searchMatchIds, activeMatchId, matchId)
+                const navClassName = getNavClassName(navMatchIds, activeNavMatchId, matchId)
+                const highlightClassName = combineRowClassNames(searchClassName, navClassName)
 
                 return (
                   <div
@@ -272,14 +321,19 @@ function renderSplitRows(params: {
                       row,
                       'left',
                       `${keyPrefix}-split-omitted-left-${item.sectionId}-${lineIndex}`,
-                      searchClassName,
-                      maybeRegisterSearchRowRef(registerSearchRowRef, searchMatchIds, matchId),
+                      highlightClassName,
+                      maybeRegisterSearchRowRef(
+                        registerSearchRowRef,
+                        searchMatchIds,
+                        navMatchIds,
+                        matchId,
+                      ),
                     )}
                     {renderSplitDiffCell(
                       row,
                       'right',
                       `${keyPrefix}-split-omitted-right-${item.sectionId}-${lineIndex}`,
-                      searchClassName,
+                      highlightClassName,
                     )}
                   </div>
                 )
@@ -314,6 +368,8 @@ function renderSplitRows(params: {
     if (row.kind === 'context') {
       const matchId = buildTextSearchRowIDForItem(index)
       const searchClassName = getSearchClassName(searchMatchIds, activeMatchId, matchId)
+      const navClassName = getNavClassName(navMatchIds, activeNavMatchId, matchId)
+      const highlightClassName = combineRowClassNames(searchClassName, navClassName)
 
       splitNodes.push(
         <div key={`${keyPrefix}-split-row-${index}`} className="split-diff-row">
@@ -321,10 +377,15 @@ function renderSplitRows(params: {
             row,
             'left',
             `${keyPrefix}-split-left-${index}`,
-            searchClassName,
-            maybeRegisterSearchRowRef(registerSearchRowRef, searchMatchIds, matchId),
+            highlightClassName,
+            maybeRegisterSearchRowRef(
+              registerSearchRowRef,
+              searchMatchIds,
+              navMatchIds,
+              matchId,
+            ),
           )}
-          {renderSplitDiffCell(row, 'right', `${keyPrefix}-split-right-${index}`, searchClassName)}
+          {renderSplitDiffCell(row, 'right', `${keyPrefix}-split-right-${index}`, highlightClassName)}
         </div>,
       )
       index++
@@ -358,10 +419,16 @@ function renderSplitRows(params: {
       const left = removed[pairIndex] ?? null
       const right = added[pairIndex] ?? null
       const leftClassName = left
-        ? getSearchClassName(searchMatchIds, activeMatchId, left.matchId)
+        ? combineRowClassNames(
+            getSearchClassName(searchMatchIds, activeMatchId, left.matchId),
+            getNavClassName(navMatchIds, activeNavMatchId, left.matchId),
+          )
         : ''
       const rightClassName = right
-        ? getSearchClassName(searchMatchIds, activeMatchId, right.matchId)
+        ? combineRowClassNames(
+            getSearchClassName(searchMatchIds, activeMatchId, right.matchId),
+            getNavClassName(navMatchIds, activeNavMatchId, right.matchId),
+          )
         : ''
 
       splitNodes.push(
@@ -372,7 +439,12 @@ function renderSplitRows(params: {
             `${keyPrefix}-split-pair-left-${index}-${pairIndex}`,
             leftClassName,
             left
-              ? maybeRegisterSearchRowRef(registerSearchRowRef, searchMatchIds, left.matchId)
+              ? maybeRegisterSearchRowRef(
+                  registerSearchRowRef,
+                  searchMatchIds,
+                  navMatchIds,
+                  left.matchId,
+                )
               : undefined,
           )}
           {renderSplitDiffCell(
@@ -381,7 +453,12 @@ function renderSplitRows(params: {
             `${keyPrefix}-split-pair-right-${index}-${pairIndex}`,
             rightClassName,
             right
-              ? maybeRegisterSearchRowRef(registerSearchRowRef, searchMatchIds, right.matchId)
+              ? maybeRegisterSearchRowRef(
+                  registerSearchRowRef,
+                  searchMatchIds,
+                  navMatchIds,
+                  right.matchId,
+                )
               : undefined,
           )}
         </div>,
@@ -408,6 +485,8 @@ export function RichDiffViewer({
   keyPrefix,
   searchMatchIds,
   activeMatchId,
+  navMatchIds,
+  activeNavMatchId,
   registerSearchRowRef,
   omittedSections,
   splitHeaderLabels,
@@ -419,7 +498,8 @@ export function RichDiffViewer({
     setVisibleItemsCount(initialVisibleItems)
   }, [initialVisibleItems, items.length, keyPrefix, layout])
 
-  const shouldRenderAllItems = (searchMatchIds?.size ?? 0) > 0
+  const shouldRenderAllItems =
+    (searchMatchIds?.size ?? 0) > 0 || (navMatchIds?.size ?? 0) > 0
   const renderedItems = useMemo(() => {
     if (shouldRenderAllItems) {
       return items
@@ -436,6 +516,8 @@ export function RichDiffViewer({
             keyPrefix,
             searchMatchIds,
             activeMatchId,
+            navMatchIds,
+            activeNavMatchId,
             registerSearchRowRef,
             omittedSections,
             splitHeaderLabels,
@@ -460,6 +542,8 @@ export function RichDiffViewer({
             keyPrefix,
             searchMatchIds,
             activeMatchId,
+            navMatchIds,
+            activeNavMatchId,
             registerSearchRowRef,
             omittedSections,
           })}

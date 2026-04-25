@@ -1,6 +1,6 @@
 # xdiff
 
-A general-purpose diff tool for JSON, plain text, and folders. Inspired by WinMerge and built in Go.
+A general-purpose diff tool for JSON, plain text, and folders, built in Go.
 
 ## Overview
 
@@ -249,7 +249,7 @@ Machine-readable output (`--output-format json`):
 
 ## Desktop App
 
-A WinMerge-style desktop GUI lives under `apps/desktop/`. See `apps/desktop/README.md` for setup and the supported JSON / text / folder compare workflows.
+An interactive desktop GUI lives under `apps/desktop/`. See `apps/desktop/README.md` for setup and the supported JSON / text / folder compare workflows.
 
 ## Development
 

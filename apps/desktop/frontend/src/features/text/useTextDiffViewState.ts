@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CompareResponse } from '../../types'
 import {
   buildRichDiffItems,
+  buildTextDiffBlocks,
   buildTextSearchMatches,
   normalizeSearchQuery,
   parseUnifiedDiff,
@@ -30,6 +31,7 @@ export function useTextDiffViewState({
   >([])
   const [textSearchQuery, setTextSearchQuery] = useState('')
   const [textActiveSearchIndex, setTextActiveSearchIndex] = useState(0)
+  const [textActiveDiffIndex, setTextActiveDiffIndex] = useState(0)
   const textSearchRowRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const textRichRows = useMemo(
@@ -51,6 +53,11 @@ export function useTextDiffViewState({
     [textRichItems, normalizedTextSearchQuery],
   )
   const activeTextSearchMatch = textSearchMatches[textActiveSearchIndex] ?? null
+  const textDiffBlocks = useMemo(
+    () => (textRichItems ? buildTextDiffBlocks(textRichItems) : []),
+    [textRichItems],
+  )
+  const activeTextDiffBlock = textDiffBlocks[textActiveDiffIndex] ?? null
   const omittedSectionIds = useMemo(
     () =>
       textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
@@ -117,6 +124,34 @@ export function useTextDiffViewState({
   ])
 
   useEffect(() => {
+    setTextActiveDiffIndex(0)
+  }, [textRichItems])
+
+  useEffect(() => {
+    if (textDiffBlocks.length === 0) {
+      if (textActiveDiffIndex !== 0) {
+        setTextActiveDiffIndex(0)
+      }
+      return
+    }
+
+    if (textActiveDiffIndex >= textDiffBlocks.length) {
+      setTextActiveDiffIndex(0)
+    }
+  }, [textDiffBlocks.length, textActiveDiffIndex])
+
+  useEffect(() => {
+    if (textResultView !== 'diff' || !canRenderTextRich || !activeTextDiffBlock) {
+      return
+    }
+
+    const node = textSearchRowRefs.current[activeTextDiffBlock.id]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [activeTextDiffBlock?.id, canRenderTextRich, textDiffLayout, textResultView])
+
+  useEffect(() => {
     setTextExpandedUnchangedSectionIds((prev) =>
       prev.filter((id) => omittedSectionIds.includes(id)),
     )
@@ -159,6 +194,22 @@ export function useTextDiffViewState({
     )
   }
 
+  const moveTextDiff = (direction: 1 | -1) => {
+    if (!canRenderTextRich || textDiffBlocks.length === 0) {
+      return
+    }
+
+    if (textResultView !== 'diff') {
+      setTextResultView('diff')
+    }
+
+    setTextActiveDiffIndex((prev) =>
+      direction === 1
+        ? (prev + 1) % textDiffBlocks.length
+        : (prev - 1 + textDiffBlocks.length) % textDiffBlocks.length,
+    )
+  }
+
   const toggleTextUnchangedSection = (sectionId: string) => {
     setTextExpandedUnchangedSectionIds((prev) =>
       prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
@@ -191,5 +242,9 @@ export function useTextDiffViewState({
     moveTextSearch,
     toggleTextUnchangedSection,
     toggleAllTextUnchangedSections,
+    textDiffBlocks,
+    textActiveDiffIndex,
+    activeTextDiffBlock,
+    moveTextDiff,
   }
 }

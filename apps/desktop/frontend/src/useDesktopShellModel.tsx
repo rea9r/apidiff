@@ -144,6 +144,10 @@ export function useDesktopShellModel({
         toggleAllTextUnchangedSections: textViewState.toggleAllTextUnchangedSections,
         isTextSectionExpanded: textViewState.isTextSectionExpanded,
         registerTextSearchRowRef: textViewState.registerTextSearchRowRef,
+        textDiffBlocks: textViewState.textDiffBlocks,
+        textActiveDiffIndex: textViewState.textActiveDiffIndex,
+        activeTextDiffBlock: textViewState.activeTextDiffBlock,
+        moveTextDiff: textViewState.moveTextDiff,
       }}
       jsonSourceProps={{
         oldSourcePath: jsonWorkflow.jsonOldSourcePath,

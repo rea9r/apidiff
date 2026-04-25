@@ -1363,6 +1363,19 @@ button {
   scroll-margin-block: 80px;
 }
 
+.text-diff-row.active-diff-hit,
+.split-diff-cell.active-diff-hit {
+  box-shadow: inset 4px 0 0 0 var(--xdiff-search-hit-active-border);
+  scroll-margin-block: 80px;
+}
+
+.text-diff-row.active-search-hit.active-diff-hit,
+.split-diff-cell.active-search-hit.active-diff-hit {
+  box-shadow:
+    inset 0 0 0 2px var(--xdiff-search-hit-active-border),
+    inset 4px 0 0 0 var(--xdiff-search-hit-active-border);
+}
+
 .text-diff-row.meta,
 .text-diff-row.hunk {
   background: var(--xdiff-viewer-surface-subtle);

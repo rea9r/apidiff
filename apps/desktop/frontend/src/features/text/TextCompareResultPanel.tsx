@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import type { CompareResponse } from '../../types'
 import { renderResult } from '../../utils/appHelpers'
+import { CompareDiffNavControls } from '../../ui/CompareDiffNavControls'
 import { CompareResultToolbar } from '../../ui/CompareResultToolbar'
 import { CompareSearchControls } from '../../ui/CompareSearchControls'
 import {
@@ -14,6 +16,7 @@ import { RichDiffViewer } from '../../ui/RichDiffViewer'
 import {
   summarizeTextDiffCounts,
   type RichDiffItem,
+  type TextDiffBlock,
   type TextSearchMatch,
   type UnifiedDiffRow,
 } from './textDiff'
@@ -42,6 +45,10 @@ export type TextCompareResultPanelProps = {
   toggleAllTextUnchangedSections: () => void
   isTextSectionExpanded: (sectionId: string) => boolean
   registerTextSearchRowRef: (matchId: string) => (node: HTMLDivElement | null) => void
+  textDiffBlocks: TextDiffBlock[]
+  textActiveDiffIndex: number
+  activeTextDiffBlock: TextDiffBlock | null
+  moveTextDiff: (direction: 1 | -1) => void
 }
 
 function buildTextSummaryBadgeItems(params: {
@@ -96,6 +103,10 @@ export function TextCompareResultPanel({
   toggleAllTextUnchangedSections,
   isTextSectionExpanded,
   registerTextSearchRowRef,
+  textDiffBlocks,
+  textActiveDiffIndex,
+  activeTextDiffBlock,
+  moveTextDiff,
 }: TextCompareResultPanelProps) {
   const raw = textResult ? renderResult(textResult) : ''
   const hasTextResult = !!textResult
@@ -116,6 +127,35 @@ export function TextCompareResultPanel({
     : null
   const textSearchMatchIds = new Set(textSearchMatches.map((match) => match.id))
   const activeTextSearchMatchId = textSearchMatches[textActiveSearchIndex]?.id ?? null
+  const textDiffBlockIds = new Set(textDiffBlocks.map((block) => block.id))
+  const activeTextDiffBlockId = activeTextDiffBlock?.id ?? null
+  const moveTextDiffRef = useRef(moveTextDiff)
+  moveTextDiffRef.current = moveTextDiff
+
+  useEffect(() => {
+    if (!canRenderTextRich || textDiffBlocks.length === 0) {
+      return
+    }
+
+    const handler = (event: KeyboardEvent) => {
+      if (!event.altKey || event.metaKey || event.ctrlKey) {
+        return
+      }
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      if (target && target.tagName === 'INPUT') {
+        return
+      }
+
+      event.preventDefault()
+      moveTextDiffRef.current(event.key === 'ArrowDown' ? 1 : -1)
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [canRenderTextRich, textDiffBlocks.length])
 
   return (
     <CompareResultShell
@@ -123,28 +163,37 @@ export function TextCompareResultPanel({
       toolbar={
         <CompareResultToolbar
           primary={
-            <CompareSearchControls
-              value={textSearchQuery}
-              placeholder="Search diff"
-              statusText={textSearchStatus}
-              disabled={!canSearchRich}
-              onChange={setTextSearchQuery}
-              onPrev={() => moveTextSearch(-1)}
-              onNext={() => moveTextSearch(1)}
-              prevDisabled={!canSearchRich || textSearchMatches.length === 0}
-              nextDisabled={!canSearchRich || textSearchMatches.length === 0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  moveTextSearch(e.shiftKey ? -1 : 1)
-                  return
-                }
+            <>
+              <CompareSearchControls
+                value={textSearchQuery}
+                placeholder="Search diff"
+                statusText={textSearchStatus}
+                disabled={!canSearchRich}
+                onChange={setTextSearchQuery}
+                onPrev={() => moveTextSearch(-1)}
+                onNext={() => moveTextSearch(1)}
+                prevDisabled={!canSearchRich || textSearchMatches.length === 0}
+                nextDisabled={!canSearchRich || textSearchMatches.length === 0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    moveTextSearch(e.shiftKey ? -1 : 1)
+                    return
+                  }
 
-                if (e.key === 'Escape') {
-                  setTextSearchQuery('')
-                }
-              }}
-            />
+                  if (e.key === 'Escape') {
+                    setTextSearchQuery('')
+                  }
+                }}
+              />
+              <CompareDiffNavControls
+                count={textDiffBlocks.length}
+                activeIndex={textActiveDiffIndex}
+                onPrev={() => moveTextDiff(-1)}
+                onNext={() => moveTextDiff(1)}
+                disabled={!canRenderTextRich}
+              />
+            </>
           }
           summary={<CompareStatusBadges items={textSummaryItems} />}
           secondary={
@@ -232,6 +281,8 @@ export function TextCompareResultPanel({
           keyPrefix="text"
           searchMatchIds={textSearchMatchIds}
           activeMatchId={activeTextSearchMatchId}
+          navMatchIds={textDiffBlockIds}
+          activeNavMatchId={activeTextDiffBlockId}
           registerSearchRowRef={registerTextSearchRowRef}
           omittedSections={{
             isExpanded: isTextSectionExpanded,

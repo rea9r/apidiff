@@ -1,6 +1,6 @@
 # xdiff Desktop
 
-A WinMerge-style desktop GUI for `xdiff`, built with Wails (Go) + React + Mantine.
+An interactive desktop GUI for `xdiff`, built with Wails (Go) + React + Mantine.
 
 ## Supported workflows
 

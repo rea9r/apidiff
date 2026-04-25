@@ -34,6 +34,10 @@ export type TextSearchMatch = {
   sectionId: string | null
 }
 
+export type TextDiffBlock = {
+  id: string
+}
+
 export function shouldHideTextRichMetaRow(row: UnifiedDiffRow): boolean {
   return row.kind === 'meta' && (row.content.startsWith('--- ') || row.content.startsWith('+++ '))
 }
@@ -444,6 +448,28 @@ export function buildRichDiffItems(
 
 export function buildTextSearchRowIDForItem(itemIndex: number): string {
   return `search-row-${itemIndex}`
+}
+
+export function buildTextDiffBlocks(items: RichDiffItem[]): TextDiffBlock[] {
+  const blocks: TextDiffBlock[] = []
+  let inBlock = false
+
+  items.forEach((item, itemIndex) => {
+    const isChange =
+      item.kind === 'row' && (item.row.kind === 'add' || item.row.kind === 'remove')
+
+    if (isChange) {
+      if (!inBlock) {
+        blocks.push({ id: buildTextSearchRowIDForItem(itemIndex) })
+        inBlock = true
+      }
+      return
+    }
+
+    inBlock = false
+  })
+
+  return blocks
 }
 
 export function buildTextSearchRowIDForOmitted(sectionId: string, lineIndex: number): string {

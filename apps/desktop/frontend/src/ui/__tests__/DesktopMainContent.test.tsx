@@ -51,6 +51,10 @@ const textResultProps = {
   toggleAllTextUnchangedSections: noop,
   isTextSectionExpanded: () => false,
   registerTextSearchRowRef: () => noop,
+  textDiffBlocks: [],
+  textActiveDiffIndex: 0,
+  activeTextDiffBlock: null,
+  moveTextDiff: noop,
 }
 
 const jsonSourceProps = {
