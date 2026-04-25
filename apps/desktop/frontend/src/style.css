@@ -118,6 +118,19 @@
   --xdiff-folder-cell-padding-x: var(--xdiff-row-padding-x);
 }
 
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-body: #EFF2F7;
+
+  --xdiff-viewer-border: #D6DAE2;
+  --xdiff-viewer-border-strong: #B5BBC7;
+  --xdiff-viewer-surface: #F7F9FC;
+  --xdiff-viewer-surface-subtle: #EFF2F7;
+  --xdiff-viewer-surface-muted: #E2E5EC;
+  --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
+  --xdiff-viewer-input-bg: #DAE0E8;
+  --xdiff-viewer-code-bg: #E8EBF1;
+}
+
 :root[data-mantine-color-scheme='dark'] {
   --mantine-color-body: #26282C;
 
