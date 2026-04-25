@@ -23,11 +23,12 @@
   /* Surface & border */
   --xdiff-viewer-border: var(--mantine-color-gray-3);
   --xdiff-viewer-border-strong: var(--mantine-color-gray-4);
-  --xdiff-viewer-surface: var(--mantine-color-body);
-  --xdiff-viewer-surface-subtle: var(--mantine-color-gray-0);
-  --xdiff-viewer-surface-muted: var(--mantine-color-gray-1);
+  --xdiff-viewer-surface: var(--mantine-color-gray-0);
+  --xdiff-viewer-surface-subtle: var(--mantine-color-gray-1);
+  --xdiff-viewer-surface-muted: var(--mantine-color-gray-2);
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
-  --xdiff-viewer-code-bg: var(--mantine-color-gray-0);
+  --xdiff-viewer-input-bg: var(--mantine-color-body);
+  --xdiff-viewer-code-bg: var(--mantine-color-gray-1);
   --xdiff-viewer-text-dimmed: var(--mantine-color-dimmed);
 
   /* Accent / focus */
@@ -118,14 +119,17 @@
 }
 
 [data-mantine-color-scheme='dark'] {
-  --xdiff-viewer-border: var(--mantine-color-dark-4);
-  --xdiff-viewer-border-strong: var(--mantine-color-dark-3);
-  --xdiff-viewer-surface: var(--mantine-color-dark-6);
-  --xdiff-viewer-surface-subtle: var(--mantine-color-dark-7);
-  --xdiff-viewer-surface-muted: var(--mantine-color-dark-8);
+  --mantine-color-body: #1E1F22;
+
+  --xdiff-viewer-border: #393B40;
+  --xdiff-viewer-border-strong: #4E5159;
+  --xdiff-viewer-surface: #2B2D30;
+  --xdiff-viewer-surface-subtle: #26282C;
+  --xdiff-viewer-surface-muted: #1A1C1F;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-4) 12%, transparent);
-  --xdiff-viewer-code-bg: var(--mantine-color-dark-8);
-  --xdiff-viewer-text-dimmed: var(--mantine-color-dark-2);
+  --xdiff-viewer-input-bg: #17181B;
+  --xdiff-viewer-code-bg: #17181B;
+  --xdiff-viewer-text-dimmed: #A0A4AB;
 
   --xdiff-accent: var(--mantine-color-blue-4);
   --xdiff-accent-strong: var(--mantine-color-blue-5);
@@ -418,6 +422,22 @@ select {
   font-size: var(--xdiff-control-font-size);
 }
 
+/* Mantine default input variant — wire to xdiff input-bg token. */
+.mantine-Input-input,
+.mantine-InputBase-input {
+  --input-bg: var(--xdiff-viewer-input-bg);
+  --input-bd: var(--xdiff-viewer-border);
+  background: var(--xdiff-viewer-input-bg);
+  border-color: var(--xdiff-viewer-border);
+}
+
+.mantine-Input-input:focus,
+.mantine-Input-input:focus-within,
+.mantine-InputBase-input:focus,
+.mantine-InputBase-input:focus-within {
+  border-color: var(--xdiff-accent);
+}
+
 button {
   padding: var(--xdiff-control-padding-y) var(--xdiff-control-padding-x);
   font-size: var(--xdiff-control-font-size);
@@ -443,16 +463,6 @@ button {
   display: flex;
   gap: var(--xdiff-toolbar-gap);
   flex-wrap: wrap;
-}
-
-.path-row {
-  display: flex;
-  gap: var(--xdiff-toolbar-gap);
-  align-items: center;
-}
-
-.path-row input {
-  flex: 1;
 }
 
 .options-panel {
@@ -739,9 +749,10 @@ button {
 
 .compare-code-input-shell {
   position: relative;
-  border: 1px solid var(--xdiff-viewer-border-strong);
+  height: 220px;
+  border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface);
+  background: var(--xdiff-viewer-input-bg);
   overflow: hidden;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -752,8 +763,9 @@ button {
 }
 
 .compare-code-input-body {
-  min-height: 220px;
-  background: color-mix(in srgb, var(--xdiff-viewer-surface) 92%, var(--xdiff-viewer-surface-subtle));
+  height: 100%;
+  min-height: 0;
+  background: transparent;
 }
 
 .compare-code-input-placeholder {
@@ -780,13 +792,13 @@ button {
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--xdiff-viewer-text-dimmed);
-  background: color-mix(in srgb, var(--xdiff-viewer-surface-subtle) 84%, transparent);
+  background: var(--xdiff-viewer-surface-subtle);
   border: 1px solid var(--xdiff-viewer-border);
 }
 
 .compare-code-input-body .cm-editor {
   height: 100%;
-  background: var(--xdiff-viewer-surface);
+  background: transparent;
 }
 
 .compare-code-input-body .cm-scroller {
@@ -804,17 +816,25 @@ button {
 }
 
 .compare-code-input-meta {
-  min-height: 18px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.compare-code-input-helper,
+.compare-code-input-error {
+  font-size: var(--xdiff-text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .compare-code-input-helper {
-  margin-top: var(--xdiff-space-2);
-  font-size: var(--xdiff-text-sm);
   color: var(--xdiff-viewer-text-dimmed);
 }
 
 .compare-code-input-error {
-  font-size: var(--xdiff-text-sm);
   color: var(--xdiff-diff-remove-fg);
 }
 
@@ -1011,8 +1031,8 @@ button {
   padding: 0 var(--xdiff-space-3);
   box-sizing: border-box;
   border-radius: var(--xdiff-radius-sm);
-  border: 1px solid var(--xdiff-viewer-border-strong);
-  background: var(--xdiff-viewer-surface);
+  border: 1px solid var(--xdiff-viewer-border);
+  background: var(--xdiff-viewer-input-bg);
   color: inherit;
 }
 
@@ -1076,7 +1096,7 @@ button {
   overflow: auto;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface);
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1602,7 +1622,7 @@ button {
   min-width: 0;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface);
+  background: var(--xdiff-viewer-input-bg);
   padding: var(--xdiff-space-2) var(--xdiff-space-3);
   cursor: pointer;
   outline: none;
@@ -1935,7 +1955,7 @@ button {
 .folder-detail-card {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface);
+  background: transparent;
   padding: var(--xdiff-space-3) var(--xdiff-space-4);
   display: flex;
   flex-direction: column;
@@ -1967,7 +1987,7 @@ button {
   overflow: auto;
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-surface);
+  background: transparent;
 }
 
 .folder-summary-title {
@@ -1998,14 +2018,6 @@ button {
 
 .folder-action-reason {
   font-size: var(--xdiff-text-sm);
-}
-
-@media (max-width: 1100px) {
-  .path-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
 }
 
 @media (max-width: 900px) {

@@ -106,10 +106,15 @@ export function CompareCodeInputBody({
       </div>
       <div className="compare-code-input-meta">
         {!parseError ? (
-          <div className="compare-code-input-helper">{resolvedHelperText}</div>
+          <div className="compare-code-input-helper" title={resolvedHelperText}>
+            {resolvedHelperText}
+          </div>
         ) : null}
         {parseError ? (
-          <div className="compare-code-input-error">
+          <div
+            className="compare-code-input-error"
+            title={`Invalid JSON: ${parseError}`}
+          >
             Invalid JSON: {parseError}
           </div>
         ) : null}
