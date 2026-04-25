@@ -747,19 +747,22 @@ button {
   flex: 1;
 }
 
-.compare-code-input-shell {
-  position: relative;
-  height: 220px;
+:where(.compare-code-input-shell, .text-editor) {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
   background: var(--xdiff-viewer-input-bg);
-  overflow: hidden;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.compare-code-input-shell:focus-within {
+:where(.compare-code-input-shell, .text-editor):focus-within {
   border-color: var(--xdiff-accent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--xdiff-accent) 45%, transparent);
+}
+
+.compare-code-input-shell {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
 }
 
 .compare-code-input-body {
@@ -985,6 +988,8 @@ button {
   font-size: var(--xdiff-mono-font-size);
   line-height: var(--xdiff-mono-line-height);
   white-space: pre;
+  color: inherit;
+  outline: none;
 }
 
 .compare-result-shell {
