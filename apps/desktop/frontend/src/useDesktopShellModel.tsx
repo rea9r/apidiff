@@ -175,6 +175,8 @@ export function useDesktopShellModel({
         setJSONResultView: jsonViewState.setJSONResultView,
         textDiffLayout: textViewState.textDiffLayout,
         setTextDiffLayout: textViewState.setTextDiffLayout,
+        textWrap: textViewState.textWrap,
+        setTextWrap: textViewState.setTextWrap,
         jsonSearchQuery: jsonViewState.jsonSearchQuery,
         setJSONSearchQuery: jsonViewState.setJSONSearchQuery,
         jsonActiveSearchIndex: jsonViewState.jsonActiveSearchIndex,

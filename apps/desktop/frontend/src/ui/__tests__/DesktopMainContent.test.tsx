@@ -84,6 +84,8 @@ const jsonResultProps = {
   setJSONResultView: noop,
   textDiffLayout: 'unified' as const,
   setTextDiffLayout: noop,
+  textWrap: true,
+  setTextWrap: noop,
   jsonSearchQuery: '',
   setJSONSearchQuery: noop,
   jsonActiveSearchIndex: 0,

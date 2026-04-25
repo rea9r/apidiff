@@ -26,6 +26,8 @@ export type JSONCompareResultPanelProps = {
   setJSONResultView: (value: 'diff' | 'semantic' | 'raw') => void
   textDiffLayout: 'split' | 'unified'
   setTextDiffLayout: (value: 'split' | 'unified') => void
+  textWrap: boolean
+  setTextWrap: (value: boolean) => void
   jsonSearchQuery: string
   setJSONSearchQuery: (value: string) => void
   jsonActiveSearchIndex: number
@@ -228,6 +230,8 @@ export function JSONCompareResultPanel({
   setJSONResultView,
   textDiffLayout,
   setTextDiffLayout,
+  textWrap,
+  setTextWrap,
   jsonSearchQuery,
   setJSONSearchQuery,
   jsonActiveSearchIndex,
@@ -420,6 +424,13 @@ export function JSONCompareResultPanel({
                         disabled: jsonResultView !== 'diff' || !canRenderJSONDiff,
                         onSelect: () => setTextDiffLayout('unified'),
                       },
+                      {
+                        key: 'json-layout-wrap',
+                        label: 'Wrap lines',
+                        active: textWrap,
+                        disabled: jsonResultView !== 'diff' || !canRenderJSONDiff,
+                        onSelect: () => setTextWrap(!textWrap),
+                      },
                     ],
                   },
                 ]}
@@ -433,6 +444,7 @@ export function JSONCompareResultPanel({
         <RichDiffViewer
           items={jsonDiffTextItems}
           layout={textDiffLayout}
+          wrap={textWrap}
           keyPrefix="json"
           searchMatchIds={jsonDiffSearchMatchIds}
           activeMatchId={activeJSONDiffSearchMatchId}
