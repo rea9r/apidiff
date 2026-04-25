@@ -120,6 +120,8 @@
 
 :root[data-mantine-color-scheme='light'] {
   --mantine-color-body: #EFF2F7;
+  --mantine-color-default: #EFF2F7;
+  --mantine-color-default-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
 
   --xdiff-viewer-border: #D6DAE2;
   --xdiff-viewer-border-strong: #B5BBC7;
@@ -128,6 +130,7 @@
   --xdiff-viewer-surface-muted: #E2E5EC;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
   --xdiff-viewer-input-bg: #DAE0E8;
+  --xdiff-viewer-textarea-bg: #EFF2F7;
   --xdiff-viewer-code-bg: #E8EBF1;
 }
 
@@ -145,6 +148,7 @@
   --xdiff-viewer-surface-muted: #1A1C1F;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-4) 12%, transparent);
   --xdiff-viewer-input-bg: #17181B;
+  --xdiff-viewer-textarea-bg: #17181B;
   --xdiff-viewer-code-bg: #1E1F22;
   --xdiff-viewer-text-dimmed: #A0A4AB;
 
@@ -831,7 +835,7 @@ button {
 :where(.compare-code-input-shell, .text-editor) {
   border: 1px solid var(--xdiff-viewer-border);
   border-radius: var(--xdiff-radius-md);
-  background: var(--xdiff-viewer-input-bg);
+  background: var(--xdiff-viewer-textarea-bg);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
