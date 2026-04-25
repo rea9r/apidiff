@@ -7,7 +7,6 @@ const initialCommon = {
   textStyle: 'patch',
   ignorePaths: [],
   showPaths: false,
-  noColor: true,
 }
 
 describe('useJSONCompareWorkflow', () => {

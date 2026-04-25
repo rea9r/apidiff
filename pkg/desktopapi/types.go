@@ -5,7 +5,6 @@ type CompareCommon struct {
 	TextStyle    string   `json:"textStyle"`
 	IgnorePaths  []string `json:"ignorePaths"`
 	ShowPaths    bool     `json:"showPaths"`
-	NoColor      bool     `json:"noColor"`
 }
 
 type CompareJSONRequest struct {

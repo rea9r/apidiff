@@ -8,7 +8,6 @@ const initialCommon = {
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  noColor: true,
 }
 
 describe('useTextCompareWorkflow', () => {

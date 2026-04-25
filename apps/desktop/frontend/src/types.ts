@@ -5,7 +5,6 @@ export type CompareCommon = {
   textStyle: string
   ignorePaths: string[]
   showPaths: boolean
-  noColor: boolean
 }
 
 export type CompareResponse = {

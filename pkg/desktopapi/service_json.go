@@ -52,7 +52,6 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	diffReq := req
 	diffReq.Common.OutputFormat = "text"
 	diffReq.Common.TextStyle = "patch"
-	diffReq.Common.NoColor = true
 	diffResult, err := s.CompareJSONFiles(diffReq)
 	if err != nil {
 		return nil, err
@@ -61,7 +60,6 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 	structuredReq := req
 	structuredReq.Common.OutputFormat = output.JSONFormat
 	structuredReq.Common.ShowPaths = false
-	structuredReq.Common.NoColor = true
 
 	structuredResult, err := s.CompareJSONFiles(structuredReq)
 	if err != nil {

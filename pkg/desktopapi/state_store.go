@@ -165,7 +165,6 @@ func normalizeCompareCommon(common CompareCommon, defaults CompareCommon) Compar
 		cleanIgnorePaths = append(cleanIgnorePaths, path)
 	}
 	common.IgnorePaths = cleanIgnorePaths
-	common.NoColor = true
 
 	return common
 }
@@ -224,7 +223,6 @@ func defaultJSONCompareCommon() CompareCommon {
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
 		ShowPaths:    false,
-		NoColor:      true,
 	}
 }
 
@@ -234,6 +232,5 @@ func defaultTextCompareCommon() CompareCommon {
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
 		ShowPaths:    false,
-		NoColor:      true,
 	}
 }

@@ -9,7 +9,6 @@ export const defaultJSONCommon: CompareCommon = {
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  noColor: true,
 }
 
 export const defaultTextCommon: CompareCommon = {
@@ -17,7 +16,6 @@ export const defaultTextCommon: CompareCommon = {
   textStyle: 'auto',
   ignorePaths: [],
   showPaths: false,
-  noColor: true,
 }
 
 function isMode(value: string): value is Mode {
