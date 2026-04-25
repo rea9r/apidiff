@@ -14,7 +14,6 @@ import { StatusBadge } from '../../ui/StatusBadge'
 import {
   canOpenFolderItem,
   folderQuickFilterLabel,
-  formatFolderKindLabel,
   formatFolderSide,
   formatFolderStatusLabel,
   getFolderItemActionReason,
@@ -142,8 +141,7 @@ export function DirectoryCompareResultPanel({
   const visibleCount =
     folderViewMode === 'tree' ? flattenedFolderTreeRows.length : sortedFolderItems.length
   const canCompareFolders = !!folderLeftRoot && !!folderRightRoot
-  const shouldShowFolderDetail =
-    folderViewMode === 'list' && !!selectedFolderItemForDetail
+  const shouldShowFolderDetail = !!selectedFolderItemForDetail
   const selectedListIndex = useMemo(
     () => sortedFolderItems.findIndex((item) => item.relativePath === selectedFolderItemPath),
     [selectedFolderItemPath, sortedFolderItems],
@@ -309,7 +307,11 @@ export function DirectoryCompareResultPanel({
             </div>
           </div>
           <div className="folder-result-toolbar-right">
-            {QUICK_FILTERS.map((filterKey) => (
+            {QUICK_FILTERS.filter((filterKey) => {
+              if (filterKey === 'all' || filterKey === 'changed') return true
+              if (folderQuickFilter === filterKey) return true
+              return folderQuickFilterCounts[filterKey] > 0
+            }).map((filterKey) => (
               <button
                 key={filterKey}
                 type="button"
@@ -602,28 +604,19 @@ export function DirectoryCompareResultPanel({
 
         {shouldShowFolderDetail ? (
           <div className="folder-detail-pane folder-detail-card">
-            <div className="folder-summary-title">Selected Entry</div>
+            <div className="folder-detail-header">
+              <span className="folder-entry-path folder-detail-title">
+                {selectedFolderItemForDetail.relativePath || '(root)'}
+              </span>
+              <StatusBadge tone={toneForFolderStatus(selectedFolderItemForDetail.status)}>
+                {formatFolderStatusLabel(selectedFolderItemForDetail.status)}
+              </StatusBadge>
+            </div>
             <div className="folder-detail-grid">
-              <div className="folder-detail-label">Relative path</div>
-              <div className="folder-entry-path">{selectedFolderItemForDetail.relativePath}</div>
-              <div className="folder-detail-label">Status</div>
-              <div className="folder-status-cell">
-                <StatusBadge tone={toneForFolderStatus(selectedFolderItemForDetail.status)}>
-                  {formatFolderStatusLabel(selectedFolderItemForDetail.status)}
-                </StatusBadge>
-              </div>
               <div className="folder-detail-label">Left path</div>
               <div className="folder-entry-path">{selectedFolderItemForDetail.leftPath || '(missing)'}</div>
               <div className="folder-detail-label">Right path</div>
               <div className="folder-entry-path">{selectedFolderItemForDetail.rightPath || '(missing)'}</div>
-              <div className="folder-detail-label">Left kind</div>
-              <div>{formatFolderKindLabel(selectedFolderItemForDetail.leftKind)}</div>
-              <div className="folder-detail-label">Right kind</div>
-              <div>{formatFolderKindLabel(selectedFolderItemForDetail.rightKind)}</div>
-              <div className="folder-detail-label">Left size</div>
-              <div>{selectedFolderItemForDetail.leftSize}</div>
-              <div className="folder-detail-label">Right size</div>
-              <div>{selectedFolderItemForDetail.rightSize}</div>
               <div className="folder-detail-label">Mode hint</div>
               <div>{selectedFolderItemForDetail.compareModeHint}</div>
               {selectedFolderItemForDetail.message ? (

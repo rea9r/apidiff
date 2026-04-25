@@ -1944,8 +1944,20 @@ button {
 
 .folder-detail-pane {
   min-width: 0;
-  max-height: 220px;
+  max-height: 140px;
   overflow: auto;
+}
+
+.folder-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--xdiff-space-2);
+  margin-bottom: var(--xdiff-space-2);
+}
+
+.folder-detail-title {
+  font-weight: 600;
+  font-size: var(--xdiff-folder-font-size);
 }
 
 .folder-list-tree-viewport {
