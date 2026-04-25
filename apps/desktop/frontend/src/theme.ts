@@ -7,6 +7,27 @@ export const appTheme = createTheme({
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   fontFamilyMonospace:
     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+  spacing: {
+    xs: '4px',
+    sm: '6px',
+    md: '8px',
+    lg: '10px',
+    xl: '12px',
+  },
+  radius: {
+    xs: '2px',
+    sm: '4px',
+    md: '6px',
+    lg: '8px',
+    xl: '12px',
+  },
+  fontSizes: {
+    xs: '11px',
+    sm: '12px',
+    md: '13px',
+    lg: '14px',
+    xl: '16px',
+  },
   colors: {
     diffAdd: [
       '#eefbf1',
