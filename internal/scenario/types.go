@@ -1,15 +1,12 @@
 package scenario
 
 import (
-	"time"
-
 	"github.com/rea9r/xdiff/internal/runner"
 )
 
 const (
 	KindJSON = "json"
 	KindText = "text"
-	KindURL  = "url"
 	KindSpec = "spec"
 
 	StatusOK    = "ok"
@@ -32,8 +29,6 @@ type Defaults struct {
 	OutputFormat string   `yaml:"output_format" json:"output_format"`
 	NoColor      *bool    `yaml:"no_color" json:"no_color"`
 	IgnoreOrder  *bool    `yaml:"ignore_order" json:"ignore_order"`
-	Headers      []string `yaml:"headers" json:"headers"`
-	Timeout      string   `yaml:"timeout" json:"timeout"`
 }
 
 type Check struct {
@@ -49,8 +44,6 @@ type Check struct {
 	OutputFormat string   `yaml:"output_format" json:"output_format"`
 	NoColor      *bool    `yaml:"no_color" json:"no_color"`
 	IgnoreOrder  *bool    `yaml:"ignore_order" json:"ignore_order"`
-	Headers      []string `yaml:"headers" json:"headers"`
-	Timeout      string   `yaml:"timeout" json:"timeout"`
 }
 
 type ResolvedCheck struct {
@@ -59,8 +52,6 @@ type ResolvedCheck struct {
 	Old     string
 	New     string
 	Compare runner.CompareOptions
-	Headers []string
-	Timeout time.Duration
 }
 
 type Result struct {

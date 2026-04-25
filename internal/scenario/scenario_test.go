@@ -3,8 +3,6 @@ package scenario
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,8 +77,6 @@ func TestResolve_MergesDefaults(t *testing.T) {
 			OutputFormat: "json",
 			NoColor:      &noColor,
 			IgnoreOrder:  &ignoreOrder,
-			Headers:      []string{"Authorization: Bearer token"},
-			Timeout:      "3s",
 		},
 		Checks: []Check{{
 			Name: "local-json",
@@ -116,12 +112,6 @@ func TestResolve_MergesDefaults(t *testing.T) {
 	}
 	if !resolved.Compare.IgnoreOrder {
 		t.Fatalf("expected ignore_order=true")
-	}
-	if resolved.Timeout.String() != "3s" {
-		t.Fatalf("unexpected timeout: %s", resolved.Timeout)
-	}
-	if len(resolved.Headers) != 1 || resolved.Headers[0] != "Authorization: Bearer token" {
-		t.Fatalf("unexpected headers: %#v", resolved.Headers)
 	}
 }
 
@@ -178,24 +168,12 @@ paths:
           description: created
 `)
 
-	oldServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"user":{"name":"Taro"}}`))
-	}))
-	defer oldServer.Close()
-	newServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"user":{"name":"Hanako"}}`))
-	}))
-	defer newServer.Close()
-
 	scenarioPath := filepath.Join(tmp, "xdiff.yaml")
 	cfg := Config{
 		Version: 1,
 		Checks: []Check{
 			{Name: "json-check", Kind: KindJSON, Old: filepath.Base(jsonOld), New: filepath.Base(jsonNew)},
 			{Name: "text-check", Kind: KindText, Old: filepath.Base(textOld), New: filepath.Base(textNew)},
-			{Name: "url-check", Kind: KindURL, Old: oldServer.URL, New: newServer.URL},
 			{Name: "spec-check", Kind: KindSpec, Old: filepath.Base(specOld), New: filepath.Base(specNew)},
 		},
 	}
@@ -204,10 +182,10 @@ paths:
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
-	if len(results) != 4 {
+	if len(results) != 3 {
 		t.Fatalf("unexpected results length: %d", len(results))
 	}
-	if summary.Total != 4 {
+	if summary.Total != 3 {
 		t.Fatalf("unexpected total: %d", summary.Total)
 	}
 	if summary.ExitCode != 1 {
@@ -223,9 +201,6 @@ paths:
 	}
 	if byName["json-check"].Status != StatusDiff {
 		t.Fatalf("expected json-check diff, got %s", byName["json-check"].Status)
-	}
-	if byName["url-check"].Status != StatusDiff {
-		t.Fatalf("expected url-check diff, got %s", byName["url-check"].Status)
 	}
 	if byName["spec-check"].Status != StatusDiff {
 		t.Fatalf("expected spec-check diff, got %s", byName["spec-check"].Status)
@@ -393,7 +368,7 @@ func TestRenderJSON_Structure(t *testing.T) {
 }
 
 func TestFilterResolvedChecks_PreservesScenarioOrder(t *testing.T) {
-	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}, {Name: "c", Kind: KindURL}}
+	checks := []ResolvedCheck{{Name: "a", Kind: KindJSON}, {Name: "b", Kind: KindText}, {Name: "c", Kind: KindSpec}}
 
 	filtered, err := FilterResolvedChecks(checks, []string{"c", "a"})
 	if err != nil {
@@ -487,17 +462,10 @@ func TestRenderCheckListText_IncludesTargetSummary(t *testing.T) {
 			Old:  "/tmp/project/scenarios/snapshots/old-user.json",
 			New:  "/tmp/project/scenarios/snapshots/new-user.json",
 		},
-		{
-			Name: "live-user-url",
-			Kind: KindURL,
-			Old:  "https://old.example.com/api/user",
-			New:  "https://new.example.com/api/user",
-		},
 	}
 
 	out := RenderCheckListText(checks, scenarioPath)
 	mustContain(t, out, "- local-user-json (json) snapshots/old-user.json -> snapshots/new-user.json")
-	mustContain(t, out, "- live-user-url (url) https://old.example.com/api/user -> https://new.example.com/api/user")
 }
 
 func TestLoadFile_StrictUnknownField(t *testing.T) {
@@ -516,17 +484,6 @@ checks:
 		t.Fatal("expected error, got nil")
 	}
 	if !strings.Contains(err.Error(), "unknown_field") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestResolve_InvalidTimeout(t *testing.T) {
-	cfg := Config{Version: 1, Checks: []Check{{Name: "c1", Kind: KindURL, Old: "https://old.example.com", New: "https://new.example.com", Timeout: "xyz"}}}
-	_, err := Resolve(cfg, filepath.Join(t.TempDir(), "xdiff.yaml"))
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !strings.Contains(err.Error(), "invalid timeout") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

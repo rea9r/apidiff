@@ -61,13 +61,8 @@ func summarizeCheckTarget(check ResolvedCheck, scenarioPath string) string {
 }
 
 func displayTargets(check ResolvedCheck, scenarioPath string) (string, string) {
-	switch check.Kind {
-	case KindURL:
-		return check.Old, check.New
-	default:
-		baseDir := filepath.Dir(scenarioPath)
-		return relativizePath(baseDir, check.Old), relativizePath(baseDir, check.New)
-	}
+	baseDir := filepath.Dir(scenarioPath)
+	return relativizePath(baseDir, check.Old), relativizePath(baseDir, check.New)
 }
 
 func relativizePath(baseDir, target string) string {

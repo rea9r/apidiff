@@ -18,9 +18,6 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	if !strings.Contains(cmd.Long, "Text comparison") {
 		t.Fatalf("missing Text comparison section in Long help")
 	}
-	if !strings.Contains(cmd.Long, "URL comparison") {
-		t.Fatalf("missing URL comparison section in Long help")
-	}
 	if !strings.Contains(cmd.Long, "OpenAPI comparison") {
 		t.Fatalf("missing OpenAPI comparison section in Long help")
 	}
@@ -93,7 +90,6 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 	}{
 		{name: "json", cmd: newJSONCommand(common, new(int))},
 		{name: "text", cmd: newTextCommand(common, new(int))},
-		{name: "url", cmd: newURLCommand(common, new(int))},
 		{name: "spec", cmd: newSpecCommand(common, new(int))},
 		{name: "run", cmd: newRunCommand(new(int), io.Discard)},
 	}
@@ -122,14 +118,6 @@ func TestIgnoreOrderFlagAvailability(t *testing.T) {
 	}
 	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--ignore-order") {
 		t.Fatal("json help should include --ignore-order")
-	}
-
-	urlCmd := newURLCommand(common, new(int))
-	if urlCmd.Flags().Lookup("ignore-order") == nil {
-		t.Fatal("url command should expose --ignore-order")
-	}
-	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--ignore-order") {
-		t.Fatal("url help should include --ignore-order")
 	}
 
 	textCmd := newTextCommand(common, new(int))
@@ -168,14 +156,6 @@ func TestTextStyleFlagAvailability(t *testing.T) {
 		t.Fatal("json help should include --text-style")
 	}
 
-	urlCmd := newURLCommand(common, new(int))
-	if urlCmd.Flags().Lookup("text-style") == nil {
-		t.Fatal("url command should expose --text-style")
-	}
-	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--text-style") {
-		t.Fatal("url help should include --text-style")
-	}
-
 	textCmd := newTextCommand(common, new(int))
 	if textCmd.Flags().Lookup("text-style") == nil {
 		t.Fatal("text command should expose --text-style")
@@ -204,14 +184,6 @@ func TestShowPathsFlagAvailability(t *testing.T) {
 	}
 	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--show-paths") {
 		t.Fatal("json help should include --show-paths")
-	}
-
-	urlCmd := newURLCommand(common, new(int))
-	if urlCmd.Flags().Lookup("show-paths") == nil {
-		t.Fatal("url command should expose --show-paths")
-	}
-	if !strings.Contains(urlCmd.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("url help should include --show-paths")
 	}
 
 	textCmd := newTextCommand(common, new(int))

@@ -1,7 +1,6 @@
 package scenario
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rea9r/xdiff/internal/openapi"
@@ -62,17 +61,6 @@ func runCheck(check ResolvedCheck) Result {
 			OldPath:        check.Old,
 			NewPath:        check.New,
 		}))
-
-	case KindURL:
-		load := func(rawURL string) runner.ValueLoader {
-			return func(ctx context.Context) (any, error) {
-				return source.LoadJSONURL(ctx, rawURL, source.HTTPOptions{
-					Headers: check.Headers,
-					Timeout: check.Timeout,
-				})
-			}
-		}
-		return resultFromRun(check, runner.RunJSONLoadersDetailed(load(check.Old), load(check.New), check.Compare))
 
 	case KindSpec:
 		oldSpec, err := source.LoadOpenAPISpecFile(check.Old)

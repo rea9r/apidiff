@@ -3,7 +3,6 @@ package scenario
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/rea9r/xdiff/internal/output"
 	"github.com/rea9r/xdiff/internal/runner"
@@ -35,7 +34,7 @@ func Resolve(cfg Config, scenarioPath string) ([]ResolvedCheck, error) {
 
 func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck, error) {
 	if !isSupportedKind(check.Kind) {
-		return ResolvedCheck{}, fmt.Errorf("unsupported kind %q (allowed: json, text, url, spec)", check.Kind)
+		return ResolvedCheck{}, fmt.Errorf("unsupported kind %q (allowed: json, text, spec)", check.Kind)
 	}
 	if check.Old == "" || check.New == "" {
 		return ResolvedCheck{}, fmt.Errorf("old and new are required")
@@ -44,8 +43,8 @@ func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck
 	resolved := ResolvedCheck{
 		Name: check.Name,
 		Kind: check.Kind,
-		Old:  check.Old,
-		New:  check.New,
+		Old:  resolveLocalPath(baseDir, check.Old),
+		New:  resolveLocalPath(baseDir, check.New),
 		Compare: runner.CompareOptions{
 			Format:       firstNonEmpty(check.OutputFormat, defaults.OutputFormat, output.TextFormat),
 			FailOn:       firstNonEmpty(check.FailOn, defaults.FailOn, runner.FailOnAny),
@@ -56,21 +55,6 @@ func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck
 			UseColor:     !firstBool(check.NoColor, defaults.NoColor, false),
 			IgnoreOrder:  firstBool(check.IgnoreOrder, defaults.IgnoreOrder, false),
 		},
-		Headers: firstSlice(check.Headers, defaults.Headers),
-	}
-
-	timeoutRaw := firstNonEmpty(check.Timeout, defaults.Timeout)
-	if timeoutRaw != "" {
-		timeout, err := time.ParseDuration(timeoutRaw)
-		if err != nil {
-			return ResolvedCheck{}, fmt.Errorf("invalid timeout %q: %w", timeoutRaw, err)
-		}
-		resolved.Timeout = timeout
-	}
-
-	if check.Kind != KindURL {
-		resolved.Old = resolveLocalPath(baseDir, check.Old)
-		resolved.New = resolveLocalPath(baseDir, check.New)
 	}
 
 	return resolved, nil
@@ -78,7 +62,7 @@ func resolveCheck(defaults Defaults, check Check, baseDir string) (ResolvedCheck
 
 func isSupportedKind(kind string) bool {
 	switch kind {
-	case KindJSON, KindText, KindURL, KindSpec:
+	case KindJSON, KindText, KindSpec:
 		return true
 	default:
 		return false

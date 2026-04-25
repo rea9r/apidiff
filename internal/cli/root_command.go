@@ -16,9 +16,6 @@ JSON comparison
 Text comparison
   Compare two local plain-text files.
 
-URL comparison
-  Compare JSON response bodies from two endpoints.
-
 OpenAPI comparison
   Compare contract-level changes between two OpenAPI specs.
 
@@ -34,22 +31,16 @@ const rootHelpExamples = `  # Local JSON comparison
   # Plain text comparison
   xdiff text before.txt after.txt
 
-  # URL comparison
-  xdiff url https://old.example.com/api https://new.example.com/api
-
   # OpenAPI comparison
   xdiff spec --fail-on breaking old-openapi.yaml new-openapi.yaml
 
   # Scenario mode
-  xdiff run xdiff.yaml
-
-  # CI usage
-  xdiff url --output-format json --fail-on breaking https://old.example.com/api https://new.example.com/api`
+  xdiff run xdiff.yaml`
 
 func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "xdiff",
-		Short:         "Compare JSON/text files, URL responses, and OpenAPI specs",
+		Short:         "Compare JSON/text files and OpenAPI specs",
 		Long:          rootHelpLong,
 		Example:       rootHelpExamples,
 		SilenceUsage:  true,
@@ -75,7 +66,6 @@ func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	commonFlags := newCommonFlags(stdout)
 	root.AddCommand(newJSONCommand(commonFlags, exitCode))
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
-	root.AddCommand(newURLCommand(commonFlags, exitCode))
 	root.AddCommand(newSpecCommand(commonFlags, exitCode))
 	root.AddCommand(newRunCommand(exitCode, stdout))
 	return root

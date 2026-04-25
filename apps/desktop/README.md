@@ -59,7 +59,6 @@ This app is an experimental desktop GUI for xdiff.
 
 Not included yet:
 
-- URL compare GUI
 - Packaging/distribution
 
 ## Prerequisites
