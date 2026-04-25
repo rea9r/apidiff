@@ -51,7 +51,6 @@ func TestDesktopStateStoreSaveLoadRoundtrip(t *testing.T) {
 	input.Folder.LeftRoot = "/tmp/left"
 	input.Folder.RightRoot = "/tmp/right"
 	input.Folder.ViewMode = "tree"
-	input.Scenario.ScenarioPath = "/tmp/xdiff.yaml"
 	input.JSONRecentPairs = []DesktopRecentPair{
 		{OldPath: "/a.json", NewPath: "/b.json", UsedAt: "2026-01-01T00:00:00Z"},
 	}
@@ -105,7 +104,6 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	input.LastUsedMode = "unknown"
 	input.Text.DiffLayout = "grid"
 	input.Folder.ViewMode = "matrix"
-	input.Scenario.ReportFormat = "xml"
 	input.JSON.Common.OutputFormat = "yaml"
 	input.JSON.Common.TextStyle = "invalid"
 	input.JSON.Common.FailOn = "wat"
@@ -124,9 +122,6 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	}
 	if normalized.Folder.ViewMode != "list" {
 		t.Fatalf("folder.viewMode = %q, want list", normalized.Folder.ViewMode)
-	}
-	if normalized.Scenario.ReportFormat != "text" {
-		t.Fatalf("scenario.reportFormat = %q, want text", normalized.Scenario.ReportFormat)
 	}
 	if normalized.JSON.Common.OutputFormat != "text" {
 		t.Fatalf("json.common.outputFormat = %q, want text", normalized.JSON.Common.OutputFormat)

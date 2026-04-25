@@ -65,17 +65,9 @@ type UseDesktopPersistenceOptions = {
     setViewMode: StateSetter<DesktopState['folder']['viewMode']>
     setRecentPairs: StateSetter<DesktopState['folderRecentPairs']>
   }
-  scenario: {
-    path: string
-    reportFormat: DesktopState['scenario']['reportFormat']
-    recentPaths: DesktopState['scenarioRecentPaths']
-    setPath: StateSetter<string>
-    setReportFormat: StateSetter<DesktopState['scenario']['reportFormat']>
-    setRecentPaths: StateSetter<DesktopState['scenarioRecentPaths']>
-  }
 }
 
-const APP_MODES: Mode[] = ['text', 'json', 'folder', 'scenario']
+const APP_MODES: Mode[] = ['text', 'json', 'folder']
 
 function isMode(value: string): value is Mode {
   return APP_MODES.includes(value as Mode)
@@ -90,7 +82,6 @@ export function useDesktopPersistence({
   json,
   text,
   folder,
-  scenario,
 }: UseDesktopPersistenceOptions) {
   const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
@@ -138,15 +129,6 @@ export function useDesktopPersistence({
     setRecentPairs: setFolderRecentPairs,
   } = folder
 
-  const {
-    path: scenarioPath,
-    reportFormat,
-    recentPaths: scenarioRecentPaths,
-    setPath: setScenarioPath,
-    setReportFormat,
-    setRecentPaths: setScenarioRecentPaths,
-  } = scenario
-
   useEffect(() => {
     let active = true
 
@@ -184,13 +166,9 @@ export function useDesktopPersistence({
         setFolderCurrentPath(saved.folder.currentPath || '')
         setFolderViewMode(saved.folder.viewMode === 'tree' ? 'tree' : 'list')
 
-        setScenarioPath(saved.scenario.scenarioPath || '')
-        setReportFormat(saved.scenario.reportFormat === 'json' ? 'json' : 'text')
-
         setJSONRecentPairs(saved.jsonRecentPairs ?? [])
         setTextRecentPairs(saved.textRecentPairs ?? [])
         setFolderRecentPairs(saved.folderRecentPairs ?? [])
-        setScenarioRecentPaths(saved.scenarioRecentPaths ?? [])
 
         if (loadTextFile) {
           const safeLoad = async (path: string): Promise<string> => {
@@ -254,9 +232,6 @@ export function useDesktopPersistence({
     setJSONOldText,
     setJSONRecentPairs,
     setMode,
-    setReportFormat,
-    setScenarioPath,
-    setScenarioRecentPaths,
     setTextCommon,
     setTextDiffLayout,
     setTextNew,
@@ -293,14 +268,9 @@ export function useDesktopPersistence({
           currentPath: folderCurrentPath,
           viewMode: folderViewMode,
         },
-        scenario: {
-          scenarioPath,
-          reportFormat,
-        },
         jsonRecentPairs,
         textRecentPairs,
         folderRecentPairs,
-        scenarioRecentPaths,
       }
 
       void saveDesktopState(state).catch(() => {
@@ -324,10 +294,7 @@ export function useDesktopPersistence({
     jsonOldSourcePath,
     jsonRecentPairs,
     mode,
-    reportFormat,
     saveDesktopState,
-    scenarioPath,
-    scenarioRecentPaths,
     textCommon,
     textDiffLayout,
     textNewSourcePath,

@@ -1,7 +1,6 @@
 import type {
   DesktopRecentFolderPair,
   DesktopRecentPair,
-  DesktopRecentScenarioPath,
 } from './types'
 
 const MAX_RECENT_ENTRIES = 10
@@ -58,28 +57,6 @@ export function upsertRecentFolderPair(
         item.currentPath === currentPath &&
         item.viewMode === viewMode
       ),
-  )
-  return [updated, ...deduped].slice(0, MAX_RECENT_ENTRIES)
-}
-
-export function upsertRecentScenarioPath(
-  prev: DesktopRecentScenarioPath[],
-  next: DesktopRecentScenarioPath,
-): DesktopRecentScenarioPath[] {
-  const path = trimValue(next.path)
-  const reportFormat = next.reportFormat === 'json' ? 'json' : 'text'
-  if (!path) {
-    return prev
-  }
-
-  const updated: DesktopRecentScenarioPath = {
-    path,
-    reportFormat,
-    usedAt: next.usedAt,
-  }
-
-  const deduped = prev.filter(
-    (item) => !(item.path === path && item.reportFormat === reportFormat),
   )
   return [updated, ...deduped].slice(0, MAX_RECENT_ENTRIES)
 }

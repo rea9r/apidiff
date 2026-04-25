@@ -106,9 +106,6 @@ func defaultDesktopState() DesktopState {
 		Folder: DesktopFolderSession{
 			ViewMode: "list",
 		},
-		Scenario: DesktopScenarioSession{
-			ReportFormat: "text",
-		},
 	}
 }
 
@@ -117,7 +114,7 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 
 	state.Version = desktopStateVersion
 	switch state.LastUsedMode {
-	case "json", "text", "folder", "scenario":
+	case "json", "text", "folder":
 	default:
 		state.LastUsedMode = defaults.LastUsedMode
 	}
@@ -140,15 +137,9 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 		state.Folder.ViewMode = defaults.Folder.ViewMode
 	}
 
-	state.Scenario.ScenarioPath = strings.TrimSpace(state.Scenario.ScenarioPath)
-	if state.Scenario.ReportFormat != "text" && state.Scenario.ReportFormat != "json" {
-		state.Scenario.ReportFormat = defaults.Scenario.ReportFormat
-	}
-
 	state.JSONRecentPairs = normalizeRecentPairs(state.JSONRecentPairs)
 	state.TextRecentPairs = normalizeRecentPairs(state.TextRecentPairs)
 	state.FolderRecentPairs = normalizeRecentFolderPairs(state.FolderRecentPairs)
-	state.ScenarioRecentPaths = normalizeRecentScenarioPaths(state.ScenarioRecentPaths)
 
 	return state
 }
@@ -220,30 +211,6 @@ func normalizeRecentFolderPairs(input []DesktopRecentFolderPair) []DesktopRecent
 			item.ViewMode = "list"
 		}
 		key := item.LeftRoot + "\x00" + item.RightRoot + "\x00" + item.CurrentPath + "\x00" + item.ViewMode
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		output = append(output, item)
-		if len(output) >= maxRecentEntries {
-			break
-		}
-	}
-	return output
-}
-
-func normalizeRecentScenarioPaths(input []DesktopRecentScenarioPath) []DesktopRecentScenarioPath {
-	output := make([]DesktopRecentScenarioPath, 0, len(input))
-	seen := map[string]struct{}{}
-	for _, item := range input {
-		item.Path = strings.TrimSpace(item.Path)
-		if item.Path == "" {
-			continue
-		}
-		if item.ReportFormat != "text" && item.ReportFormat != "json" {
-			item.ReportFormat = "text"
-		}
-		key := item.Path + "\x00" + item.ReportFormat
 		if _, ok := seen[key]; ok {
 			continue
 		}

@@ -181,32 +181,6 @@ const folderResultProps = {
   onFolderTableKeyDown: noop,
 }
 
-const scenarioResultProps = {
-  scenarioRunResult: null,
-  selectedScenarioResultName: '',
-  setSelectedScenarioResultName: noop,
-}
-
-const scenarioSourceProps = {
-  scenarioPath: '',
-  onScenarioPathChange: noop,
-  onBrowseScenario: noop,
-  scenarioRecentPaths: [],
-  onLoadRecentScenario: noop,
-  onClearRecentScenarios: noop,
-  reportFormat: 'text' as const,
-  onReportFormatChange: noop,
-  loading: false,
-  onLoadChecks: noop,
-  onRun: noop,
-  scenarioListStatus: '',
-  scenarioChecks: [],
-  selectedChecks: [],
-  onToggleCheck: noop,
-  onSelectAllChecks: noop,
-  onClearCheckSelection: noop,
-}
-
 describe('DesktopMainContent', () => {
   it('renders text mode content and return banner action', async () => {
     const onReturnToFolderCompare = vi.fn()
@@ -221,8 +195,6 @@ describe('DesktopMainContent', () => {
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
         folderResultProps={folderResultProps}
-        scenarioSourceProps={scenarioSourceProps}
-        scenarioResultProps={scenarioResultProps}
       />,
     )
 
@@ -243,31 +215,9 @@ describe('DesktopMainContent', () => {
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
         folderResultProps={folderResultProps}
-        scenarioSourceProps={scenarioSourceProps}
-        scenarioResultProps={scenarioResultProps}
       />,
     )
 
     expect(await screen.findByText('Directory Compare')).toBeInTheDocument()
-  })
-
-  it('renders scenario mode heading and result panel', async () => {
-    renderWithProvider(
-      <DesktopMainContent
-        mode="scenario"
-        showFolderReturnBanner={false}
-        onReturnToFolderCompare={noop}
-        textSourceProps={textSourceProps}
-        textResultProps={textResultProps}
-        jsonSourceProps={jsonSourceProps}
-        jsonResultProps={jsonResultProps}
-        folderResultProps={folderResultProps}
-        scenarioSourceProps={scenarioSourceProps}
-        scenarioResultProps={scenarioResultProps}
-      />,
-    )
-
-    expect(await screen.findByText('Scenario path')).toBeInTheDocument()
-    expect(await screen.findByText('(no scenario run yet)')).toBeInTheDocument()
   })
 })

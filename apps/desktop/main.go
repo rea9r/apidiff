@@ -47,14 +47,6 @@ func (a *App) CompareFolders(req desktopapi.CompareFoldersRequest) (*desktopapi.
 	return a.api.CompareFolders(req)
 }
 
-func (a *App) RunScenario(req desktopapi.RunScenarioRequest) (*desktopapi.ScenarioRunResponse, error) {
-	return a.api.RunScenario(req)
-}
-
-func (a *App) ListScenarioChecks(req desktopapi.ListScenarioChecksRequest) (*desktopapi.ScenarioListResponse, error) {
-	return a.api.ListScenarioChecks(req)
-}
-
 func (a *App) LoadDesktopState() (*desktopapi.DesktopState, error) {
 	return a.api.LoadDesktopState()
 }
@@ -68,19 +60,6 @@ func (a *App) PickJSONFile() (string, error) {
 		{
 			DisplayName: "JSON (*.json)",
 			Pattern:     "*.json",
-		},
-		{
-			DisplayName: "All files (*.*)",
-			Pattern:     "*.*",
-		},
-	})
-}
-
-func (a *App) PickScenarioFile() (string, error) {
-	return a.pickFile("Select scenario file", []runtime.FileFilter{
-		{
-			DisplayName: "Scenario YAML (*.yaml;*.yml)",
-			Pattern:     "*.yaml;*.yml",
 		},
 		{
 			DisplayName: "All files (*.*)",

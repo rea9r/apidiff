@@ -14,22 +14,13 @@ JSON comparison
   Compare two local files containing JSON.
 
 Text comparison
-  Compare two local plain-text files.
-
-Scenario mode
-  Run multiple checks from one scenario file.
-
-CI usage
-  Emit JSON and fail only on breaking changes for automation.`
+  Compare two local plain-text files.`
 
 const rootHelpExamples = `  # Local JSON comparison
   xdiff json old.json new.json
 
   # Plain text comparison
-  xdiff text before.txt after.txt
-
-  # Scenario mode
-  xdiff run xdiff.yaml`
+  xdiff text before.txt after.txt`
 
 func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	root := &cobra.Command{
@@ -60,6 +51,5 @@ func newRootCommand(exitCode *int, stdout io.Writer) *cobra.Command {
 	commonFlags := newCommonFlags(stdout)
 	root.AddCommand(newJSONCommand(commonFlags, exitCode))
 	root.AddCommand(newTextCommand(commonFlags, exitCode))
-	root.AddCommand(newRunCommand(exitCode, stdout))
 	return root
 }

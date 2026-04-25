@@ -7,8 +7,6 @@ import type { TextCompareResultPanelProps } from '../features/text/TextCompareRe
 import type { TextCompareSourceWorkspaceProps } from '../features/text/TextCompareSourceWorkspace'
 import type { JSONCompareResultPanelProps } from '../features/json/JSONCompareResultPanel'
 import type { JSONCompareSourceWorkspaceProps } from '../features/json/JSONCompareSourceWorkspace'
-import type { ScenarioResultPanelProps } from '../features/scenario/ScenarioResultPanel'
-import type { ScenarioSourceWorkspaceProps } from '../features/scenario/ScenarioSourceWorkspace'
 
 const DirectoryCompareResultPanel = lazy(() =>
   import('../features/folder/DirectoryCompareResultPanel').then((module) => ({
@@ -35,16 +33,6 @@ const JSONCompareSourceWorkspace = lazy(() =>
     default: module.JSONCompareSourceWorkspace,
   })),
 )
-const ScenarioResultPanel = lazy(() =>
-  import('../features/scenario/ScenarioResultPanel').then((module) => ({
-    default: module.ScenarioResultPanel,
-  })),
-)
-const ScenarioSourceWorkspace = lazy(() =>
-  import('../features/scenario/ScenarioSourceWorkspace').then((module) => ({
-    default: module.ScenarioSourceWorkspace,
-  })),
-)
 
 function MainContentLoadingFallback() {
   return <div className="muted">Loading view...</div>
@@ -59,8 +47,6 @@ type DesktopMainContentProps = {
   jsonSourceProps: JSONCompareSourceWorkspaceProps
   jsonResultProps: JSONCompareResultPanelProps
   folderResultProps: DirectoryCompareResultPanelProps
-  scenarioSourceProps: ScenarioSourceWorkspaceProps
-  scenarioResultProps: ScenarioResultPanelProps
 }
 
 export function DesktopMainContent({
@@ -72,8 +58,6 @@ export function DesktopMainContent({
   jsonSourceProps,
   jsonResultProps,
   folderResultProps,
-  scenarioSourceProps,
-  scenarioResultProps,
 }: DesktopMainContentProps) {
   const folderReturnPathBanner = showFolderReturnBanner ? (
     <div className="folder-return-banner">
@@ -116,23 +100,10 @@ export function DesktopMainContent({
     )
   }
 
-  if (mode === 'folder') {
-    return (
-      <div className="result-panel">
-        <Suspense fallback={<MainContentLoadingFallback />}>
-          <DirectoryCompareResultPanel {...folderResultProps} />
-        </Suspense>
-      </div>
-    )
-  }
-
   return (
-    <div className="compare-main-shell">
+    <div className="result-panel">
       <Suspense fallback={<MainContentLoadingFallback />}>
-        <CompareWorkspaceShell
-          source={<ScenarioSourceWorkspace {...scenarioSourceProps} />}
-          result={<ScenarioResultPanel {...scenarioResultProps} />}
-        />
+        <DirectoryCompareResultPanel {...folderResultProps} />
       </Suspense>
     </div>
   )

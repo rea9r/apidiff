@@ -6,9 +6,6 @@ import type {
   Mode,
 } from './types'
 import { parseIgnorePaths } from './utils/appHelpers'
-import { useBrowseAndSet } from './useBrowseAndSet'
-import { useDesktopBridge } from './useDesktopBridge'
-import { useRecentActionRunner } from './useRecentActionRunner'
 import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
 import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
@@ -19,7 +16,6 @@ import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { useJSONCompareViewState } from './features/json/useJSONCompareViewState'
 import { useJSONCompareWorkflow } from './features/json/useJSONCompareWorkflow'
-import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 type DesktopShellModel = {
   layoutMode: 'workspace' | 'sidebar'
@@ -34,16 +30,10 @@ type UseDesktopShellModelArgs = {
   loading: boolean
   compareOptionsOpened: boolean
   onCloseCompareOptions: () => void
-  browseAndSet: ReturnType<typeof useBrowseAndSet>['browseAndSet']
-  pickScenarioFile: ReturnType<typeof useDesktopBridge>['pickScenarioFile']
-  runRecentAction: ReturnType<typeof useRecentActionRunner>['runRecentAction']
-  handleLoadScenarioChecks: () => void
-  onRun: () => void
   jsonWorkflow: ReturnType<typeof useJSONCompareWorkflow>
   jsonViewState: ReturnType<typeof useJSONCompareViewState>
   textWorkflow: ReturnType<typeof useTextCompareWorkflow>
   textViewState: ReturnType<typeof useTextDiffViewState>
-  scenarioWorkflow: ReturnType<typeof useScenarioWorkflow>
   folderLeftRoot: string
   folderRightRoot: string
   folderNameFilter: string
@@ -62,16 +52,10 @@ export function useDesktopShellModel({
   loading,
   compareOptionsOpened,
   onCloseCompareOptions,
-  browseAndSet,
-  pickScenarioFile,
-  runRecentAction,
-  handleLoadScenarioChecks,
-  onRun,
   jsonWorkflow,
   jsonViewState,
   textWorkflow,
   textViewState,
-  scenarioWorkflow,
   folderLeftRoot,
   folderRightRoot,
   folderNameFilter,
@@ -120,30 +104,6 @@ export function useDesktopShellModel({
       }}
     />
   )
-
-  const scenarioSourceProps = {
-    scenarioPath: scenarioWorkflow.scenarioPath,
-    onScenarioPathChange: scenarioWorkflow.setScenarioPath,
-    onBrowseScenario: () =>
-      void browseAndSet(pickScenarioFile, scenarioWorkflow.setScenarioPath),
-    scenarioRecentPaths: scenarioWorkflow.scenarioRecentPaths,
-    onLoadRecentScenario: (entry: (typeof scenarioWorkflow.scenarioRecentPaths)[number]) =>
-      void runRecentAction('Recent scenario load', () =>
-        scenarioWorkflow.loadScenarioRecent(entry),
-      ),
-    onClearRecentScenarios: () => scenarioWorkflow.setScenarioRecentPaths([]),
-    reportFormat: scenarioWorkflow.reportFormat,
-    onReportFormatChange: scenarioWorkflow.setReportFormat,
-    loading,
-    onLoadChecks: handleLoadScenarioChecks,
-    onRun,
-    scenarioListStatus: scenarioWorkflow.scenarioListStatus,
-    scenarioChecks: scenarioWorkflow.scenarioChecks,
-    selectedChecks: scenarioWorkflow.selectedChecks,
-    onToggleCheck: scenarioWorkflow.toggleScenarioCheck,
-    onSelectAllChecks: scenarioWorkflow.selectAllScenarioChecks,
-    onClearCheckSelection: scenarioWorkflow.clearScenarioSelection,
-  }
 
   const sidebar = undefined
 
@@ -274,12 +234,6 @@ export function useDesktopShellModel({
         onFolderTableKeyDown: (event) =>
           void folderInteractions.handleFolderTableKeyDown(event),
       }}
-      scenarioSourceProps={scenarioSourceProps}
-      scenarioResultProps={{
-        scenarioRunResult: scenarioWorkflow.scenarioRunResult,
-        selectedScenarioResultName: scenarioWorkflow.selectedScenarioResultName,
-        setSelectedScenarioResultName: scenarioWorkflow.setSelectedScenarioResultName,
-      }}
     />
   )
 
@@ -304,7 +258,7 @@ export function useDesktopShellModel({
 
   return {
     layoutMode:
-      isCompareCentricMode || mode === 'folder' || mode === 'scenario'
+      isCompareCentricMode || mode === 'folder'
         ? 'workspace'
         : 'sidebar',
     sidebar,

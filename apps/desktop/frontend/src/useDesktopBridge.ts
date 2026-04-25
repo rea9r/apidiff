@@ -10,8 +10,6 @@ import type {
   DesktopState,
   LoadTextFileRequest,
   LoadTextFileResponse,
-  ScenarioRunResponse,
-  ScenarioListResponse,
 } from './types'
 
 // ---------------------------------------------------------------------------
@@ -22,8 +20,6 @@ import type {
 // ---------------------------------------------------------------------------
 
 type CompareTextReq = { oldText: string; newText: string; common: CompareCommon }
-type RunScenarioReq = { scenarioPath: string; reportFormat: string }
-type ListScenarioChecksReq = { scenarioPath: string }
 
 export function useDesktopBridge() {
   return useMemo(
@@ -41,16 +37,7 @@ export function useDesktopBridge() {
       ): Promise<CompareFoldersResponse> =>
         App.CompareFolders(req as any) as Promise<CompareFoldersResponse>,
 
-      runScenario: (req: RunScenarioReq): Promise<ScenarioRunResponse> =>
-        App.RunScenario(req as any),
-
-      listScenarioChecks: (
-        req: ListScenarioChecksReq,
-      ): Promise<ScenarioListResponse> =>
-        App.ListScenarioChecks(req as any),
-
       pickJSONFile: App.PickJSONFile,
-      pickScenarioFile: App.PickScenarioFile,
       pickTextFile: App.PickTextFile,
       pickFolderRoot: App.PickFolderRoot,
 

@@ -10,7 +10,6 @@ import { useDesktopShellModel } from './useDesktopShellModel'
 import { useJSONCompareModel } from './features/json/useJSONCompareModel'
 import { useTextCompareModel } from './features/text/useTextCompareModel'
 import { useFolderCompareModel } from './features/folder/useFolderCompareModel'
-import { useScenarioWorkflow } from './features/scenario/useScenarioWorkflow'
 
 export function useDesktopAppModel() {
   const { mode, setMode, compareOptionsOpened, setCompareOptionsOpened, onModeChange } =
@@ -37,16 +36,6 @@ export function useDesktopAppModel() {
     textDiffLayout: textModel.viewState.textDiffLayout,
   })
 
-  const scenarioWorkflow = useScenarioWorkflow({
-    listScenarioChecks: api.listScenarioChecks,
-    runScenario: api.runScenario,
-    onEnterScenarioMode: () => setMode('scenario'),
-    onScenarioRunCompleted: () => {
-      setSummaryLine('')
-      setOutput('')
-    },
-  })
-
   const folderModel = useFolderCompareModel({
     mode,
     setMode,
@@ -63,7 +52,7 @@ export function useDesktopAppModel() {
 
   // --- Orchestration ---
 
-  const { setResult, onRun, handleLoadScenarioChecks } = useAppRunOrchestration({
+  const { setResult, onRun } = useAppRunOrchestration({
     mode,
     setLoading,
     setSummaryLine,
@@ -78,9 +67,6 @@ export function useDesktopAppModel() {
     setTextLastRunOutputFormat: textModel.workflow.setTextLastRunOutputFormat,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
     runFolderCompare: folderModel.workflow.runFolderCompare,
-    runScenario: scenarioWorkflow.runScenario,
-    onLoadScenarioChecks: scenarioWorkflow.onLoadScenarioChecks,
-    setScenarioRunError: scenarioWorkflow.setScenarioRunError,
   })
 
   // --- Persistence ---
@@ -132,14 +118,6 @@ export function useDesktopAppModel() {
       setViewMode: folderModel.viewState.setFolderViewMode,
       setRecentPairs: folderModel.state.setFolderRecentPairs,
     },
-    scenario: {
-      path: scenarioWorkflow.scenarioPath,
-      reportFormat: scenarioWorkflow.reportFormat,
-      recentPaths: scenarioWorkflow.scenarioRecentPaths,
-      setPath: scenarioWorkflow.setScenarioPath,
-      setReportFormat: scenarioWorkflow.setReportFormat,
-      setRecentPaths: scenarioWorkflow.setScenarioRecentPaths,
-    },
   })
 
   // --- UI chrome ---
@@ -176,16 +154,10 @@ export function useDesktopAppModel() {
     loading,
     compareOptionsOpened,
     onCloseCompareOptions: () => setCompareOptionsOpened(false),
-    browseAndSet,
-    pickScenarioFile: api.pickScenarioFile,
-    runRecentAction,
-    handleLoadScenarioChecks,
-    onRun,
     jsonWorkflow: jsonModel.workflow,
     jsonViewState: jsonModel.viewState,
     textWorkflow: textModel.workflow,
     textViewState: textModel.viewState,
-    scenarioWorkflow,
     folderLeftRoot: folderModel.state.folderLeftRoot,
     folderRightRoot: folderModel.state.folderRightRoot,
     folderNameFilter: folderModel.state.folderNameFilter,

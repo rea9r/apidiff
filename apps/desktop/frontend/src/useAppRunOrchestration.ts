@@ -21,9 +21,6 @@ type UseAppRunOrchestrationOptions = {
   setTextLastRunOutputFormat: (value: 'text' | 'json' | null) => void
   clearTextExpandedSections: () => void
   runFolderCompare: () => Promise<void>
-  runScenario: () => Promise<void>
-  onLoadScenarioChecks: () => Promise<void>
-  setScenarioRunError: (value: string) => void
 }
 
 function buildCompareErrorResult(errorText: string): CompareResponse {
@@ -65,9 +62,6 @@ export function useAppRunOrchestration({
   setTextLastRunOutputFormat,
   clearTextExpandedSections,
   runFolderCompare,
-  runScenario,
-  onLoadScenarioChecks,
-  setScenarioRunError,
 }: UseAppRunOrchestrationOptions) {
   const setResult = useCallback(
     (res: unknown) => {
@@ -91,20 +85,13 @@ export function useAppRunOrchestration({
       await runText()
       return
     }
-    if (mode === 'folder') {
-      await runFolderCompare()
-      return
-    }
-    await runScenario()
-  }, [mode, runFolderCompare, runJSONWithViewReset, runScenario, runText])
+    await runFolderCompare()
+  }, [mode, runFolderCompare, runJSONWithViewReset, runText])
 
   const onRun = useCallback(async () => {
     setLoading(true)
-
-    if (mode !== 'scenario') {
-      setSummaryLine('')
-      setOutput('')
-    }
+    setSummaryLine('')
+    setOutput('')
 
     if (mode === 'text') {
       setTextResult(null)
@@ -119,18 +106,14 @@ export function useAppRunOrchestration({
     } catch (error) {
       const errorText = String(error)
 
-      if (mode === 'scenario') {
-        setScenarioRunError(errorText)
-      } else {
-        if (mode === 'text') {
-          setTextResult(buildCompareErrorResult(errorText))
-        } else if (mode === 'json') {
-          setJSONRichResult(buildJSONErrorResult(errorText))
-        }
-
-        setSummaryLine('error=yes')
-        setOutput(errorText)
+      if (mode === 'text') {
+        setTextResult(buildCompareErrorResult(errorText))
+      } else if (mode === 'json') {
+        setJSONRichResult(buildJSONErrorResult(errorText))
       }
+
+      setSummaryLine('error=yes')
+      setOutput(errorText)
     } finally {
       setLoading(false)
     }
@@ -141,7 +124,6 @@ export function useAppRunOrchestration({
     setJSONRichResult,
     setLoading,
     setOutput,
-    setScenarioRunError,
     setSummaryLine,
     setTextLastRunOld,
     setTextLastRunNew,
@@ -149,19 +131,8 @@ export function useAppRunOrchestration({
     setTextResult,
   ])
 
-  const handleLoadScenarioChecks = useCallback(async () => {
-    setLoading(true)
-
-    try {
-      await onLoadScenarioChecks()
-    } finally {
-      setLoading(false)
-    }
-  }, [onLoadScenarioChecks, setLoading])
-
   return {
     setResult,
     onRun,
-    handleLoadScenarioChecks,
   }
 }

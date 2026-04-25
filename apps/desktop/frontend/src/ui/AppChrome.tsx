@@ -29,10 +29,6 @@ const MODE_OPTIONS = [
       { value: 'folder', label: 'Folder compare' },
     ],
   },
-  {
-    group: 'Tools',
-    items: [{ value: 'scenario', label: 'Scenario run' }],
-  },
 ]
 
 const NAVBAR_WIDTH_STORAGE_KEY = 'xdiff.desktop.navbarWidth'

@@ -1,4 +1,4 @@
-export type Mode = 'json' | 'text' | 'scenario' | 'folder'
+export type Mode = 'json' | 'text' | 'folder'
 
 export type CompareCommon = {
   failOn: string
@@ -102,47 +102,6 @@ export type CompareFoldersResponse = {
   error?: string
 }
 
-export type ScenarioSummary = {
-  total: number
-  ok: number
-  diff: number
-  error: number
-  exitCode: number
-}
-
-export type ScenarioResult = {
-  name: string
-  kind: string
-  status: string
-  exitCode: number
-  diffFound: boolean
-  output?: string
-  errorMessage?: string
-}
-
-export type ScenarioRunResponse = {
-  exitCode: number
-  summary?: ScenarioSummary
-  results?: ScenarioResult[]
-  output?: string
-  error?: string
-}
-
-export type ScenarioCheckListEntry = {
-  name: string
-  kind: string
-  old: string
-  new: string
-  summary: string
-}
-
-export type ScenarioListResponse = {
-  exitCode: number
-  checks?: ScenarioCheckListEntry[]
-  output?: string
-  error?: string
-}
-
 export type DesktopJSONSession = {
   oldSourcePath: string
   newSourcePath: string
@@ -164,11 +123,6 @@ export type DesktopFolderSession = {
   viewMode: 'list' | 'tree'
 }
 
-export type DesktopScenarioSession = {
-  scenarioPath: string
-  reportFormat: 'text' | 'json'
-}
-
 export type DesktopRecentPair = {
   oldPath: string
   newPath: string
@@ -183,21 +137,13 @@ export type DesktopRecentFolderPair = {
   usedAt: string
 }
 
-export type DesktopRecentScenarioPath = {
-  path: string
-  reportFormat: 'text' | 'json'
-  usedAt: string
-}
-
 export type DesktopState = {
   version: number
   lastUsedMode: Mode
   json: DesktopJSONSession
   text: DesktopTextSession
   folder: DesktopFolderSession
-  scenario: DesktopScenarioSession
   jsonRecentPairs: DesktopRecentPair[]
   textRecentPairs: DesktopRecentPair[]
   folderRecentPairs: DesktopRecentFolderPair[]
-  scenarioRecentPaths: DesktopRecentScenarioPath[]
 }

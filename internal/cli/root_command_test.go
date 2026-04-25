@@ -18,12 +18,6 @@ func TestRootHelpContent_IsTaskOriented(t *testing.T) {
 	if !strings.Contains(cmd.Long, "Text comparison") {
 		t.Fatalf("missing Text comparison section in Long help")
 	}
-	if !strings.Contains(cmd.Long, "Scenario mode") {
-		t.Fatalf("missing Scenario mode section in Long help")
-	}
-	if !strings.Contains(cmd.Long, "CI usage") {
-		t.Fatalf("missing CI usage section in Long help")
-	}
 
 	firstExample := "xdiff json old.json new.json"
 	if !strings.Contains(cmd.Example, firstExample) {
@@ -87,7 +81,6 @@ func TestSubcommandsHaveExamples(t *testing.T) {
 	}{
 		{name: "json", cmd: newJSONCommand(common, new(int))},
 		{name: "text", cmd: newTextCommand(common, new(int))},
-		{name: "run", cmd: newRunCommand(new(int), io.Discard)},
 	}
 
 	for _, tt := range tests {
