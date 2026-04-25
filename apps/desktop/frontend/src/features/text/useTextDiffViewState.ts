@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CompareResponse } from '../../types'
 import {
   buildRichDiffItems,
   buildTextDiffBlocks,
+  buildTextRulerMarks,
   buildTextSearchMatches,
   normalizeSearchQuery,
   parseUnifiedDiff,
@@ -58,6 +59,10 @@ export function useTextDiffViewState({
     [textRichItems],
   )
   const activeTextDiffBlock = textDiffBlocks[textActiveDiffIndex] ?? null
+  const textRulerMarks = useMemo(
+    () => (textRichItems ? buildTextRulerMarks(textRichItems) : []),
+    [textRichItems],
+  )
   const omittedSectionIds = useMemo(
     () =>
       textRichItems?.flatMap((item) => (item.kind === 'omitted' ? [item.sectionId] : [])) ?? [],
@@ -178,6 +183,25 @@ export function useTextDiffViewState({
     delete textSearchRowRefs.current[matchId]
   }
 
+  const getTextRowNode = useCallback(
+    (matchId: string): HTMLDivElement | null => textSearchRowRefs.current[matchId] ?? null,
+    [],
+  )
+
+  const jumpToTextDiffBlock = useCallback(
+    (id: string) => {
+      const index = textDiffBlocks.findIndex((block) => block.id === id)
+      if (index < 0) {
+        return
+      }
+      if (textResultView !== 'diff') {
+        setTextResultView('diff')
+      }
+      setTextActiveDiffIndex(index)
+    },
+    [textDiffBlocks, textResultView],
+  )
+
   const moveTextSearch = (direction: 1 | -1) => {
     if (!canRenderTextRich || textSearchMatches.length === 0) {
       return
@@ -246,5 +270,8 @@ export function useTextDiffViewState({
     textActiveDiffIndex,
     activeTextDiffBlock,
     moveTextDiff,
+    textRulerMarks,
+    getTextRowNode,
+    jumpToTextDiffBlock,
   }
 }

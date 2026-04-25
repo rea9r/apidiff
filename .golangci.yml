@@ -16,6 +16,9 @@ linters:
   settings:
     exhaustive:
       default-signifies-exhaustive: true
+  exclusions:
+    paths:
+      - examples
 
 formatters:
   enable:

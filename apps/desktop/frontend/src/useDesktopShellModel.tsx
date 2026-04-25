@@ -148,6 +148,9 @@ export function useDesktopShellModel({
         textActiveDiffIndex: textViewState.textActiveDiffIndex,
         activeTextDiffBlock: textViewState.activeTextDiffBlock,
         moveTextDiff: textViewState.moveTextDiff,
+        textRulerMarks: textViewState.textRulerMarks,
+        getTextRowNode: textViewState.getTextRowNode,
+        jumpToTextDiffBlock: textViewState.jumpToTextDiffBlock,
       }}
       jsonSourceProps={{
         oldSourcePath: jsonWorkflow.jsonOldSourcePath,
