@@ -196,6 +196,10 @@ type AISetupRequest struct {
 	Model string `json:"model,omitempty"`
 }
 
+type DeleteOllamaModelRequest struct {
+	Model string `json:"model"`
+}
+
 type AISetupProgress struct {
 	Phase         string  `json:"phase"`
 	Message       string  `json:"message,omitempty"`

@@ -75,6 +75,10 @@ func (a *App) CancelAISetup() error {
 	return a.api.CancelAISetup()
 }
 
+func (a *App) DeleteOllamaModel(req desktopapi.DeleteOllamaModelRequest) error {
+	return a.api.DeleteOllamaModel(req)
+}
+
 func (a *App) OpenOllamaDownloadPage() {
 	if a.ctx == nil {
 		return

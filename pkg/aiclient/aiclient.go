@@ -162,6 +162,28 @@ func (c *Client) Chat(ctx context.Context, baseURL string, req ChatRequest) (str
 	return out.Choices[0].Message.Content, nil
 }
 
+func (c *Client) DeleteOllamaModel(ctx context.Context, baseURL, name string) error {
+	body, err := json.Marshal(map[string]any{"name": name, "model": name})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL+"/api/delete", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		msg, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("ollama /api/delete returned %d: %s", resp.StatusCode, string(msg))
+	}
+	return nil
+}
+
 func (c *Client) PullOllamaModel(ctx context.Context, baseURL, name string, onProgress func(PullProgress)) error {
 	body, err := json.Marshal(map[string]any{"name": name, "stream": true})
 	if err != nil {

@@ -175,6 +175,17 @@ func (s *Service) AISetupProgressSnapshot() (*AISetupProgress, error) {
 	return &snap, nil
 }
 
+func (s *Service) DeleteOllamaModel(req DeleteOllamaModelRequest) error {
+	model := strings.TrimSpace(req.Model)
+	if model == "" {
+		return errors.New("model is required")
+	}
+	client := aiclient.NewClient()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return client.DeleteOllamaModel(ctx, aiclient.DefaultOllamaBaseURL, model)
+}
+
 func (s *Service) CancelAISetup() error {
 	state := s.setupState()
 	state.mu.Lock()

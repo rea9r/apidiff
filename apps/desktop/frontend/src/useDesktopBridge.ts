@@ -10,6 +10,7 @@ import type {
   CompareJSONRichResponse,
   CompareDirectoriesRequest,
   CompareDirectoriesResponse,
+  DeleteOllamaModelRequest,
   DesktopState,
   ExplainDiffRequest,
   ExplainDiffResponse,
@@ -68,6 +69,9 @@ export function useDesktopBridge() {
         App.AISetupProgress() as unknown as Promise<AISetupProgress>,
 
       cancelAISetup: (): Promise<void> => App.CancelAISetup(),
+
+      deleteOllamaModel: (req: DeleteOllamaModelRequest): Promise<void> =>
+        App.DeleteOllamaModel(req as any),
 
       openOllamaDownloadPage: (): Promise<void> => App.OpenOllamaDownloadPage(),
     }),

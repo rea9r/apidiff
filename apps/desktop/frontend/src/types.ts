@@ -187,6 +187,10 @@ export type AISetupRequest = {
   model?: string
 }
 
+export type DeleteOllamaModelRequest = {
+  model: string
+}
+
 export type AISetupPhase =
   | 'idle'
   | 'starting'

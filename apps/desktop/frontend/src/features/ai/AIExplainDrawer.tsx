@@ -22,6 +22,7 @@ import {
   IconCheck,
   IconLock,
   IconRefresh,
+  IconSettings,
   IconWallet,
 } from '@tabler/icons-react'
 import { useDesktopBridge } from '../../useDesktopBridge'
@@ -214,6 +215,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
     startAISetup,
     aiSetupProgress,
     cancelAISetup,
+    deleteOllamaModel,
     openOllamaDownloadPage,
   } = useDesktopBridge()
 
@@ -229,10 +231,14 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null)
   const [showReadyFlash, setShowReadyFlash] = useState(false)
   const [etaMs, setEtaMs] = useState<number | null>(null)
+  const [manageMode, setManageMode] = useState(false)
+  const [confirmDeleteModel, setConfirmDeleteModel] = useState<string | null>(null)
+  const [deletingModel, setDeletingModel] = useState<string | null>(null)
 
   const lastDiffRef = useRef<string>('')
   const samplesRef = useRef<{ t: number; bytes: number }[]>([])
   const prevPhaseRef = useRef<AISetupPhase | undefined>(undefined)
+  const revertTimeoutRef = useRef<number | null>(null)
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -281,9 +287,16 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   )
 
   // Re-detect provider every time the drawer opens — state outside the app
-  // (Ollama install, daemon start) may have changed since last open.
+  // (Ollama install, daemon start) may have changed since last open. Also
+  // reset transient manage-mode state so each open starts in the normal view.
   useEffect(() => {
     if (!opened) return
+    setManageMode(false)
+    setConfirmDeleteModel(null)
+    if (revertTimeoutRef.current !== null) {
+      window.clearTimeout(revertTimeoutRef.current)
+      revertTimeoutRef.current = null
+    }
     void refreshStatus()
   }, [opened, refreshStatus])
 
@@ -440,6 +453,48 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
     setSetupProgress(null)
     void refreshStatus()
   }, [refreshStatus])
+
+  const queueDeleteConfirm = useCallback((m: string | null) => {
+    if (revertTimeoutRef.current !== null) {
+      window.clearTimeout(revertTimeoutRef.current)
+      revertTimeoutRef.current = null
+    }
+    setConfirmDeleteModel(m)
+    if (m !== null) {
+      revertTimeoutRef.current = window.setTimeout(() => {
+        setConfirmDeleteModel(null)
+        revertTimeoutRef.current = null
+      }, 3000)
+    }
+  }, [])
+
+  const handleDeleteClick = useCallback(
+    async (m: string) => {
+      if (confirmDeleteModel !== m) {
+        queueDeleteConfirm(m)
+        return
+      }
+      queueDeleteConfirm(null)
+      setDeletingModel(m)
+      try {
+        await deleteOllamaModel({ model: m })
+        const next = await refreshStatus()
+        if (activeModel === m) {
+          const fallback = next.models?.[0] ?? ''
+          setActiveModel(fallback)
+          lastDiffRef.current = ''
+        }
+        if (!next.models || next.models.length === 0) {
+          setManageMode(false)
+        }
+      } catch (e) {
+        setError(formatUnknownError(e))
+      } finally {
+        setDeletingModel(null)
+      }
+    },
+    [confirmDeleteModel, queueDeleteConfirm, deleteOllamaModel, refreshStatus, activeModel],
+  )
 
   const viewState: 'detecting' | 'ready-flash' | 'setup-progress' | 'setup-needed' | 'available' =
     !status
@@ -639,65 +694,128 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
         ) : null}
 
         {viewState === 'available' && status?.available ? (
-          <>
-            {status.models && status.models.length > 0 ? (
-              <Group gap="xs" align="end" wrap="nowrap">
-                <Select
-                  label="Model"
-                  size="xs"
-                  value={activeModel}
-                  onChange={(value) => setActiveModel(value ?? '')}
-                  data={status.models}
-                  style={{ flex: 1 }}
-                  comboboxProps={{ withinPortal: true }}
-                  allowDeselect={false}
-                />
-                <Tooltip label="Regenerate">
-                  <ActionIcon
-                    variant="default"
-                    size={30}
-                    onClick={() => void runExplain()}
-                    disabled={isLoading || !diffText.trim()}
-                    aria-label="Regenerate"
-                  >
-                    <IconRefresh size={15} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            ) : null}
-
-            {!diffText.trim() ? (
-              <Text size="sm" c="dimmed">
-                Run a comparison first — there is no diff to explain yet.
-              </Text>
-            ) : null}
-
-            {isLoading ? (
-              <Group gap="xs">
-                <Loader size="xs" />
-                <Text size="sm" c="dimmed">
-                  Generating explanation…
+          manageMode ? (
+            <Stack gap="xs">
+              <Group justify="space-between" wrap="nowrap">
+                <Text fw={600} size="sm">
+                  Manage models
                 </Text>
-              </Group>
-            ) : null}
-
-            {error ? (
-              <Alert color="red" variant="light" title="Failed to explain diff">
-                <Text size="sm">{error}</Text>
-              </Alert>
-            ) : null}
-
-            {explanation ? (
-              <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
-                <Text
-                  size="sm"
-                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                <Button
+                  size="compact-xs"
+                  variant="default"
+                  onClick={() => setManageMode(false)}
                 >
-                  {explanation}
+                  Done
+                </Button>
+              </Group>
+              <Text size="xs" c="dimmed">
+                Click Delete twice to remove a model.
+              </Text>
+              {(status.models ?? []).length === 0 ? (
+                <Text size="xs" c="dimmed">
+                  No models installed.
                 </Text>
-              </ScrollArea>
-            ) : null}
-          </>
+              ) : (
+                <Stack gap={4}>
+                  {(status.models ?? []).map((m) => (
+                    <Group key={m} justify="space-between" wrap="nowrap" gap="xs">
+                      <Text
+                        size="sm"
+                        ff="monospace"
+                        style={{
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {m}
+                      </Text>
+                      <Button
+                        size="compact-xs"
+                        color={confirmDeleteModel === m ? 'red' : 'gray'}
+                        variant={confirmDeleteModel === m ? 'filled' : 'subtle'}
+                        loading={deletingModel === m}
+                        onClick={() => void handleDeleteClick(m)}
+                      >
+                        {confirmDeleteModel === m ? 'Confirm' : 'Delete'}
+                      </Button>
+                    </Group>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          ) : (
+            <>
+              {status.models && status.models.length > 0 ? (
+                <Group gap="xs" align="end" wrap="nowrap">
+                  <Select
+                    label="Model"
+                    size="xs"
+                    value={activeModel}
+                    onChange={(value) => setActiveModel(value ?? '')}
+                    data={status.models}
+                    style={{ flex: 1 }}
+                    comboboxProps={{ withinPortal: true }}
+                    allowDeselect={false}
+                  />
+                  <Tooltip label="Regenerate">
+                    <ActionIcon
+                      variant="default"
+                      size={30}
+                      onClick={() => void runExplain()}
+                      disabled={isLoading || !diffText.trim()}
+                      aria-label="Regenerate"
+                    >
+                      <IconRefresh size={15} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Tooltip label="Manage models">
+                    <ActionIcon
+                      variant="default"
+                      size={30}
+                      onClick={() => setManageMode(true)}
+                      aria-label="Manage models"
+                    >
+                      <IconSettings size={15} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+              ) : null}
+
+              {!diffText.trim() ? (
+                <Text size="sm" c="dimmed">
+                  Run a comparison first — there is no diff to explain yet.
+                </Text>
+              ) : null}
+
+              {isLoading ? (
+                <Group gap="xs">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed">
+                    Generating explanation…
+                  </Text>
+                </Group>
+              ) : null}
+
+              {error ? (
+                <Alert color="red" variant="light" title="Failed to explain diff">
+                  <Text size="sm">{error}</Text>
+                </Alert>
+              ) : null}
+
+              {explanation ? (
+                <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
+                  <Text
+                    size="sm"
+                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  >
+                    {explanation}
+                  </Text>
+                </ScrollArea>
+              ) : null}
+            </>
+          )
         ) : null}
       </Stack>
     </Drawer>
