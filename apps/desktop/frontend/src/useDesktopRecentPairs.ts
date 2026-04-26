@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopRecentDirectoryPair, DesktopRecentPair, DesktopState } from './types'
 import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
@@ -32,14 +32,17 @@ export function useDesktopRecentPairs({ initial, commit }: UseDesktopRecentPairs
     }))
   }, [jsonRecentPairs, textRecentPairs, directoryRecentPairs, commit])
 
-  return {
-    jsonRecentPairs,
-    setJSONRecentPairs,
-    textRecentPairs,
-    setTextRecentPairs,
-    directoryRecentPairs,
-    setDirectoryRecentPairs,
-  }
+  return useMemo(
+    () => ({
+      jsonRecentPairs,
+      setJSONRecentPairs,
+      textRecentPairs,
+      setTextRecentPairs,
+      directoryRecentPairs,
+      setDirectoryRecentPairs,
+    }),
+    [jsonRecentPairs, textRecentPairs, directoryRecentPairs],
+  )
 }
 
 export type DesktopRecentPairsState = ReturnType<typeof useDesktopRecentPairs>

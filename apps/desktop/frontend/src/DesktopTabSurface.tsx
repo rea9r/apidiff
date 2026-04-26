@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react'
+import { memo, useEffect, useLayoutEffect } from 'react'
 import { useDesktopAppModel } from './useDesktopAppModel'
 import { usePublishDesktopTabSlots } from './useDesktopTabSlotsContext'
 import type { useDesktopBridge } from './useDesktopBridge'
@@ -16,7 +16,7 @@ type DesktopTabSurfaceProps = {
   commit: DesktopStatePersistor['commit']
 }
 
-export function DesktopTabSurface({
+function DesktopTabSurfaceImpl({
   tabId,
   isActive,
   api,
@@ -50,3 +50,5 @@ export function DesktopTabSurface({
 
   return null
 }
+
+export const DesktopTabSurface = memo(DesktopTabSurfaceImpl)

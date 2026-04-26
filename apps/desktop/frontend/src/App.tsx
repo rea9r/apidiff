@@ -1,5 +1,5 @@
 import './style.css'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { AppChrome } from './ui/AppChrome'
 import { TabBar } from './ui/TabBar'
 import { DesktopTabSurface } from './DesktopTabSurface'
@@ -51,27 +51,33 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
     return map
   }, [initial])
 
+  const initialSessionCacheRef = useRef<Map<string, DesktopTabSession>>(new Map())
+  const resolveInitialSession = (tab: { id: string; label: string }): DesktopTabSession => {
+    const cached = initialSessionCacheRef.current.get(tab.id)
+    if (cached) return cached
+    const session =
+      initialSessionsById.get(tab.id) ??
+      persistor.getLatestSession(tab.id) ??
+      persistor.fallbackTabSession(tab.id, tab.label)
+    initialSessionCacheRef.current.set(tab.id, session)
+    return session
+  }
+
   return (
     <DesktopTabSlotsProvider>
       <ActiveTabAppChrome tabsManager={tabsManager} />
-      {tabsManager.tabs.map((tab) => {
-        const initialSession =
-          initialSessionsById.get(tab.id) ??
-          persistor.getLatestSession(tab.id) ??
-          persistor.fallbackTabSession(tab.id, tab.label)
-        return (
-          <DesktopTabSurface
-            key={tab.id}
-            tabId={tab.id}
-            isActive={tab.id === tabsManager.activeTabId}
-            api={api}
-            recentPairs={recentPairs}
-            onLabelChange={tabsManager.updateTabLabel}
-            initialSession={initialSession}
-            commit={persistor.commit}
-          />
-        )
-      })}
+      {tabsManager.tabs.map((tab) => (
+        <DesktopTabSurface
+          key={tab.id}
+          tabId={tab.id}
+          isActive={tab.id === tabsManager.activeTabId}
+          api={api}
+          recentPairs={recentPairs}
+          onLabelChange={tabsManager.updateTabLabel}
+          initialSession={resolveInitialSession(tab)}
+          commit={persistor.commit}
+        />
+      ))}
     </DesktopTabSlotsProvider>
   )
 }
