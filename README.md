@@ -1,6 +1,6 @@
 # xdiff
 
-A general-purpose diff tool for JSON, plain text, and directories, built in Go.
+A general-purpose diff tool for JSON and plain text (and directories in the desktop GUI), built in Go.
 
 ## Overview
 
@@ -68,15 +68,15 @@ Common options (`xdiff json` and `xdiff text`):
 | `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
 | `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
 | `--no-color` | Disable colored text output | `false` |
+| `--ignore-whitespace` | Collapse runs of whitespace within each line before comparing | `false` |
+| `--ignore-case` | Compare text case-insensitively | `false` |
+| `--ignore-eol` | Normalize CRLF/CR to LF before comparing | `false` |
 
 JSON-specific options (`xdiff json`):
 
 | Option | Description | Default |
 | --- | --- | --- |
 | `--ignore-order` | Treat JSON arrays as unordered when comparing | `false` |
-
-> This README uses **options** for named command-line settings such as `--output-format`.
-> Cobra help may refer to the same settings as **flags**.
 
 ## Behavior Notes
 
