@@ -7,7 +7,11 @@ import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { useDesktopShellModel } from './useDesktopShellModel'
 import { useDesktopTabModel } from './useDesktopTabModel'
 
-export function useDesktopAppModel() {
+export type UseDesktopAppModelOptions = {
+  enabled?: boolean
+}
+
+export function useDesktopAppModel({ enabled = true }: UseDesktopAppModelOptions = {}) {
   const api = useDesktopBridge()
   const recentPairs = useDesktopRecentPairs()
 
@@ -19,6 +23,7 @@ export function useDesktopAppModel() {
   // --- Persistence ---
 
   useDesktopPersistence({
+    enabled,
     mode,
     setMode,
     loadDesktopState: api.loadDesktopState,

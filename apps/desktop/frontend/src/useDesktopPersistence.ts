@@ -22,6 +22,7 @@ type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse
 type UseDesktopPersistenceOptions = {
   mode: Mode
   setMode: StateSetter<Mode>
+  enabled?: boolean
   loadDesktopState?: LoadDesktopStateFn
   saveDesktopState?: SaveDesktopStateFn
   loadTextFile?: LoadTextFileFn
@@ -77,6 +78,7 @@ function isMode(value: string): value is Mode {
 export function useDesktopPersistence({
   mode,
   setMode,
+  enabled = true,
   loadDesktopState,
   saveDesktopState,
   loadTextFile,
@@ -131,6 +133,10 @@ export function useDesktopPersistence({
   } = directory
 
   useEffect(() => {
+    if (!enabled) {
+      return
+    }
+
     let active = true
 
     const hydrate = async () => {
@@ -218,6 +224,7 @@ export function useDesktopPersistence({
       active = false
     }
   }, [
+    enabled,
     loadDesktopState,
     loadTextFile,
     setDirectoryCurrentPath,
@@ -244,7 +251,7 @@ export function useDesktopPersistence({
   ])
 
   useEffect(() => {
-    if (!desktopStateHydrated || !saveDesktopState) {
+    if (!enabled || !desktopStateHydrated || !saveDesktopState) {
       return
     }
 
@@ -290,6 +297,7 @@ export function useDesktopPersistence({
     directoryRecentPairs,
     directoryRightRoot,
     directoryViewMode,
+    enabled,
     ignoreOrder,
     jsonCommon,
     jsonNewSourcePath,
