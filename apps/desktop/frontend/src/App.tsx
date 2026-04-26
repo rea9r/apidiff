@@ -15,6 +15,9 @@ import {
 } from './useDesktopTabsManager'
 import { useDesktopStatePersistor } from './useDesktopStatePersistor'
 import { useDesktopTabHotkeys } from './useDesktopTabHotkeys'
+import { DesktopTabDirtyProvider } from './useDesktopTabDirtyRegistry'
+import { useTabCloseConfirm } from './useTabCloseConfirm'
+import { useGuardedTabClose, type GuardedTabClose } from './useGuardedTabClose'
 import type { DesktopState, DesktopTabSession } from './types'
 
 export function App() {
@@ -34,14 +37,24 @@ type AppHydratedProps = {
   initial: DesktopState
 }
 
-function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
+function AppHydrated(props: AppHydratedProps) {
+  return (
+    <DesktopTabDirtyProvider>
+      <AppHydratedInner {...props} />
+    </DesktopTabDirtyProvider>
+  )
+}
+
+function AppHydratedInner({ api, persistor, initial }: AppHydratedProps) {
   const recentPairs = useDesktopRecentPairs({ initial, commit: persistor.commit })
   const tabsManager = useDesktopTabsManager({
     initial,
     commit: persistor.commit,
     fallbackTabSession: persistor.fallbackTabSession,
   })
-  useDesktopTabHotkeys(tabsManager)
+  const { confirm, modal } = useTabCloseConfirm()
+  const guardedClose = useGuardedTabClose(tabsManager, confirm)
+  useDesktopTabHotkeys(tabsManager, { closeTab: guardedClose.closeTab })
 
   const initialSessionsById = useMemo(() => {
     const map = new Map<string, DesktopTabSession>()
@@ -64,37 +77,35 @@ function AppHydrated({ api, persistor, initial }: AppHydratedProps) {
   }
 
   return (
-    <DesktopTabSlotsProvider>
-      <ActiveTabAppChrome tabsManager={tabsManager} />
-      {tabsManager.tabs.map((tab) => (
-        <DesktopTabSurface
-          key={tab.id}
-          tabId={tab.id}
-          isActive={tab.id === tabsManager.activeTabId}
-          api={api}
-          recentPairs={recentPairs}
-          onLabelChange={tabsManager.updateTabLabel}
-          initialSession={resolveInitialSession(tab)}
-          commit={persistor.commit}
-        />
-      ))}
-    </DesktopTabSlotsProvider>
+    <>
+      <DesktopTabSlotsProvider>
+        <ActiveTabAppChrome tabsManager={tabsManager} guardedClose={guardedClose} />
+        {tabsManager.tabs.map((tab) => (
+          <DesktopTabSurface
+            key={tab.id}
+            tabId={tab.id}
+            isActive={tab.id === tabsManager.activeTabId}
+            api={api}
+            recentPairs={recentPairs}
+            onLabelChange={tabsManager.updateTabLabel}
+            initialSession={resolveInitialSession(tab)}
+            commit={persistor.commit}
+          />
+        ))}
+      </DesktopTabSlotsProvider>
+      {modal}
+    </>
   )
 }
 
-function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerState }) {
+type ActiveTabAppChromeProps = {
+  tabsManager: DesktopTabsManagerState
+  guardedClose: GuardedTabClose
+}
+
+function ActiveTabAppChrome({ tabsManager, guardedClose }: ActiveTabAppChromeProps) {
   const slots = useActiveDesktopTabSlots()
-  const {
-    tabs,
-    activeTabId,
-    setActiveTabId,
-    addTab,
-    closeTab,
-    closeOthers,
-    closeToRight,
-    closeAll,
-    reorderTab,
-  } = tabsManager
+  const { tabs, activeTabId, setActiveTabId, addTab, reorderTab } = tabsManager
 
   if (!slots) {
     return null
@@ -116,10 +127,10 @@ function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerSt
           activeTabId={activeTabId}
           onSelectTab={setActiveTabId}
           onAddTab={addTab}
-          onCloseTab={closeTab}
-          onCloseOthers={closeOthers}
-          onCloseToRight={closeToRight}
-          onCloseAll={closeAll}
+          onCloseTab={guardedClose.closeTab}
+          onCloseOthers={guardedClose.closeOthers}
+          onCloseToRight={guardedClose.closeToRight}
+          onCloseAll={guardedClose.closeAll}
           onReorderTab={reorderTab}
         />
       }

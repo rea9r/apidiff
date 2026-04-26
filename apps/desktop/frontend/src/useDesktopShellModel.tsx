@@ -27,6 +27,7 @@ type DesktopShellModel = {
   main: ReactNode
   inspector: ReactNode | undefined
   inspectorOpen: boolean
+  isDirty: boolean
 }
 
 type TextAdoptSnapshot = {
@@ -390,5 +391,6 @@ export function useDesktopShellModel({
     main,
     inspector,
     inspectorOpen: isCompareCentricMode && compareOptionsOpened,
+    isDirty: textAdoptUndoStack.length > 0,
   }
 }

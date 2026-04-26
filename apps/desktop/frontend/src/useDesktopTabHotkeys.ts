@@ -1,9 +1,18 @@
 import { useEffect, useRef } from 'react'
 import type { DesktopTabsManagerState } from './useDesktopTabsManager'
 
-export function useDesktopTabHotkeys(tabsManager: DesktopTabsManagerState) {
+export type DesktopTabHotkeyOverrides = {
+  closeTab?: (id: string) => void
+}
+
+export function useDesktopTabHotkeys(
+  tabsManager: DesktopTabsManagerState,
+  overrides?: DesktopTabHotkeyOverrides,
+) {
   const managerRef = useRef(tabsManager)
   managerRef.current = tabsManager
+  const overridesRef = useRef(overrides)
+  overridesRef.current = overrides
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -13,6 +22,7 @@ export function useDesktopTabHotkeys(tabsManager: DesktopTabsManagerState) {
       }
 
       const m = managerRef.current
+      const o = overridesRef.current
       const key = event.key.toLowerCase()
 
       if (key === 't') {
@@ -23,7 +33,8 @@ export function useDesktopTabHotkeys(tabsManager: DesktopTabsManagerState) {
 
       if (key === 'w') {
         event.preventDefault()
-        m.closeTab(m.activeTabId)
+        const close = o?.closeTab ?? m.closeTab
+        close(m.activeTabId)
         return
       }
 

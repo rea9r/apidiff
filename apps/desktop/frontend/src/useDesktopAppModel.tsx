@@ -101,7 +101,7 @@ export function useDesktopAppModel({
     setMode,
   })
 
-  const { layoutMode, sidebar, main, inspector, inspectorOpen } = useDesktopShellModel({
+  const { layoutMode, sidebar, main, inspector, inspectorOpen, isDirty } = useDesktopShellModel({
     mode,
     setMode,
     loading,
@@ -144,5 +144,6 @@ export function useDesktopAppModel({
     inspector,
     inspectorOpen,
     tabLabel,
+    isDirty,
   }
 }
