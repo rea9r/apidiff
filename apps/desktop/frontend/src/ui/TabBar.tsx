@@ -127,6 +127,12 @@ export function TabBar({
           onSelectTab(tab.id)
         }
 
+        const handleAuxClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+          if (event.button !== 1) return
+          event.preventDefault()
+          if (canClose) onCloseTab(tab.id)
+        }
+
         const className = [
           'xdiff-tab',
           isActive ? 'is-active' : '',
@@ -146,6 +152,7 @@ export function TabBar({
             data-tab-id={tab.id}
             onPointerDown={handlePointerDown}
             onClick={handleClick}
+            onAuxClick={handleAuxClick}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()

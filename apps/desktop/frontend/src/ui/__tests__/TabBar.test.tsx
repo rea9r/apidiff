@@ -132,3 +132,37 @@ describe('TabBar drag reorder', () => {
     expect(onSelectTab).toHaveBeenCalledWith('tab-b')
   })
 })
+
+describe('TabBar middle-click close', () => {
+  it('closes the tab on middle-click when more than one tab exists', () => {
+    const onCloseTab = vi.fn()
+    const { container } = renderTabBar({ onCloseTab })
+    const tabB = container.querySelector('[data-tab-id="tab-b"]') as HTMLElement
+
+    fireEvent(tabB, new MouseEvent('auxclick', { bubbles: true, button: 1 }))
+
+    expect(onCloseTab).toHaveBeenCalledWith('tab-b')
+  })
+
+  it('ignores middle-click when only one tab remains', () => {
+    const onCloseTab = vi.fn()
+    const onlyOne: DesktopTab[] = [{ id: 'tab-only', label: 'Only' }]
+    const { container } = renderTabBar({ tabs: onlyOne, activeTabId: 'tab-only', onCloseTab })
+    const tab = container.querySelector('[data-tab-id="tab-only"]') as HTMLElement
+
+    fireEvent(tab, new MouseEvent('auxclick', { bubbles: true, button: 1 }))
+
+    expect(onCloseTab).not.toHaveBeenCalled()
+  })
+
+  it('does not close on left or right auxclick', () => {
+    const onCloseTab = vi.fn()
+    const { container } = renderTabBar({ onCloseTab })
+    const tabB = container.querySelector('[data-tab-id="tab-b"]') as HTMLElement
+
+    fireEvent(tabB, new MouseEvent('auxclick', { bubbles: true, button: 2 }))
+    fireEvent(tabB, new MouseEvent('auxclick', { bubbles: true, button: 0 }))
+
+    expect(onCloseTab).not.toHaveBeenCalled()
+  })
+})
