@@ -243,6 +243,66 @@ describe('useDesktopTabsManager.closeAll', () => {
   })
 })
 
+describe('useDesktopTabsManager counter', () => {
+  it('seeds the counter from the highest "Tab N" label so a new tab does not reuse an existing number', () => {
+    const initial = makeInitial(['a', 'b'])
+    initial.tabs[0].label = 'Tab 23'
+    initial.tabs[1].label = 'Tab 24'
+
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.addTab())
+
+    const newest = result.current.tabs[result.current.tabs.length - 1]
+    expect(newest.label).toBe('Tab 25')
+  })
+
+  it('ignores custom-renamed labels when seeding the counter', () => {
+    const initial = makeInitial(['a', 'b'])
+    initial.tabs[0].label = 'Auth diff'
+    initial.tabs[1].label = 'Tab 7'
+
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.addTab())
+
+    const newest = result.current.tabs[result.current.tabs.length - 1]
+    expect(newest.label).toBe('Tab 8')
+  })
+
+  it('resets the counter to 1 on closeAll so subsequent tabs start from Tab 2', () => {
+    const initial = makeInitial(['a', 'b'])
+    initial.tabs[0].label = 'Tab 9'
+    initial.tabs[1].label = 'Tab 24'
+
+    const { result } = renderHook(() =>
+      useDesktopTabsManager({
+        initial,
+        commit: vi.fn(),
+        fallbackTabSession: makeSession,
+      }),
+    )
+
+    act(() => result.current.closeAll())
+    expect(result.current.tabs[0].label).toBe('Tab 1')
+
+    act(() => result.current.addTab())
+    expect(result.current.tabs[result.current.tabs.length - 1].label).toBe('Tab 2')
+  })
+})
+
 describe('useDesktopTabsManager.addTab', () => {
   it('inherits lastUsedMode from the currently active tab', () => {
     const initial = makeInitial(['a', 'b'])

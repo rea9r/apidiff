@@ -13,6 +13,19 @@ export type UseDesktopTabsManagerOptions = {
   fallbackTabSession: DesktopStatePersistor['fallbackTabSession']
 }
 
+const TAB_LABEL_PATTERN = /^Tab (\d+)$/
+
+function maxTabNumber(labels: readonly { label: string }[]): number {
+  let max = 0
+  for (const t of labels) {
+    const m = TAB_LABEL_PATTERN.exec(t.label)
+    if (!m) continue
+    const n = Number(m[1])
+    if (n > max) max = n
+  }
+  return max
+}
+
 export function useDesktopTabsManager({
   initial,
   commit,
@@ -25,7 +38,7 @@ export function useDesktopTabsManager({
 
   const [tabs, setTabs] = useState<DesktopTab[]>(initialTabsRef.current)
   const [activeTabId, setActiveTabId] = useState<string>(initialActiveTabIdRef.current)
-  const counterRef = useRef<number>(initialTabsRef.current.length)
+  const counterRef = useRef<number>(maxTabNumber(initialTabsRef.current))
 
   const addTab = useCallback(() => {
     counterRef.current += 1
@@ -67,7 +80,7 @@ export function useDesktopTabsManager({
   }, [])
 
   const closeAll = useCallback(() => {
-    counterRef.current += 1
+    counterRef.current = 1
     const next = counterRef.current
     const id = `tab-${next}-${Date.now()}`
     const label = `Tab ${next}`
