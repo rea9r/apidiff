@@ -14,8 +14,8 @@ type CompareHeaderActionsProps = {
   onClearRecent: () => void
 }
 
-type FolderHeaderActionsProps = {
-  kind: 'folder'
+type DirectoryHeaderActionsProps = {
+  kind: 'directory'
   loading?: boolean
   compareDisabled?: boolean
   onCompare: () => void
@@ -23,7 +23,7 @@ type FolderHeaderActionsProps = {
   onClearRecent: () => void
 }
 
-type DesktopModeHeaderActionsProps = CompareHeaderActionsProps | FolderHeaderActionsProps
+type DesktopModeHeaderActionsProps = CompareHeaderActionsProps | DirectoryHeaderActionsProps
 
 export function DesktopModeHeaderActions(props: DesktopModeHeaderActionsProps) {
   if (props.kind === 'compare') {

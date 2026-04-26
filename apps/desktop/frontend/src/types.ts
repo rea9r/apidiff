@@ -1,4 +1,4 @@
-export type Mode = 'json' | 'text' | 'folder'
+export type Mode = 'json' | 'text' | 'directory'
 
 export type CompareCommon = {
   outputFormat: string
@@ -65,7 +65,7 @@ export type LoadTextFileResponse = {
   encoding: TextEncoding
 }
 
-export type CompareFoldersRequest = {
+export type CompareDirectoriesRequest = {
   leftRoot: string
   rightRoot: string
   currentPath: string
@@ -74,7 +74,7 @@ export type CompareFoldersRequest = {
   nameFilter: string
 }
 
-export type FolderCompareSummary = {
+export type DirectoryCompareSummary = {
   total: number
   same: number
   changed: number
@@ -84,7 +84,7 @@ export type FolderCompareSummary = {
   error: number
 }
 
-export type FolderCompareItem = {
+export type DirectoryCompareItem = {
   name: string
   relativePath: string
   isDir: boolean
@@ -101,12 +101,12 @@ export type FolderCompareItem = {
   message?: string
 }
 
-export type CompareFoldersResponse = {
+export type CompareDirectoriesResponse = {
   currentPath: string
   parentPath?: string
-  scannedSummary: FolderCompareSummary
-  currentSummary: FolderCompareSummary
-  items: FolderCompareItem[]
+  scannedSummary: DirectoryCompareSummary
+  currentSummary: DirectoryCompareSummary
+  items: DirectoryCompareItem[]
   error?: string
 }
 
@@ -124,7 +124,7 @@ export type DesktopTextSession = {
   diffLayout: 'split' | 'unified'
 }
 
-export type DesktopFolderSession = {
+export type DesktopDirectorySession = {
   leftRoot: string
   rightRoot: string
   currentPath: string
@@ -137,7 +137,7 @@ export type DesktopRecentPair = {
   usedAt: string
 }
 
-export type DesktopRecentFolderPair = {
+export type DesktopRecentDirectoryPair = {
   leftRoot: string
   rightRoot: string
   currentPath: string
@@ -150,8 +150,8 @@ export type DesktopState = {
   lastUsedMode: Mode
   json: DesktopJSONSession
   text: DesktopTextSession
-  folder: DesktopFolderSession
+  directory: DesktopDirectorySession
   jsonRecentPairs: DesktopRecentPair[]
   textRecentPairs: DesktopRecentPair[]
-  folderRecentPairs: DesktopRecentFolderPair[]
+  directoryRecentPairs: DesktopRecentDirectoryPair[]
 }

@@ -1,5 +1,5 @@
 import type {
-  DesktopRecentFolderPair,
+  DesktopRecentDirectoryPair,
   DesktopRecentPair,
 } from './types'
 
@@ -29,10 +29,10 @@ export function upsertRecentPair(
   return [updated, ...deduped].slice(0, MAX_RECENT_ENTRIES)
 }
 
-export function upsertRecentFolderPair(
-  prev: DesktopRecentFolderPair[],
-  next: DesktopRecentFolderPair,
-): DesktopRecentFolderPair[] {
+export function upsertRecentDirectoryPair(
+  prev: DesktopRecentDirectoryPair[],
+  next: DesktopRecentDirectoryPair,
+): DesktopRecentDirectoryPair[] {
   const leftRoot = trimValue(next.leftRoot)
   const rightRoot = trimValue(next.rightRoot)
   const currentPath = trimValue(next.currentPath)
@@ -41,7 +41,7 @@ export function upsertRecentFolderPair(
     return prev
   }
 
-  const updated: DesktopRecentFolderPair = {
+  const updated: DesktopRecentDirectoryPair = {
     leftRoot,
     rightRoot,
     currentPath,

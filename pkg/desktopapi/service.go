@@ -12,7 +12,7 @@ type Service struct {
 	stateStore *desktopStateStore
 }
 
-type folderEntrySnapshot struct {
+type directoryEntrySnapshot struct {
 	Path string
 	Kind string
 	Size int64

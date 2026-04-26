@@ -27,7 +27,7 @@ const MODE_OPTIONS = [
     items: [
       { value: 'text', label: 'Text compare' },
       { value: 'json', label: 'JSON compare' },
-      { value: 'folder', label: 'Folder compare' },
+      { value: 'directory', label: 'Directory compare' },
     ],
   },
 ]

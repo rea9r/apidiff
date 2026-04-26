@@ -2,14 +2,14 @@ import { lazy, Suspense } from 'react'
 import { IconArrowLeft } from '@tabler/icons-react'
 import type { Mode } from '../types'
 import { CompareWorkspaceShell } from './CompareWorkspaceShell'
-import type { DirectoryCompareResultPanelProps } from '../features/folder/DirectoryCompareResultPanel'
+import type { DirectoryCompareResultPanelProps } from '../features/directory/DirectoryCompareResultPanel'
 import type { TextCompareResultPanelProps } from '../features/text/TextCompareResultPanel'
 import type { TextCompareSourceWorkspaceProps } from '../features/text/TextCompareSourceWorkspace'
 import type { JSONCompareResultPanelProps } from '../features/json/JSONCompareResultPanel'
 import type { JSONCompareSourceWorkspaceProps } from '../features/json/JSONCompareSourceWorkspace'
 
 const DirectoryCompareResultPanel = lazy(() =>
-  import('../features/folder/DirectoryCompareResultPanel').then((module) => ({
+  import('../features/directory/DirectoryCompareResultPanel').then((module) => ({
     default: module.DirectoryCompareResultPanel,
   })),
 )
@@ -40,31 +40,31 @@ function MainContentLoadingFallback() {
 
 type DesktopMainContentProps = {
   mode: Mode
-  showFolderReturnBanner: boolean
-  onReturnToFolderCompare: () => void
+  showDirectoryReturnBanner: boolean
+  onReturnToDirectoryCompare: () => void
   textSourceProps: TextCompareSourceWorkspaceProps
   textResultProps: TextCompareResultPanelProps
   jsonSourceProps: JSONCompareSourceWorkspaceProps
   jsonResultProps: JSONCompareResultPanelProps
-  folderResultProps: DirectoryCompareResultPanelProps
+  directoryResultProps: DirectoryCompareResultPanelProps
 }
 
 export function DesktopMainContent({
   mode,
-  showFolderReturnBanner,
-  onReturnToFolderCompare,
+  showDirectoryReturnBanner,
+  onReturnToDirectoryCompare,
   textSourceProps,
   textResultProps,
   jsonSourceProps,
   jsonResultProps,
-  folderResultProps,
+  directoryResultProps,
 }: DesktopMainContentProps) {
-  const folderReturnPathBanner = showFolderReturnBanner ? (
-    <div className="folder-return-banner">
+  const directoryReturnPathBanner = showDirectoryReturnBanner ? (
+    <div className="directory-return-banner">
       <button
         type="button"
-        className="button-secondary button-compact folder-return-button"
-        onClick={onReturnToFolderCompare}
+        className="button-secondary button-compact directory-return-button"
+        onClick={onReturnToDirectoryCompare}
       >
         <IconArrowLeft size={13} />
         Back to directory compare
@@ -75,7 +75,7 @@ export function DesktopMainContent({
   if (mode === 'text') {
     return (
       <div className="compare-main-shell">
-        {folderReturnPathBanner}
+        {directoryReturnPathBanner}
         <Suspense fallback={<MainContentLoadingFallback />}>
           <CompareWorkspaceShell
             source={<TextCompareSourceWorkspace {...textSourceProps} />}
@@ -89,7 +89,7 @@ export function DesktopMainContent({
   if (mode === 'json') {
     return (
       <div className="compare-main-shell">
-        {folderReturnPathBanner}
+        {directoryReturnPathBanner}
         <Suspense fallback={<MainContentLoadingFallback />}>
           <CompareWorkspaceShell
             source={<JSONCompareSourceWorkspace {...jsonSourceProps} />}
@@ -103,7 +103,7 @@ export function DesktopMainContent({
   return (
     <div className="result-panel">
       <Suspense fallback={<MainContentLoadingFallback />}>
-        <DirectoryCompareResultPanel {...folderResultProps} />
+        <DirectoryCompareResultPanel {...directoryResultProps} />
       </Suspense>
     </div>
   )

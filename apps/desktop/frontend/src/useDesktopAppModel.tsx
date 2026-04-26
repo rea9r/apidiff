@@ -9,7 +9,7 @@ import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { useDesktopShellModel } from './useDesktopShellModel'
 import { useJSONCompareModel } from './features/json/useJSONCompareModel'
 import { useTextCompareModel } from './features/text/useTextCompareModel'
-import { useFolderCompareModel } from './features/folder/useFolderCompareModel'
+import { useDirectoryCompareModel } from './features/directory/useDirectoryCompareModel'
 import { useFileDrop } from './features/dragdrop/useFileDrop'
 
 export function useDesktopAppModel() {
@@ -37,12 +37,12 @@ export function useDesktopAppModel() {
     textDiffLayout: textModel.viewState.textDiffLayout,
   })
 
-  const folderModel = useFolderCompareModel({
+  const directoryModel = useDirectoryCompareModel({
     mode,
     setMode,
     loadTextFile: api.loadTextFile,
-    compareFolders: api.compareFolders,
-    pickFolderRoot: api.pickFolderRoot,
+    compareDirectories: api.compareDirectories,
+    pickDirectoryRoot: api.pickDirectoryRoot,
     runJSONCompareFromPaths: jsonModel.workflow.runJSONCompareFromPaths,
     runTextCompareWithValues: textModel.workflow.runTextCompareWithValues,
     resetJSONSearch: jsonModel.viewState.resetJSONSearch,
@@ -59,7 +59,7 @@ export function useDesktopAppModel() {
     setSummaryLine,
     setOutput,
     runJSON: jsonModel.workflow.runJSON,
-    applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
+    applyJSONResultView: directoryModel.childDiffOpeners.applyJSONResultView,
     setJSONRichResult: jsonModel.workflow.setJSONRichResult,
     runText: textModel.workflow.runText,
     setTextResult: textModel.workflow.setTextResult,
@@ -67,7 +67,7 @@ export function useDesktopAppModel() {
     setTextLastRunNew: textModel.workflow.setTextLastRunNew,
     setTextLastRunOutputFormat: textModel.workflow.setTextLastRunOutputFormat,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
-    runFolderCompare: folderModel.workflow.runFolderCompare,
+    runDirectoryCompare: directoryModel.workflow.runDirectoryCompare,
   })
 
   // --- Persistence ---
@@ -107,17 +107,17 @@ export function useDesktopAppModel() {
       setOldText: textModel.workflow.setTextOld,
       setNewText: textModel.workflow.setTextNew,
     },
-    folder: {
-      leftRoot: folderModel.state.folderLeftRoot,
-      rightRoot: folderModel.state.folderRightRoot,
-      currentPath: folderModel.state.folderCurrentPath,
-      viewMode: folderModel.viewState.folderViewMode,
-      recentPairs: folderModel.state.folderRecentPairs,
-      setLeftRoot: folderModel.state.setFolderLeftRoot,
-      setRightRoot: folderModel.state.setFolderRightRoot,
-      setCurrentPath: folderModel.state.setFolderCurrentPath,
-      setViewMode: folderModel.viewState.setFolderViewMode,
-      setRecentPairs: folderModel.state.setFolderRecentPairs,
+    directory: {
+      leftRoot: directoryModel.state.directoryLeftRoot,
+      rightRoot: directoryModel.state.directoryRightRoot,
+      currentPath: directoryModel.state.directoryCurrentPath,
+      viewMode: directoryModel.viewState.directoryViewMode,
+      recentPairs: directoryModel.state.directoryRecentPairs,
+      setLeftRoot: directoryModel.state.setDirectoryLeftRoot,
+      setRightRoot: directoryModel.state.setDirectoryRightRoot,
+      setCurrentPath: directoryModel.state.setDirectoryCurrentPath,
+      setViewMode: directoryModel.viewState.setDirectoryViewMode,
+      setRecentPairs: directoryModel.state.setDirectoryRecentPairs,
     },
   })
 
@@ -142,14 +142,14 @@ export function useDesktopAppModel() {
     'json-new': (paths) => {
       void jsonModel.workflow.loadJSONFromPath('new', paths[0])
     },
-    'folder-left': (paths) => {
-      folderModel.workflow.setFolderRootPath('left', paths[0])
+    'directory-left': (paths) => {
+      directoryModel.workflow.setDirectoryRootPath('left', paths[0])
       if (paths[1]) {
-        folderModel.workflow.setFolderRootPath('right', paths[1])
+        directoryModel.workflow.setDirectoryRootPath('right', paths[1])
       }
     },
-    'folder-right': (paths) => {
-      folderModel.workflow.setFolderRootPath('right', paths[0])
+    'directory-right': (paths) => {
+      directoryModel.workflow.setDirectoryRootPath('right', paths[0])
     },
   })
 
@@ -164,21 +164,21 @@ export function useDesktopAppModel() {
     compareOptionsOpened,
     onToggleCompareOptions: () => setCompareOptionsOpened((prev) => !prev),
     jsonCompareDisabled: jsonModel.compareDisabled,
-    folderCompareDisabled: folderModel.compareDisabled,
+    directoryCompareDisabled: directoryModel.compareDisabled,
     onRun,
     jsonRecentPairs: jsonModel.workflow.jsonRecentPairs,
     onClearJSONRecent: () => jsonModel.workflow.setJSONRecentPairs([]),
     textRecentPairs: textModel.workflow.textRecentPairs,
     onClearTextRecent: () => textModel.workflow.setTextRecentPairs([]),
-    folderRecentPairs: folderModel.state.folderRecentPairs,
-    onClearFolderRecent: () => folderModel.state.setFolderRecentPairs([]),
+    directoryRecentPairs: directoryModel.state.directoryRecentPairs,
+    onClearDirectoryRecent: () => directoryModel.state.setDirectoryRecentPairs([]),
     runRecentAction,
     runTextFromRecent: textModel.workflow.runTextFromRecent,
     clearTextExpandedSections: textModel.viewState.clearTextExpandedSections,
     resetTextSearch: textModel.viewState.resetTextSearch,
     runJSONFromRecent: jsonModel.workflow.runJSONFromRecent,
-    applyJSONResultView: folderModel.childDiffOpeners.applyJSONResultView,
-    runFolderFromRecent: folderModel.interactions.runFolderFromRecent,
+    applyJSONResultView: directoryModel.childDiffOpeners.applyJSONResultView,
+    runDirectoryFromRecent: directoryModel.interactions.runDirectoryFromRecent,
     setMode,
   })
 
@@ -192,17 +192,17 @@ export function useDesktopAppModel() {
     jsonViewState: jsonModel.viewState,
     textWorkflow: textModel.workflow,
     textViewState: textModel.viewState,
-    folderLeftRoot: folderModel.state.folderLeftRoot,
-    folderRightRoot: folderModel.state.folderRightRoot,
-    folderNameFilter: folderModel.state.folderNameFilter,
-    setFolderNameFilter: folderModel.state.setFolderNameFilter,
-    folderCurrentPath: folderModel.state.folderCurrentPath,
-    folderResult: folderModel.state.folderResult,
-    folderStatus: folderModel.state.folderStatus,
-    folderViewState: folderModel.viewState,
-    folderWorkflow: folderModel.workflow,
-    folderChildDiffActions: folderModel.childDiffActions,
-    folderInteractions: folderModel.interactions,
+    directoryLeftRoot: directoryModel.state.directoryLeftRoot,
+    directoryRightRoot: directoryModel.state.directoryRightRoot,
+    directoryNameFilter: directoryModel.state.directoryNameFilter,
+    setDirectoryNameFilter: directoryModel.state.setDirectoryNameFilter,
+    directoryCurrentPath: directoryModel.state.directoryCurrentPath,
+    directoryResult: directoryModel.state.directoryResult,
+    directoryStatus: directoryModel.state.directoryStatus,
+    directoryViewState: directoryModel.viewState,
+    directoryWorkflow: directoryModel.workflow,
+    directoryChildDiffActions: directoryModel.childDiffActions,
+    directoryInteractions: directoryModel.interactions,
   })
 
   return {

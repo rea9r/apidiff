@@ -41,7 +41,7 @@ type LoadTextFileResponse struct {
 	Encoding string `json:"encoding"`
 }
 
-type CompareFoldersRequest struct {
+type CompareDirectoriesRequest struct {
 	LeftRoot    string `json:"leftRoot"`
 	RightRoot   string `json:"rightRoot"`
 	CurrentPath string `json:"currentPath"`
@@ -50,7 +50,7 @@ type CompareFoldersRequest struct {
 	NameFilter  string `json:"nameFilter"`
 }
 
-type FolderCompareSummary struct {
+type DirectoryCompareSummary struct {
 	Total        int `json:"total"`
 	Same         int `json:"same"`
 	Changed      int `json:"changed"`
@@ -60,7 +60,7 @@ type FolderCompareSummary struct {
 	Error        int `json:"error"`
 }
 
-type FolderCompareItem struct {
+type DirectoryCompareItem struct {
 	Name            string `json:"name"`
 	RelativePath    string `json:"relativePath"`
 	IsDir           bool   `json:"isDir"`
@@ -77,13 +77,13 @@ type FolderCompareItem struct {
 	Message         string `json:"message,omitempty"`
 }
 
-type CompareFoldersResponse struct {
-	CurrentPath    string               `json:"currentPath"`
-	ParentPath     string               `json:"parentPath,omitempty"`
-	ScannedSummary FolderCompareSummary `json:"scannedSummary"`
-	CurrentSummary FolderCompareSummary `json:"currentSummary"`
-	Items          []FolderCompareItem  `json:"items"`
-	Error          string               `json:"error,omitempty"`
+type CompareDirectoriesResponse struct {
+	CurrentPath    string                  `json:"currentPath"`
+	ParentPath     string                  `json:"parentPath,omitempty"`
+	ScannedSummary DirectoryCompareSummary `json:"scannedSummary"`
+	CurrentSummary DirectoryCompareSummary `json:"currentSummary"`
+	Items          []DirectoryCompareItem  `json:"items"`
+	Error          string                  `json:"error,omitempty"`
 }
 
 type CompareResponse struct {
@@ -129,7 +129,7 @@ type DesktopTextSession struct {
 	DiffLayout    string        `json:"diffLayout"`
 }
 
-type DesktopFolderSession struct {
+type DesktopDirectorySession struct {
 	LeftRoot    string `json:"leftRoot"`
 	RightRoot   string `json:"rightRoot"`
 	CurrentPath string `json:"currentPath"`
@@ -142,7 +142,7 @@ type DesktopRecentPair struct {
 	UsedAt  string `json:"usedAt"`
 }
 
-type DesktopRecentFolderPair struct {
+type DesktopRecentDirectoryPair struct {
 	LeftRoot    string `json:"leftRoot"`
 	RightRoot   string `json:"rightRoot"`
 	CurrentPath string `json:"currentPath"`
@@ -151,12 +151,12 @@ type DesktopRecentFolderPair struct {
 }
 
 type DesktopState struct {
-	Version           int                       `json:"version"`
-	LastUsedMode      string                    `json:"lastUsedMode"`
-	JSON              DesktopJSONSession        `json:"json"`
-	Text              DesktopTextSession        `json:"text"`
-	Folder            DesktopFolderSession      `json:"folder"`
-	JSONRecentPairs   []DesktopRecentPair       `json:"jsonRecentPairs"`
-	TextRecentPairs   []DesktopRecentPair       `json:"textRecentPairs"`
-	FolderRecentPairs []DesktopRecentFolderPair `json:"folderRecentPairs"`
+	Version              int                          `json:"version"`
+	LastUsedMode         string                       `json:"lastUsedMode"`
+	JSON                 DesktopJSONSession           `json:"json"`
+	Text                 DesktopTextSession           `json:"text"`
+	Directory            DesktopDirectorySession      `json:"directory"`
+	JSONRecentPairs      []DesktopRecentPair          `json:"jsonRecentPairs"`
+	TextRecentPairs      []DesktopRecentPair          `json:"textRecentPairs"`
+	DirectoryRecentPairs []DesktopRecentDirectoryPair `json:"directoryRecentPairs"`
 }

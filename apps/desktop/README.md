@@ -6,10 +6,10 @@ An interactive desktop GUI for `xdiff`, built with Wails (Go) + React + Mantine.
 
 - **JSON compare**: file load or paste-edit input, semantic rich diff with grouped path/value table, and raw output fallback.
 - **Text compare**: paste-first input with per-editor open/paste/copy/clear actions, rich diff with `Unified` / `Split` view toggle, collapsible unchanged sections, and row search with next/prev navigation.
-- **Folder compare**: recursive directory scan with table-first list/tree views, breadcrumb navigation, scanned/visible summaries, quick filters, sortable columns, and child compare launch into JSON or text diff.
+- **Directory compare**: recursive directory scan with table-first list/tree views, breadcrumb navigation, scanned/visible summaries, quick filters, sortable columns, and child compare launch into JSON or text diff.
 - **Shared compare workspace**: unified result model with `Diff` as the default view and `Semantic` / `Raw` as secondary views where applicable.
 - **Theming**: light / dark / system theme support with theme-aware viewer tokens and responsive sidebar that collapses for narrower windows.
-- **Persistence**: last-session restore (paths/roots/options) and recent compare/folder targets with per-mode clear actions. Editor text and diff output are not persisted.
+- **Persistence**: last-session restore (paths/roots/options) and recent compare/directory targets with per-mode clear actions. Editor text and diff output are not persisted.
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ npm --prefix frontend install
 wails dev
 ```
 
-For folder compare sample data, use `examples/folder/basic` and `examples/folder/filters`.
+For directory compare sample data, use `examples/directory/basic` and `examples/directory/filters`.
 
 ## Build frontend only
 

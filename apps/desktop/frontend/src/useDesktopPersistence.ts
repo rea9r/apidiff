@@ -54,21 +54,21 @@ type UseDesktopPersistenceOptions = {
     setOldText: StateSetter<string>
     setNewText: StateSetter<string>
   }
-  folder: {
+  directory: {
     leftRoot: string
     rightRoot: string
     currentPath: string
-    viewMode: DesktopState['folder']['viewMode']
-    recentPairs: DesktopState['folderRecentPairs']
+    viewMode: DesktopState['directory']['viewMode']
+    recentPairs: DesktopState['directoryRecentPairs']
     setLeftRoot: StateSetter<string>
     setRightRoot: StateSetter<string>
     setCurrentPath: StateSetter<string>
-    setViewMode: StateSetter<DesktopState['folder']['viewMode']>
-    setRecentPairs: StateSetter<DesktopState['folderRecentPairs']>
+    setViewMode: StateSetter<DesktopState['directory']['viewMode']>
+    setRecentPairs: StateSetter<DesktopState['directoryRecentPairs']>
   }
 }
 
-const APP_MODES: Mode[] = ['text', 'json', 'folder']
+const APP_MODES: Mode[] = ['text', 'json', 'directory']
 
 function isMode(value: string): value is Mode {
   return APP_MODES.includes(value as Mode)
@@ -82,7 +82,7 @@ export function useDesktopPersistence({
   loadTextFile,
   json,
   text,
-  folder,
+  directory,
 }: UseDesktopPersistenceOptions) {
   const [desktopStateHydrated, setDesktopStateHydrated] = useState(false)
 
@@ -118,17 +118,17 @@ export function useDesktopPersistence({
   } = text
 
   const {
-    leftRoot: folderLeftRoot,
-    rightRoot: folderRightRoot,
-    currentPath: folderCurrentPath,
-    viewMode: folderViewMode,
-    recentPairs: folderRecentPairs,
-    setLeftRoot: setFolderLeftRoot,
-    setRightRoot: setFolderRightRoot,
-    setCurrentPath: setFolderCurrentPath,
-    setViewMode: setFolderViewMode,
-    setRecentPairs: setFolderRecentPairs,
-  } = folder
+    leftRoot: directoryLeftRoot,
+    rightRoot: directoryRightRoot,
+    currentPath: directoryCurrentPath,
+    viewMode: directoryViewMode,
+    recentPairs: directoryRecentPairs,
+    setLeftRoot: setDirectoryLeftRoot,
+    setRightRoot: setDirectoryRightRoot,
+    setCurrentPath: setDirectoryCurrentPath,
+    setViewMode: setDirectoryViewMode,
+    setRecentPairs: setDirectoryRecentPairs,
+  } = directory
 
   useEffect(() => {
     let active = true
@@ -163,14 +163,14 @@ export function useDesktopPersistence({
         setTextOldSourcePath(saved.text.oldSourcePath || '')
         setTextNewSourcePath(saved.text.newSourcePath || '')
 
-        setFolderLeftRoot(saved.folder.leftRoot || '')
-        setFolderRightRoot(saved.folder.rightRoot || '')
-        setFolderCurrentPath(saved.folder.currentPath || '')
-        setFolderViewMode(saved.folder.viewMode === 'tree' ? 'tree' : 'list')
+        setDirectoryLeftRoot(saved.directory.leftRoot || '')
+        setDirectoryRightRoot(saved.directory.rightRoot || '')
+        setDirectoryCurrentPath(saved.directory.currentPath || '')
+        setDirectoryViewMode(saved.directory.viewMode === 'tree' ? 'tree' : 'list')
 
         setJSONRecentPairs(saved.jsonRecentPairs ?? [])
         setTextRecentPairs(saved.textRecentPairs ?? [])
-        setFolderRecentPairs(saved.folderRecentPairs ?? [])
+        setDirectoryRecentPairs(saved.directoryRecentPairs ?? [])
 
         if (loadTextFile) {
           const safeLoad = async (path: string): Promise<string> => {
@@ -220,11 +220,11 @@ export function useDesktopPersistence({
   }, [
     loadDesktopState,
     loadTextFile,
-    setFolderCurrentPath,
-    setFolderLeftRoot,
-    setFolderRecentPairs,
-    setFolderRightRoot,
-    setFolderViewMode,
+    setDirectoryCurrentPath,
+    setDirectoryLeftRoot,
+    setDirectoryRecentPairs,
+    setDirectoryRightRoot,
+    setDirectoryViewMode,
     setIgnoreOrder,
     setJSONCommon,
     setJSONIgnorePathsDraft,
@@ -264,15 +264,15 @@ export function useDesktopPersistence({
           common: textCommon,
           diffLayout: textDiffLayout,
         },
-        folder: {
-          leftRoot: folderLeftRoot,
-          rightRoot: folderRightRoot,
-          currentPath: folderCurrentPath,
-          viewMode: folderViewMode,
+        directory: {
+          leftRoot: directoryLeftRoot,
+          rightRoot: directoryRightRoot,
+          currentPath: directoryCurrentPath,
+          viewMode: directoryViewMode,
         },
         jsonRecentPairs,
         textRecentPairs,
-        folderRecentPairs,
+        directoryRecentPairs,
       }
 
       void saveDesktopState(state).catch(() => {
@@ -285,11 +285,11 @@ export function useDesktopPersistence({
     }
   }, [
     desktopStateHydrated,
-    folderCurrentPath,
-    folderLeftRoot,
-    folderRecentPairs,
-    folderRightRoot,
-    folderViewMode,
+    directoryCurrentPath,
+    directoryLeftRoot,
+    directoryRecentPairs,
+    directoryRightRoot,
+    directoryViewMode,
     ignoreOrder,
     jsonCommon,
     jsonNewSourcePath,

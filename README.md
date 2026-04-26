@@ -1,13 +1,13 @@
 # xdiff
 
-A general-purpose diff tool for JSON, plain text, and folders, built in Go.
+A general-purpose diff tool for JSON, plain text, and directories, built in Go.
 
 ## Overview
 
 `xdiff` ships in two forms:
 
 - **CLI** for scripting local file comparisons (`xdiff json`, `xdiff text`).
-- **Desktop GUI** (Wails + React) for interactive JSON / text / folder compare workflows.
+- **Desktop GUI** (Wails + React) for interactive JSON / text / directory compare workflows.
 
 ## Quick Start
 
@@ -108,10 +108,10 @@ Small runnable examples are available under:
 
 ## Desktop fixture examples
 
-Desktop-only fixture sets for the Folder Compare workflow:
+Desktop-only fixture sets for the Directory Compare workflow:
 
-- `examples/folder/basic`
-- `examples/folder/filters`
+- `examples/directory/basic`
+- `examples/directory/filters`
 
 ## Examples
 
@@ -249,7 +249,7 @@ Machine-readable output (`--output-format json`):
 
 ## Desktop App
 
-An interactive desktop GUI lives under `apps/desktop/`. See `apps/desktop/README.md` for setup and the supported JSON / text / folder compare workflows.
+An interactive desktop GUI lives under `apps/desktop/`. See `apps/desktop/README.md` for setup and the supported JSON / text / directory compare workflows.
 
 ## Development
 

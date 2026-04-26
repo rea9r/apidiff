@@ -5,8 +5,8 @@ import type {
   CompareResponse,
   CompareJSONValuesRequest,
   CompareJSONRichResponse,
-  CompareFoldersRequest,
-  CompareFoldersResponse,
+  CompareDirectoriesRequest,
+  CompareDirectoriesResponse,
   DesktopState,
   LoadTextFileRequest,
   LoadTextFileResponse,
@@ -32,14 +32,14 @@ export function useDesktopBridge() {
       ): Promise<CompareJSONRichResponse> =>
         App.CompareJSONValuesRich(req as any) as Promise<CompareJSONRichResponse>,
 
-      compareFolders: (
-        req: CompareFoldersRequest,
-      ): Promise<CompareFoldersResponse> =>
-        App.CompareFolders(req as any) as Promise<CompareFoldersResponse>,
+      compareDirectories: (
+        req: CompareDirectoriesRequest,
+      ): Promise<CompareDirectoriesResponse> =>
+        App.CompareDirectories(req as any) as Promise<CompareDirectoriesResponse>,
 
       pickJSONFile: App.PickJSONFile,
       pickTextFile: App.PickTextFile,
-      pickFolderRoot: App.PickFolderRoot,
+      pickDirectoryRoot: App.PickDirectoryRoot,
 
       loadTextFile: (req: LoadTextFileRequest): Promise<LoadTextFileResponse> =>
         App.LoadTextFile(req as any) as unknown as Promise<LoadTextFileResponse>,

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import type {
   CompareJSONRichResponse,
-  DesktopRecentFolderPair,
+  DesktopRecentDirectoryPair,
   DesktopRecentPair,
   Mode,
 } from './types'
@@ -17,21 +17,21 @@ type UseDesktopHeaderActionsOptions = {
   compareOptionsOpened: boolean
   onToggleCompareOptions: () => void
   jsonCompareDisabled: boolean
-  folderCompareDisabled: boolean
+  directoryCompareDisabled: boolean
   onRun: () => void
   jsonRecentPairs: DesktopRecentPair[]
   onClearJSONRecent: () => void
   textRecentPairs: DesktopRecentPair[]
   onClearTextRecent: () => void
-  folderRecentPairs: DesktopRecentFolderPair[]
-  onClearFolderRecent: () => void
+  directoryRecentPairs: DesktopRecentDirectoryPair[]
+  onClearDirectoryRecent: () => void
   runRecentAction: RecentActionRunner
   runTextFromRecent: (pair: DesktopRecentPair) => Promise<void>
   clearTextExpandedSections: () => void
   resetTextSearch: () => void
   runJSONFromRecent: (pair: DesktopRecentPair) => Promise<CompareJSONRichResponse>
   applyJSONResultView: (result: StructuredResultView) => void
-  runFolderFromRecent: (entry: DesktopRecentFolderPair) => Promise<void>
+  runDirectoryFromRecent: (entry: DesktopRecentDirectoryPair) => Promise<void>
   setMode: (value: Mode) => void
 }
 
@@ -41,21 +41,21 @@ export function useDesktopHeaderActions({
   compareOptionsOpened,
   onToggleCompareOptions,
   jsonCompareDisabled,
-  folderCompareDisabled,
+  directoryCompareDisabled,
   onRun,
   jsonRecentPairs,
   onClearJSONRecent,
   textRecentPairs,
   onClearTextRecent,
-  folderRecentPairs,
-  onClearFolderRecent,
+  directoryRecentPairs,
+  onClearDirectoryRecent,
   runRecentAction,
   runTextFromRecent,
   clearTextExpandedSections,
   resetTextSearch,
   runJSONFromRecent,
   applyJSONResultView,
-  runFolderFromRecent,
+  runDirectoryFromRecent,
   setMode,
 }: UseDesktopHeaderActionsOptions) {
   const runTextFromRecentWithViewReset = useCallback(
@@ -103,15 +103,15 @@ export function useDesktopHeaderActions({
     ],
   )
 
-  const folderRecentItems = useMemo(
+  const directoryRecentItems = useMemo(
     () =>
-      folderRecentPairs.map((entry) => ({
+      directoryRecentPairs.map((entry) => ({
         key: `${entry.leftRoot}::${entry.rightRoot}::${entry.currentPath}::${entry.viewMode}`,
         label: `${entry.leftRoot} <> ${entry.rightRoot}`,
         onClick: () =>
-          void runRecentAction('Recent directory compare', () => runFolderFromRecent(entry)),
+          void runRecentAction('Recent directory compare', () => runDirectoryFromRecent(entry)),
       })),
-    [folderRecentPairs, runFolderFromRecent, runRecentAction],
+    [directoryRecentPairs, runDirectoryFromRecent, runRecentAction],
   )
 
   const headerActions = useMemo(() => {
@@ -130,15 +130,15 @@ export function useDesktopHeaderActions({
       )
     }
 
-    if (mode === 'folder') {
+    if (mode === 'directory') {
       return (
         <DesktopModeHeaderActions
-          kind="folder"
+          kind="directory"
           loading={loading}
-          compareDisabled={folderCompareDisabled}
+          compareDisabled={directoryCompareDisabled}
           onCompare={() => void onRun()}
-          recentItems={folderRecentItems}
-          onClearRecent={onClearFolderRecent}
+          recentItems={directoryRecentItems}
+          onClearRecent={onClearDirectoryRecent}
         />
       )
     }
@@ -147,12 +147,12 @@ export function useDesktopHeaderActions({
   }, [
     compareOptionsOpened,
     compareRecentItems,
-    folderCompareDisabled,
-    folderRecentItems,
+    directoryCompareDisabled,
+    directoryRecentItems,
     jsonCompareDisabled,
     loading,
     mode,
-    onClearFolderRecent,
+    onClearDirectoryRecent,
     onClearJSONRecent,
     onClearTextRecent,
     onRun,

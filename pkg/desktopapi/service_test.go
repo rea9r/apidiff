@@ -17,7 +17,7 @@ func writeFile(t *testing.T, path, body string) {
 	}
 }
 
-func findFolderItem(t *testing.T, items []FolderCompareItem, relativePath string) FolderCompareItem {
+func findDirectoryItem(t *testing.T, items []DirectoryCompareItem, relativePath string) DirectoryCompareItem {
 	t.Helper()
 	for _, item := range items {
 		if item.RelativePath == relativePath {
@@ -25,7 +25,7 @@ func findFolderItem(t *testing.T, items []FolderCompareItem, relativePath string
 		}
 	}
 	t.Fatalf("item %q not found", relativePath)
-	return FolderCompareItem{}
+	return DirectoryCompareItem{}
 }
 
 func TestCompareJSONFiles(t *testing.T) {
@@ -428,7 +428,7 @@ func TestLoadTextFileUnsupportedEncoding(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_NavigateRootListing(t *testing.T) {
+func TestCompareDirectories_NavigateRootListing(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -438,7 +438,7 @@ func TestCompareFolders_NavigateRootListing(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "beta.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -446,10 +446,10 @@ func TestCompareFolders_NavigateRootListing(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 	if res.CurrentPath != "" {
 		t.Fatalf("expected currentPath root, got %q", res.CurrentPath)
@@ -465,7 +465,7 @@ func TestCompareFolders_NavigateRootListing(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_NavigateChildDirectory(t *testing.T) {
+func TestCompareDirectories_NavigateChildDirectory(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -475,7 +475,7 @@ func TestCompareFolders_NavigateChildDirectory(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "src", "diff.txt"), "right\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "src",
@@ -483,10 +483,10 @@ func TestCompareFolders_NavigateChildDirectory(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 	if res.CurrentPath != "src" {
 		t.Fatalf("expected currentPath src, got %q", res.CurrentPath)
@@ -499,7 +499,7 @@ func TestCompareFolders_NavigateChildDirectory(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_DirectoryAggregateStatus(t *testing.T) {
+func TestCompareDirectories_DirectoryAggregateStatus(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -507,7 +507,7 @@ func TestCompareFolders_DirectoryAggregateStatus(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "svc", "config.txt"), "right\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -515,10 +515,10 @@ func TestCompareFolders_DirectoryAggregateStatus(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 	if len(res.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(res.Items))
@@ -528,7 +528,7 @@ func TestCompareFolders_DirectoryAggregateStatus(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_CurrentSummaryVsScannedSummary(t *testing.T) {
+func TestCompareDirectories_CurrentSummaryVsScannedSummary(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -538,7 +538,7 @@ func TestCompareFolders_CurrentSummaryVsScannedSummary(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "sub", "diff.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -546,17 +546,17 @@ func TestCompareFolders_CurrentSummaryVsScannedSummary(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 	if res.ScannedSummary.Total <= res.CurrentSummary.Total {
 		t.Fatalf("expected scanned summary to include more entries, got scanned=%+v current=%+v", res.ScannedSummary, res.CurrentSummary)
 	}
 }
 
-func TestCompareFolders_NameFilterOnCurrentFolder(t *testing.T) {
+func TestCompareDirectories_NameFilterOnCurrentDirectory(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -566,7 +566,7 @@ func TestCompareFolders_NameFilterOnCurrentFolder(t *testing.T) {
 	writeFile(t, filepath.Join(rightRoot, "beta.txt"), "new\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -575,10 +575,10 @@ func TestCompareFolders_NameFilterOnCurrentFolder(t *testing.T) {
 		NameFilter:  "BETA",
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 
 	if len(res.Items) != 1 {
@@ -589,7 +589,7 @@ func TestCompareFolders_NameFilterOnCurrentFolder(t *testing.T) {
 	}
 }
 
-func TestCompareFolders_OpenableHints(t *testing.T) {
+func TestCompareDirectories_OpenableHints(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")
 
@@ -600,7 +600,7 @@ func TestCompareFolders_OpenableHints(t *testing.T) {
 	writeFile(t, filepath.Join(leftRoot, "left-only.txt"), "left only\n")
 
 	svc := NewService()
-	res, err := svc.CompareFolders(CompareFoldersRequest{
+	res, err := svc.CompareDirectories(CompareDirectoriesRequest{
 		LeftRoot:    leftRoot,
 		RightRoot:   rightRoot,
 		CurrentPath: "",
@@ -608,21 +608,21 @@ func TestCompareFolders_OpenableHints(t *testing.T) {
 		ShowSame:    true,
 	})
 	if err != nil {
-		t.Fatalf("CompareFolders() error = %v", err)
+		t.Fatalf("CompareDirectories() error = %v", err)
 	}
 	if res.Error != "" {
-		t.Fatalf("CompareFolders() response error = %s", res.Error)
+		t.Fatalf("CompareDirectories() response error = %s", res.Error)
 	}
 
-	jsonItem := findFolderItem(t, res.Items, "payload.json")
+	jsonItem := findDirectoryItem(t, res.Items, "payload.json")
 	if jsonItem.CompareModeHint != "json" {
 		t.Fatalf("payload.json hint = %s, want json", jsonItem.CompareModeHint)
 	}
-	textItem := findFolderItem(t, res.Items, "note.txt")
+	textItem := findDirectoryItem(t, res.Items, "note.txt")
 	if textItem.CompareModeHint != "text" {
 		t.Fatalf("note.txt hint = %s, want text", textItem.CompareModeHint)
 	}
-	leftOnlyItem := findFolderItem(t, res.Items, "left-only.txt")
+	leftOnlyItem := findDirectoryItem(t, res.Items, "left-only.txt")
 	if leftOnlyItem.CompareModeHint != "none" {
 		t.Fatalf("left-only.txt hint = %s, want none", leftOnlyItem.CompareModeHint)
 	}

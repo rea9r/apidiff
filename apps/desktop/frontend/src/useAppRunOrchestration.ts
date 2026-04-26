@@ -20,7 +20,7 @@ type UseAppRunOrchestrationOptions = {
   setTextLastRunNew: (value: string) => void
   setTextLastRunOutputFormat: (value: 'text' | 'json' | null) => void
   clearTextExpandedSections: () => void
-  runFolderCompare: () => Promise<void>
+  runDirectoryCompare: () => Promise<void>
 }
 
 function buildCompareErrorResult(errorText: string): CompareResponse {
@@ -60,7 +60,7 @@ export function useAppRunOrchestration({
   setTextLastRunNew,
   setTextLastRunOutputFormat,
   clearTextExpandedSections,
-  runFolderCompare,
+  runDirectoryCompare,
 }: UseAppRunOrchestrationOptions) {
   const setResult = useCallback(
     (res: unknown) => {
@@ -84,8 +84,8 @@ export function useAppRunOrchestration({
       await runText()
       return
     }
-    await runFolderCompare()
-  }, [mode, runFolderCompare, runJSONWithViewReset, runText])
+    await runDirectoryCompare()
+  }, [mode, runDirectoryCompare, runJSONWithViewReset, runText])
 
   const onRun = useCallback(async () => {
     setLoading(true)

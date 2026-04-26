@@ -48,9 +48,9 @@ func TestDesktopStateStoreSaveLoadRoundtrip(t *testing.T) {
 	}
 	input := defaultDesktopState()
 	input.LastUsedMode = "text"
-	input.Folder.LeftRoot = "/tmp/left"
-	input.Folder.RightRoot = "/tmp/right"
-	input.Folder.ViewMode = "tree"
+	input.Directory.LeftRoot = "/tmp/left"
+	input.Directory.RightRoot = "/tmp/right"
+	input.Directory.ViewMode = "tree"
 	input.JSONRecentPairs = []DesktopRecentPair{
 		{OldPath: "/a.json", NewPath: "/b.json", UsedAt: "2026-01-01T00:00:00Z"},
 	}
@@ -65,14 +65,57 @@ func TestDesktopStateStoreSaveLoadRoundtrip(t *testing.T) {
 	if loaded.LastUsedMode != "text" {
 		t.Fatalf("lastUsedMode = %q, want text", loaded.LastUsedMode)
 	}
-	if loaded.Folder.LeftRoot != "/tmp/left" || loaded.Folder.RightRoot != "/tmp/right" {
-		t.Fatalf("folder roots mismatch: %+v", loaded.Folder)
+	if loaded.Directory.LeftRoot != "/tmp/left" || loaded.Directory.RightRoot != "/tmp/right" {
+		t.Fatalf("directory roots mismatch: %+v", loaded.Directory)
 	}
-	if loaded.Folder.ViewMode != "tree" {
-		t.Fatalf("folder viewMode = %q, want tree", loaded.Folder.ViewMode)
+	if loaded.Directory.ViewMode != "tree" {
+		t.Fatalf("directory viewMode = %q, want tree", loaded.Directory.ViewMode)
 	}
 	if len(loaded.JSONRecentPairs) != 1 {
 		t.Fatalf("jsonRecentPairs len = %d, want 1", len(loaded.JSONRecentPairs))
+	}
+}
+
+func TestDesktopStateStoreLoadLegacyFolderKeys(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "desktop-state.json")
+	legacyJSON := `{
+		"version": 1,
+		"lastUsedMode": "folder",
+		"folder": {
+			"leftRoot": "/legacy/left",
+			"rightRoot": "/legacy/right",
+			"currentPath": "api",
+			"viewMode": "tree"
+		},
+		"folderRecentPairs": [
+			{"leftRoot": "/r1/left", "rightRoot": "/r1/right", "currentPath": "", "viewMode": "list", "usedAt": "2026-01-01T00:00:00Z"}
+		]
+	}`
+	if err := os.WriteFile(path, []byte(legacyJSON), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	store := &desktopStateStore{path: path}
+	state, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if state.LastUsedMode != "directory" {
+		t.Fatalf("lastUsedMode = %q, want directory", state.LastUsedMode)
+	}
+	if state.Directory.LeftRoot != "/legacy/left" || state.Directory.RightRoot != "/legacy/right" {
+		t.Fatalf("legacy folder roots not migrated: %+v", state.Directory)
+	}
+	if state.Directory.CurrentPath != "api" || state.Directory.ViewMode != "tree" {
+		t.Fatalf("legacy folder fields not migrated: %+v", state.Directory)
+	}
+	if len(state.DirectoryRecentPairs) != 1 || state.DirectoryRecentPairs[0].LeftRoot != "/r1/left" {
+		t.Fatalf("legacy folderRecentPairs not migrated: %+v", state.DirectoryRecentPairs)
+	}
+	if state.Version != desktopStateVersion {
+		t.Fatalf("version = %d, want %d", state.Version, desktopStateVersion)
 	}
 }
 
@@ -103,11 +146,11 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	input := defaultDesktopState()
 	input.LastUsedMode = "unknown"
 	input.Text.DiffLayout = "grid"
-	input.Folder.ViewMode = "matrix"
+	input.Directory.ViewMode = "matrix"
 	input.JSON.Common.OutputFormat = "yaml"
 	input.JSON.Common.TextStyle = "invalid"
 	input.JSON.Common.IgnorePaths = []string{"", "  ", "a.b"}
-	input.FolderRecentPairs = []DesktopRecentFolderPair{
+	input.DirectoryRecentPairs = []DesktopRecentDirectoryPair{
 		{LeftRoot: " /left ", RightRoot: " /right ", CurrentPath: " /api ", ViewMode: "x"},
 	}
 
@@ -119,8 +162,8 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	if normalized.Text.DiffLayout != "split" {
 		t.Fatalf("diffLayout = %q, want split", normalized.Text.DiffLayout)
 	}
-	if normalized.Folder.ViewMode != "list" {
-		t.Fatalf("folder.viewMode = %q, want list", normalized.Folder.ViewMode)
+	if normalized.Directory.ViewMode != "list" {
+		t.Fatalf("directory.viewMode = %q, want list", normalized.Directory.ViewMode)
 	}
 	if normalized.JSON.Common.OutputFormat != "text" {
 		t.Fatalf("json.common.outputFormat = %q, want text", normalized.JSON.Common.OutputFormat)
@@ -131,16 +174,16 @@ func TestNormalizeDesktopStateEnumFallback(t *testing.T) {
 	if len(normalized.JSON.Common.IgnorePaths) != 1 || normalized.JSON.Common.IgnorePaths[0] != "a.b" {
 		t.Fatalf("json.common.ignorePaths = %+v, want [a.b]", normalized.JSON.Common.IgnorePaths)
 	}
-	if len(normalized.FolderRecentPairs) != 1 {
-		t.Fatalf("folderRecentPairs len = %d, want 1", len(normalized.FolderRecentPairs))
+	if len(normalized.DirectoryRecentPairs) != 1 {
+		t.Fatalf("directoryRecentPairs len = %d, want 1", len(normalized.DirectoryRecentPairs))
 	}
-	if normalized.FolderRecentPairs[0].ViewMode != "list" {
-		t.Fatalf("folderRecentPairs[0].viewMode = %q, want list", normalized.FolderRecentPairs[0].ViewMode)
+	if normalized.DirectoryRecentPairs[0].ViewMode != "list" {
+		t.Fatalf("directoryRecentPairs[0].viewMode = %q, want list", normalized.DirectoryRecentPairs[0].ViewMode)
 	}
-	if normalized.FolderRecentPairs[0].LeftRoot != "/left" ||
-		normalized.FolderRecentPairs[0].RightRoot != "/right" ||
-		normalized.FolderRecentPairs[0].CurrentPath != "/api" {
-		t.Fatalf("folderRecentPairs[0] trim mismatch: %+v", normalized.FolderRecentPairs[0])
+	if normalized.DirectoryRecentPairs[0].LeftRoot != "/left" ||
+		normalized.DirectoryRecentPairs[0].RightRoot != "/right" ||
+		normalized.DirectoryRecentPairs[0].CurrentPath != "/api" {
+		t.Fatalf("directoryRecentPairs[0] trim mismatch: %+v", normalized.DirectoryRecentPairs[0])
 	}
 }
 
@@ -169,7 +212,7 @@ func TestServiceStateConcurrentAccess(t *testing.T) {
 				// Writer
 				state := defaultDesktopState()
 				state.LastUsedMode = "text"
-				state.Folder.LeftRoot = fmt.Sprintf("/tmp/left-%d", n)
+				state.Directory.LeftRoot = fmt.Sprintf("/tmp/left-%d", n)
 				if err := svc.SaveDesktopState(state); err != nil {
 					t.Errorf("goroutine %d: Save() error = %v", n, err)
 				}

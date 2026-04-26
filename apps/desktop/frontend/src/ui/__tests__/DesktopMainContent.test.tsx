@@ -3,7 +3,7 @@ import { MantineProvider } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { DesktopMainContent } from '../DesktopMainContent'
-import type { FolderCompareItem } from '../../types'
+import type { DirectoryCompareItem } from '../../types'
 
 const noop = vi.fn()
 
@@ -122,7 +122,7 @@ const jsonResultProps = {
   registerJSONSemanticDiffRowRef: () => noop,
 }
 
-const folderItem: FolderCompareItem = {
+const directoryItem: DirectoryCompareItem = {
   name: 'file.txt',
   relativePath: 'file.txt',
   isDir: false,
@@ -138,8 +138,8 @@ const folderItem: FolderCompareItem = {
   compareModeHint: 'text',
 }
 
-const folderResultProps = {
-  folderResult: {
+const directoryResultProps = {
+  directoryResult: {
     currentPath: '',
     scannedSummary: {
       total: 1,
@@ -159,16 +159,16 @@ const folderResultProps = {
       typeMismatch: 0,
       error: 0,
     },
-    items: [folderItem],
+    items: [directoryItem],
   },
-  folderStatus: '',
-  folderLeftRoot: '/left',
-  folderRightRoot: '/right',
-  folderNameFilter: '',
-  folderCurrentPath: '',
-  folderViewMode: 'list' as const,
-  folderQuickFilter: 'all' as const,
-  folderQuickFilterCounts: {
+  directoryStatus: '',
+  directoryLeftRoot: '/left',
+  directoryRightRoot: '/right',
+  directoryNameFilter: '',
+  directoryCurrentPath: '',
+  directoryViewMode: 'list' as const,
+  directoryQuickFilter: 'all' as const,
+  directoryQuickFilterCounts: {
     all: 1,
     changed: 1,
     'left-only': 0,
@@ -177,67 +177,67 @@ const folderResultProps = {
     error: 0,
     same: 0,
   },
-  folderSortKey: 'name' as const,
-  folderSortDirection: 'asc' as const,
-  folderOpenBusyPath: '',
-  folderTreeLoadingPath: '',
-  selectedFolderItemPath: '',
-  sortedFolderItems: [folderItem],
-  flattenedFolderTreeRows: [],
-  selectedFolderItemForDetail: null,
-  folderBreadcrumbs: [{ label: 'Root', path: '' }],
+  directorySortKey: 'name' as const,
+  directorySortDirection: 'asc' as const,
+  directoryOpenBusyPath: '',
+  directoryTreeLoadingPath: '',
+  selectedDirectoryItemPath: '',
+  sortedDirectoryItems: [directoryItem],
+  flattenedDirectoryTreeRows: [],
+  selectedDirectoryItemForDetail: null,
+  directoryBreadcrumbs: [{ label: 'Root', path: '' }],
   loading: false,
-  onBrowseFolderRoot: noop,
-  onSetFolderNameFilter: noop,
-  onSetFolderViewMode: noop,
-  onSetFolderQuickFilter: noop,
-  onSelectFolderItemPath: noop,
-  onNavigateFolderPath: noop,
-  onApplyFolderSort: noop,
-  onOpenFolderEntryDiff: noop,
-  onToggleFolderTreeNode: noop,
-  onFolderRowDoubleClick: noop,
-  onFolderTreeRowDoubleClick: noop,
-  onFolderTableKeyDown: noop,
+  onBrowseDirectoryRoot: noop,
+  onSetDirectoryNameFilter: noop,
+  onSetDirectoryViewMode: noop,
+  onSetDirectoryQuickFilter: noop,
+  onSelectDirectoryItemPath: noop,
+  onNavigateDirectoryPath: noop,
+  onApplyDirectorySort: noop,
+  onOpenDirectoryEntryDiff: noop,
+  onToggleDirectoryTreeNode: noop,
+  onDirectoryRowDoubleClick: noop,
+  onDirectoryTreeRowDoubleClick: noop,
+  onDirectoryTableKeyDown: noop,
 }
 
 describe('DesktopMainContent', () => {
   it('renders text mode content and return banner action', async () => {
-    const onReturnToFolderCompare = vi.fn()
+    const onReturnToDirectoryCompare = vi.fn()
 
     renderWithProvider(
       <DesktopMainContent
         mode="text"
-        showFolderReturnBanner
-        onReturnToFolderCompare={onReturnToFolderCompare}
+        showDirectoryReturnBanner
+        onReturnToDirectoryCompare={onReturnToDirectoryCompare}
         textSourceProps={textSourceProps}
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
-        folderResultProps={folderResultProps}
+        directoryResultProps={directoryResultProps}
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: /back to directory compare/i }))
-    expect(onReturnToFolderCompare).toHaveBeenCalled()
+    expect(onReturnToDirectoryCompare).toHaveBeenCalled()
 
     expect(await screen.findByText('Old text')).toBeInTheDocument()
   })
 
-  it('renders folder mode result panel', async () => {
+  it('renders directory mode result panel', async () => {
     renderWithProvider(
       <DesktopMainContent
-        mode="folder"
-        showFolderReturnBanner={false}
-        onReturnToFolderCompare={noop}
+        mode="directory"
+        showDirectoryReturnBanner={false}
+        onReturnToDirectoryCompare={noop}
         textSourceProps={textSourceProps}
         textResultProps={textResultProps}
         jsonSourceProps={jsonSourceProps}
         jsonResultProps={jsonResultProps}
-        folderResultProps={folderResultProps}
+        directoryResultProps={directoryResultProps}
       />,
     )
 
-    expect(await screen.findByText('Directory Compare')).toBeInTheDocument()
+    expect(await screen.findByText('file.txt')).toBeInTheDocument()
   })
 })

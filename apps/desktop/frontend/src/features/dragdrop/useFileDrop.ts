@@ -6,8 +6,8 @@ export type FileDropTarget =
   | 'text-new'
   | 'json-old'
   | 'json-new'
-  | 'folder-left'
-  | 'folder-right'
+  | 'directory-left'
+  | 'directory-right'
 
 export type FileDropHandlers = {
   [K in FileDropTarget]?: (paths: string[]) => void

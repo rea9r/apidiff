@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CompareCommon, Mode } from './types'
 
 const LAST_USED_MODE_STORAGE_KEY = 'xdiff.desktop.lastUsedMode'
-const APP_MODES: Mode[] = ['text', 'json', 'folder']
+const APP_MODES: Mode[] = ['text', 'json', 'directory']
 
 export const defaultJSONCommon: CompareCommon = {
   outputFormat: 'text',
@@ -57,7 +57,7 @@ export function useDesktopModeState() {
 
   const onModeChange = (nextMode: Mode) => {
     setMode(nextMode)
-    if (nextMode === 'folder') {
+    if (nextMode === 'directory') {
       setCompareOptionsOpened(false)
     }
   }

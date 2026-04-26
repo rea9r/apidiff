@@ -43,8 +43,8 @@ func (a *App) LoadTextFile(req desktopapi.LoadTextFileRequest) (*desktopapi.Load
 	return a.api.LoadTextFile(req)
 }
 
-func (a *App) CompareFolders(req desktopapi.CompareFoldersRequest) (*desktopapi.CompareFoldersResponse, error) {
-	return a.api.CompareFolders(req)
+func (a *App) CompareDirectories(req desktopapi.CompareDirectoriesRequest) (*desktopapi.CompareDirectoriesResponse, error) {
+	return a.api.CompareDirectories(req)
 }
 
 func (a *App) LoadDesktopState() (*desktopapi.DesktopState, error) {
@@ -81,13 +81,13 @@ func (a *App) PickTextFile() (string, error) {
 	})
 }
 
-func (a *App) PickFolderRoot() (string, error) {
+func (a *App) PickDirectoryRoot() (string, error) {
 	if a.ctx == nil {
 		return "", nil
 	}
 
 	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select folder",
+		Title: "Select directory",
 	})
 }
 

@@ -9,9 +9,15 @@ import (
 )
 
 const (
-	desktopStateVersion = 1
+	desktopStateVersion = 2
 	maxRecentEntries    = 10
 )
+
+type legacyDesktopState struct {
+	DesktopState
+	LegacyDirectory            *DesktopDirectorySession     `json:"folder,omitempty"`
+	LegacyDirectoryRecentPairs []DesktopRecentDirectoryPair `json:"folderRecentPairs,omitempty"`
+}
 
 type desktopStateStore struct {
 	path string
@@ -43,9 +49,19 @@ func (s *desktopStateStore) Load() (DesktopState, error) {
 		return state, err
 	}
 
-	var decoded DesktopState
-	if err := json.Unmarshal(raw, &decoded); err != nil {
+	var legacy legacyDesktopState
+	if err := json.Unmarshal(raw, &legacy); err != nil {
 		return state, nil
+	}
+	decoded := legacy.DesktopState
+	if legacy.LegacyDirectory != nil && (decoded.Directory == DesktopDirectorySession{}) {
+		decoded.Directory = *legacy.LegacyDirectory
+	}
+	if len(legacy.LegacyDirectoryRecentPairs) > 0 && len(decoded.DirectoryRecentPairs) == 0 {
+		decoded.DirectoryRecentPairs = legacy.LegacyDirectoryRecentPairs
+	}
+	if decoded.LastUsedMode == "folder" {
+		decoded.LastUsedMode = "directory"
 	}
 	return normalizeDesktopState(decoded), nil
 }
@@ -103,7 +119,7 @@ func defaultDesktopState() DesktopState {
 			Common:     defaultTextCompareCommon(),
 			DiffLayout: "split",
 		},
-		Folder: DesktopFolderSession{
+		Directory: DesktopDirectorySession{
 			ViewMode: "list",
 		},
 	}
@@ -114,7 +130,7 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 
 	state.Version = desktopStateVersion
 	switch state.LastUsedMode {
-	case "json", "text", "folder":
+	case "json", "text", "directory":
 	default:
 		state.LastUsedMode = defaults.LastUsedMode
 	}
@@ -130,16 +146,16 @@ func normalizeDesktopState(state DesktopState) DesktopState {
 		state.Text.DiffLayout = defaults.Text.DiffLayout
 	}
 
-	state.Folder.LeftRoot = strings.TrimSpace(state.Folder.LeftRoot)
-	state.Folder.RightRoot = strings.TrimSpace(state.Folder.RightRoot)
-	state.Folder.CurrentPath = strings.TrimSpace(state.Folder.CurrentPath)
-	if state.Folder.ViewMode != "list" && state.Folder.ViewMode != "tree" {
-		state.Folder.ViewMode = defaults.Folder.ViewMode
+	state.Directory.LeftRoot = strings.TrimSpace(state.Directory.LeftRoot)
+	state.Directory.RightRoot = strings.TrimSpace(state.Directory.RightRoot)
+	state.Directory.CurrentPath = strings.TrimSpace(state.Directory.CurrentPath)
+	if state.Directory.ViewMode != "list" && state.Directory.ViewMode != "tree" {
+		state.Directory.ViewMode = defaults.Directory.ViewMode
 	}
 
 	state.JSONRecentPairs = normalizeRecentPairs(state.JSONRecentPairs)
 	state.TextRecentPairs = normalizeRecentPairs(state.TextRecentPairs)
-	state.FolderRecentPairs = normalizeRecentFolderPairs(state.FolderRecentPairs)
+	state.DirectoryRecentPairs = normalizeRecentDirectoryPairs(state.DirectoryRecentPairs)
 
 	return state
 }
@@ -191,8 +207,8 @@ func normalizeRecentPairs(input []DesktopRecentPair) []DesktopRecentPair {
 	return output
 }
 
-func normalizeRecentFolderPairs(input []DesktopRecentFolderPair) []DesktopRecentFolderPair {
-	output := make([]DesktopRecentFolderPair, 0, len(input))
+func normalizeRecentDirectoryPairs(input []DesktopRecentDirectoryPair) []DesktopRecentDirectoryPair {
+	output := make([]DesktopRecentDirectoryPair, 0, len(input))
 	seen := map[string]struct{}{}
 	for _, item := range input {
 		item.LeftRoot = strings.TrimSpace(item.LeftRoot)

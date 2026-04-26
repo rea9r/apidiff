@@ -2,16 +2,16 @@ import { useState, type ReactNode } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconChevronDown } from '@tabler/icons-react'
 import type {
-  CompareFoldersResponse,
+  CompareDirectoriesResponse,
   Mode,
 } from './types'
 import { parseIgnorePaths } from './utils/appHelpers'
 import { DesktopCompareOptionsContent } from './ui/DesktopCompareOptionsContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
-import { useDirectoryCompareViewState } from './features/folder/useDirectoryCompareViewState'
-import { useDirectoryCompareWorkflow } from './features/folder/useDirectoryCompareWorkflow'
-import { useDirectoryCompareChildDiffActions } from './features/folder/useDirectoryCompareChildDiffActions'
-import { useDirectoryCompareInteractions } from './features/folder/useDirectoryCompareInteractions'
+import { useDirectoryCompareViewState } from './features/directory/useDirectoryCompareViewState'
+import { useDirectoryCompareWorkflow } from './features/directory/useDirectoryCompareWorkflow'
+import { useDirectoryCompareChildDiffActions } from './features/directory/useDirectoryCompareChildDiffActions'
+import { useDirectoryCompareInteractions } from './features/directory/useDirectoryCompareInteractions'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { useTextCompareWorkflow } from './features/text/useTextCompareWorkflow'
 import { applyChangeBlockToNew, applyChangeBlockToOld } from './features/text/textDiff'
@@ -44,17 +44,17 @@ type UseDesktopShellModelArgs = {
   jsonViewState: ReturnType<typeof useJSONCompareViewState>
   textWorkflow: ReturnType<typeof useTextCompareWorkflow>
   textViewState: ReturnType<typeof useTextDiffViewState>
-  folderLeftRoot: string
-  folderRightRoot: string
-  folderNameFilter: string
-  setFolderNameFilter: (value: string) => void
-  folderCurrentPath: string
-  folderResult: CompareFoldersResponse | null
-  folderStatus: string
-  folderViewState: ReturnType<typeof useDirectoryCompareViewState>
-  folderWorkflow: ReturnType<typeof useDirectoryCompareWorkflow>
-  folderChildDiffActions: ReturnType<typeof useDirectoryCompareChildDiffActions>
-  folderInteractions: ReturnType<typeof useDirectoryCompareInteractions>
+  directoryLeftRoot: string
+  directoryRightRoot: string
+  directoryNameFilter: string
+  setDirectoryNameFilter: (value: string) => void
+  directoryCurrentPath: string
+  directoryResult: CompareDirectoriesResponse | null
+  directoryStatus: string
+  directoryViewState: ReturnType<typeof useDirectoryCompareViewState>
+  directoryWorkflow: ReturnType<typeof useDirectoryCompareWorkflow>
+  directoryChildDiffActions: ReturnType<typeof useDirectoryCompareChildDiffActions>
+  directoryInteractions: ReturnType<typeof useDirectoryCompareInteractions>
 }
 
 export function useDesktopShellModel({
@@ -67,17 +67,17 @@ export function useDesktopShellModel({
   jsonViewState,
   textWorkflow,
   textViewState,
-  folderLeftRoot,
-  folderRightRoot,
-  folderNameFilter,
-  setFolderNameFilter,
-  folderCurrentPath,
-  folderResult,
-  folderStatus,
-  folderViewState,
-  folderWorkflow,
-  folderChildDiffActions,
-  folderInteractions,
+  directoryLeftRoot,
+  directoryRightRoot,
+  directoryNameFilter,
+  setDirectoryNameFilter,
+  directoryCurrentPath,
+  directoryResult,
+  directoryStatus,
+  directoryViewState,
+  directoryWorkflow,
+  directoryChildDiffActions,
+  directoryInteractions,
 }: UseDesktopShellModelArgs): DesktopShellModel {
   const isCompareCentricMode = mode === 'text' || mode === 'json'
 
@@ -205,8 +205,8 @@ export function useDesktopShellModel({
   const main = (
     <DesktopMainContent
       mode={mode}
-      showFolderReturnBanner={isCompareCentricMode && !!folderChildDiffActions.folderReturnContext}
-      onReturnToFolderCompare={folderChildDiffActions.returnToFolderCompare}
+      showDirectoryReturnBanner={isCompareCentricMode && !!directoryChildDiffActions.directoryReturnContext}
+      onReturnToDirectoryCompare={directoryChildDiffActions.returnToDirectoryCompare}
       textSourceProps={{
         oldSourcePath: textWorkflow.textOldSourcePath,
         newSourcePath: textWorkflow.textNewSourcePath,
@@ -325,39 +325,39 @@ export function useDesktopShellModel({
         moveJSONDiff: jsonViewState.moveJSONDiff,
         registerJSONSemanticDiffRowRef: jsonViewState.registerJSONSemanticDiffRowRef,
       }}
-      folderResultProps={{
-        folderResult,
-        folderStatus,
-        folderLeftRoot,
-        folderRightRoot,
-        folderNameFilter,
-        folderCurrentPath,
-        folderViewMode: folderViewState.folderViewMode,
-        folderQuickFilter: folderViewState.folderQuickFilter,
-        folderQuickFilterCounts: folderViewState.folderQuickFilterCounts,
-        folderSortKey: folderViewState.folderSortKey,
-        folderSortDirection: folderViewState.folderSortDirection,
-        folderOpenBusyPath: folderChildDiffActions.folderOpenBusyPath,
-        folderTreeLoadingPath: folderViewState.folderTreeLoadingPath,
-        selectedFolderItemPath: folderViewState.selectedFolderItemPath,
-        sortedFolderItems: folderViewState.sortedFolderItems,
-        flattenedFolderTreeRows: folderViewState.flattenedFolderTreeRows,
-        selectedFolderItemForDetail: folderViewState.selectedFolderItemForDetail,
-        folderBreadcrumbs: folderViewState.folderBreadcrumbs,
+      directoryResultProps={{
+        directoryResult,
+        directoryStatus,
+        directoryLeftRoot,
+        directoryRightRoot,
+        directoryNameFilter,
+        directoryCurrentPath,
+        directoryViewMode: directoryViewState.directoryViewMode,
+        directoryQuickFilter: directoryViewState.directoryQuickFilter,
+        directoryQuickFilterCounts: directoryViewState.directoryQuickFilterCounts,
+        directorySortKey: directoryViewState.directorySortKey,
+        directorySortDirection: directoryViewState.directorySortDirection,
+        directoryOpenBusyPath: directoryChildDiffActions.directoryOpenBusyPath,
+        directoryTreeLoadingPath: directoryViewState.directoryTreeLoadingPath,
+        selectedDirectoryItemPath: directoryViewState.selectedDirectoryItemPath,
+        sortedDirectoryItems: directoryViewState.sortedDirectoryItems,
+        flattenedDirectoryTreeRows: directoryViewState.flattenedDirectoryTreeRows,
+        selectedDirectoryItemForDetail: directoryViewState.selectedDirectoryItemForDetail,
+        directoryBreadcrumbs: directoryViewState.directoryBreadcrumbs,
         loading,
-        onBrowseFolderRoot: folderWorkflow.browseFolderRoot,
-        onSetFolderNameFilter: setFolderNameFilter,
-        onSetFolderViewMode: folderViewState.setFolderViewMode,
-        onSetFolderQuickFilter: folderViewState.setFolderQuickFilter,
-        onSelectFolderItemPath: folderViewState.setSelectedFolderItemPath,
-        onNavigateFolderPath: folderInteractions.navigateFolderPath,
-        onApplyFolderSort: folderViewState.applyFolderSort,
-        onOpenFolderEntryDiff: folderChildDiffActions.openFolderEntryDiff,
-        onToggleFolderTreeNode: folderViewState.toggleFolderTreeNode,
-        onFolderRowDoubleClick: folderInteractions.handleFolderRowDoubleClick,
-        onFolderTreeRowDoubleClick: folderInteractions.handleFolderTreeRowDoubleClick,
-        onFolderTableKeyDown: (event) =>
-          void folderInteractions.handleFolderTableKeyDown(event),
+        onBrowseDirectoryRoot: directoryWorkflow.browseDirectoryRoot,
+        onSetDirectoryNameFilter: setDirectoryNameFilter,
+        onSetDirectoryViewMode: directoryViewState.setDirectoryViewMode,
+        onSetDirectoryQuickFilter: directoryViewState.setDirectoryQuickFilter,
+        onSelectDirectoryItemPath: directoryViewState.setSelectedDirectoryItemPath,
+        onNavigateDirectoryPath: directoryInteractions.navigateDirectoryPath,
+        onApplyDirectorySort: directoryViewState.applyDirectorySort,
+        onOpenDirectoryEntryDiff: directoryChildDiffActions.openDirectoryEntryDiff,
+        onToggleDirectoryTreeNode: directoryViewState.toggleDirectoryTreeNode,
+        onDirectoryRowDoubleClick: directoryInteractions.handleDirectoryRowDoubleClick,
+        onDirectoryTreeRowDoubleClick: directoryInteractions.handleDirectoryTreeRowDoubleClick,
+        onDirectoryTableKeyDown: (event) =>
+          void directoryInteractions.handleDirectoryTableKeyDown(event),
       }}
     />
   )
@@ -383,7 +383,7 @@ export function useDesktopShellModel({
 
   return {
     layoutMode:
-      isCompareCentricMode || mode === 'folder'
+      isCompareCentricMode || mode === 'directory'
         ? 'workspace'
         : 'sidebar',
     sidebar,
