@@ -1,8 +1,13 @@
 import './style.css'
 import { AppChrome } from './ui/AppChrome'
 import { useDesktopAppModel } from './useDesktopAppModel'
+import { useDesktopBridge } from './useDesktopBridge'
+import { useDesktopRecentPairs } from './useDesktopRecentPairs'
 
 export function App() {
+  const api = useDesktopBridge()
+  const recentPairs = useDesktopRecentPairs()
+
   const {
     mode,
     onModeChange,
@@ -12,7 +17,7 @@ export function App() {
     main,
     inspector,
     inspectorOpen,
-  } = useDesktopAppModel()
+  } = useDesktopAppModel({ api, recentPairs })
 
   return (
     <AppChrome

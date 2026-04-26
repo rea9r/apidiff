@@ -1,6 +1,6 @@
-import { useDesktopBridge } from './useDesktopBridge'
+import type { useDesktopBridge } from './useDesktopBridge'
 import { useBrowseAndSet } from './useBrowseAndSet'
-import { useDesktopRecentPairs } from './useDesktopRecentPairs'
+import type { DesktopRecentPairsState } from './useDesktopRecentPairs'
 import { useDesktopPersistence } from './useDesktopPersistence'
 import { useRecentActionRunner } from './useRecentActionRunner'
 import { useDesktopHeaderActions } from './useDesktopHeaderActions'
@@ -8,13 +8,12 @@ import { useDesktopShellModel } from './useDesktopShellModel'
 import { useDesktopTabModel } from './useDesktopTabModel'
 
 export type UseDesktopAppModelOptions = {
+  api: ReturnType<typeof useDesktopBridge>
+  recentPairs: DesktopRecentPairsState
   enabled?: boolean
 }
 
-export function useDesktopAppModel({ enabled = true }: UseDesktopAppModelOptions = {}) {
-  const api = useDesktopBridge()
-  const recentPairs = useDesktopRecentPairs()
-
+export function useDesktopAppModel({ api, recentPairs, enabled = true }: UseDesktopAppModelOptions) {
   const tab = useDesktopTabModel({ api, recentPairs })
   const { mode, setMode, onModeChange, compareOptionsOpened, setCompareOptionsOpened, loading } =
     tab
