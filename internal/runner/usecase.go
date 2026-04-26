@@ -117,8 +117,6 @@ func RunJSONValuesDetailed(oldValue, newValue any, opts CompareOptions) RunResul
 
 	var out string
 	switch {
-	case opts.ShowPaths:
-		out = output.RenderPaths(diffs)
 	case opts.Format == output.TextFormat:
 		style, err := resolveJSONTextStyle(opts)
 		if err != nil {

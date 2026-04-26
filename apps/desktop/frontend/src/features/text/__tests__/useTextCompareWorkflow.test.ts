@@ -8,7 +8,6 @@ const initialCommon = {
   outputFormat: 'text',
   textStyle: 'auto',
   ignorePaths: [],
-  showPaths: false,
   ignoreWhitespace: false,
   ignoreCase: false,
   ignoreEOL: false,

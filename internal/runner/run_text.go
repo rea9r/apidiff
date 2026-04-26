@@ -53,8 +53,6 @@ func RunTextValuesDetailed(oldText, newText string, opts CompareOptions) RunResu
 
 	var out string
 	switch {
-	case opts.ShowPaths:
-		out = output.RenderPaths(filtered)
 	case opts.Format == output.TextFormat:
 		style, err := resolveTextDiffStyle(opts)
 		if err != nil {

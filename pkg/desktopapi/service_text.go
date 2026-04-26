@@ -21,7 +21,6 @@ func (s *Service) CompareText(req CompareTextRequest) (*CompareResponse, error) 
 	opts := runner.CompareOptions{
 		Format:           normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths:      append([]string(nil), req.Common.IgnorePaths...),
-		ShowPaths:        req.Common.ShowPaths,
 		TextStyle:        req.Common.TextStyle,
 		UseColor:         guiUseColor(),
 		IgnoreWhitespace: req.Common.IgnoreWhitespace,

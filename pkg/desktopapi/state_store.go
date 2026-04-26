@@ -350,7 +350,6 @@ func defaultJSONCompareCommon() CompareCommon {
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
-		ShowPaths:    false,
 	}
 }
 
@@ -359,6 +358,5 @@ func defaultTextCompareCommon() CompareCommon {
 		OutputFormat: "text",
 		TextStyle:    "auto",
 		IgnorePaths:  []string{},
-		ShowPaths:    false,
 	}
 }

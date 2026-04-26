@@ -17,7 +17,6 @@ type CompareOptions struct {
 	IgnorePaths      []string
 	IgnoreOrder      bool
 	TextStyle        string
-	ShowPaths        bool
 	UseColor         bool
 	IgnoreWhitespace bool
 	IgnoreCase       bool

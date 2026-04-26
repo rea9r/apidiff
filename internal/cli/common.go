@@ -16,7 +16,6 @@ type commonFlagValues struct {
 	outputFormat     string
 	ignorePaths      []string
 	textStyle        string
-	showPaths        bool
 	noColor          bool
 	ignoreWhitespace bool
 	ignoreCase       bool
@@ -41,7 +40,6 @@ func (c *commonFlagValues) compareOptions() runner.CompareOptions {
 		Format:           c.outputFormat,
 		IgnorePaths:      append([]string(nil), c.ignorePaths...),
 		TextStyle:        c.textStyle,
-		ShowPaths:        c.showPaths,
 		UseColor:         c.useColor(),
 		IgnoreWhitespace: c.ignoreWhitespace,
 		IgnoreCase:       c.ignoreCase,
@@ -61,7 +59,6 @@ func bindCommonFlags(flags *pflag.FlagSet, common *commonFlagValues) {
 	flags.StringVar(&common.outputFormat, "output-format", output.TextFormat, "output format: text or json")
 	flags.StringArrayVar(&common.ignorePaths, "ignore-path", nil, "ignore diff by exact path (can be specified multiple times)")
 	flags.StringVar(&common.textStyle, "text-style", runner.TextStyleAuto, "text rendering style: auto, patch, semantic")
-	flags.BoolVar(&common.showPaths, "show-paths", false, "print canonical diff paths only (useful with --ignore-path)")
 	flags.BoolVar(&common.noColor, "no-color", false, "disable colored text output")
 	flags.BoolVar(&common.ignoreWhitespace, "ignore-whitespace", false, "collapse runs of whitespace within each line before comparing")
 	flags.BoolVar(&common.ignoreCase, "ignore-case", false, "compare text case-insensitively")

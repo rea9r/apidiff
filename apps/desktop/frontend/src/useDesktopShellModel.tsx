@@ -100,8 +100,6 @@ export function useDesktopShellModel({
         onIgnorePathsDraftChange: jsonWorkflow.setJSONIgnorePathsDraft,
         onIgnorePathsCommit: (value) =>
           jsonWorkflow.updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
-        showPaths: jsonWorkflow.jsonCommon.showPaths,
-        onShowPathsChange: (checked) => jsonWorkflow.updateJSONCommon('showPaths', checked),
       }}
       textProps={{
         outputFormat: textWorkflow.textCommon.outputFormat,

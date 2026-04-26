@@ -25,7 +25,6 @@ func (s *Service) CompareJSONFiles(req CompareJSONRequest) (*CompareResponse, er
 		CompareOptions: runner.CompareOptions{
 			Format:      normalizeOutputFormat(req.Common.OutputFormat),
 			IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
-			ShowPaths:   req.Common.ShowPaths,
 			TextStyle:   req.Common.TextStyle,
 			IgnoreOrder: req.IgnoreOrder,
 			UseColor:    guiUseColor(),
@@ -59,7 +58,6 @@ func (s *Service) CompareJSONRich(req CompareJSONRequest) (*CompareJSONRichRespo
 
 	structuredReq := req
 	structuredReq.Common.OutputFormat = output.JSONFormat
-	structuredReq.Common.ShowPaths = false
 
 	structuredResult, err := s.CompareJSONFiles(structuredReq)
 	if err != nil {
@@ -93,7 +91,6 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 	rawOpts := runner.CompareOptions{
 		Format:      normalizeOutputFormat(req.Common.OutputFormat),
 		IgnorePaths: append([]string(nil), req.Common.IgnorePaths...),
-		ShowPaths:   req.Common.ShowPaths,
 		TextStyle:   req.Common.TextStyle,
 		IgnoreOrder: req.IgnoreOrder,
 		UseColor:    guiUseColor(),
@@ -108,14 +105,12 @@ func (s *Service) CompareJSONValuesRich(req CompareJSONValuesRequest) (*CompareJ
 
 	structuredOpts := rawOpts
 	structuredOpts.Format = output.JSONFormat
-	structuredOpts.ShowPaths = false
 	structuredOpts.UseColor = false
 	structuredRun := runner.RunJSONValuesDetailed(oldValue, newValue, structuredOpts)
 
 	diffOpts := rawOpts
 	diffOpts.Format = output.TextFormat
 	diffOpts.TextStyle = "patch"
-	diffOpts.ShowPaths = false
 	diffOpts.UseColor = false
 	diffRun := runner.RunJSONValuesDetailed(oldValue, newValue, diffOpts)
 

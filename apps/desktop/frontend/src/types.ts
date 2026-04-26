@@ -4,7 +4,6 @@ export type CompareCommon = {
   outputFormat: string
   textStyle: string
   ignorePaths: string[]
-  showPaths: boolean
   ignoreWhitespace: boolean
   ignoreCase: boolean
   ignoreEOL: boolean

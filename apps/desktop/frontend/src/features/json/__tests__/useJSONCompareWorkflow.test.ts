@@ -6,7 +6,6 @@ const initialCommon = {
   outputFormat: 'text',
   textStyle: 'patch',
   ignorePaths: [],
-  showPaths: false,
   ignoreWhitespace: false,
   ignoreCase: false,
   ignoreEOL: false,

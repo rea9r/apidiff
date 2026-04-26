@@ -66,7 +66,6 @@ Common options (`xdiff json` and `xdiff text`):
 | --- | --- | --- |
 | `--output-format text\|json` | Output format | `text` |
 | `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
-| `--show-paths` | Print canonical diff paths only (useful with `--ignore-path`) | `false` |
 | `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
 | `--no-color` | Disable colored text output | `false` |
 
@@ -83,7 +82,7 @@ JSON-specific options (`xdiff json`):
 
 ### Canonical Diff Paths
 
-`--ignore-path` matches canonical diff paths exactly. Use `--show-paths` to print only the paths so you can identify which entries to ignore.
+`--ignore-path` matches canonical diff paths exactly.
 
 ### `--ignore-order`
 
@@ -137,12 +136,6 @@ Ignore noisy fields:
 
 ```bash
 xdiff json --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
-```
-
-Show canonical diff paths for local JSON comparison:
-
-```bash
-xdiff json --show-paths old.json new.json
 ```
 
 Ignore array order in local JSON comparison:

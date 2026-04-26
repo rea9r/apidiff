@@ -9,8 +9,6 @@ export type JSONCompareOptionsPanelProps = {
   ignorePathsDraft: string
   onIgnorePathsDraftChange: (value: string) => void
   onIgnorePathsCommit: (value: string) => void
-  showPaths: boolean
-  onShowPathsChange: (checked: boolean) => void
 }
 
 export function JSONCompareOptionsPanel({
@@ -24,8 +22,6 @@ export function JSONCompareOptionsPanel({
   ignorePathsDraft,
   onIgnorePathsDraftChange,
   onIgnorePathsCommit,
-  showPaths,
-  onShowPathsChange,
 }: JSONCompareOptionsPanelProps) {
   return (
     <section className="mode-panel">
@@ -81,15 +77,6 @@ export function JSONCompareOptionsPanel({
             Enter one canonical path per line (exact match), e.g. <code>user.updated_at</code>.
           </div>
         </div>
-
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={showPaths}
-            onChange={(e) => onShowPathsChange(e.target.checked)}
-          />
-          show canonical paths
-        </label>
       </details>
     </section>
   )

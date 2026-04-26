@@ -142,31 +142,3 @@ func TestTextStyleFlagAvailability(t *testing.T) {
 		t.Fatal("text command should expose --text-style")
 	}
 }
-
-func TestShowPathsFlagAvailability(t *testing.T) {
-	common := newCommonFlags(io.Discard)
-
-	root := newRootCommand(new(int), io.Discard)
-	if root.Flags().Lookup("show-paths") != nil {
-		t.Fatal("root command should not expose --show-paths")
-	}
-	if strings.Contains(root.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("root help should not include --show-paths")
-	}
-
-	jsonCmd := newJSONCommand(common, new(int))
-	if jsonCmd.Flags().Lookup("show-paths") == nil {
-		t.Fatal("json command should expose --show-paths")
-	}
-	if !strings.Contains(jsonCmd.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("json help should include --show-paths")
-	}
-
-	textCmd := newTextCommand(common, new(int))
-	if textCmd.Flags().Lookup("show-paths") == nil {
-		t.Fatal("text command should expose --show-paths")
-	}
-	if !strings.Contains(textCmd.Flags().FlagUsages(), "--show-paths") {
-		t.Fatal("text help should include --show-paths")
-	}
-}
