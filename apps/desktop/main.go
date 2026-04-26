@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/rea9r/xdiff/pkg/desktopapi"
 	"github.com/wailsapp/wails/v2"
@@ -61,6 +62,47 @@ func (a *App) AIProviderStatus() (*desktopapi.AIProviderStatus, error) {
 
 func (a *App) ExplainDiff(req desktopapi.ExplainDiffRequest) (*desktopapi.ExplainDiffResponse, error) {
 	return a.api.ExplainDiff(req)
+}
+
+func (a *App) ExplainDiffStream(req desktopapi.ExplainDiffStreamRequest) (*desktopapi.ExplainDiffResponse, error) {
+	streamID := req.StreamID
+	chunkEvent := "ai-explain-chunk-" + streamID
+	thinkingEvent := "ai-explain-thinking-" + streamID
+	chunkCount := 0
+	thinkingCount := 0
+	log.Printf("[ai] explain stream start event=%s model=%s", chunkEvent, req.Model)
+	onChunk := func(chunk string) {
+		if a.ctx == nil || streamID == "" {
+			return
+		}
+		chunkCount++
+		if chunkCount <= 3 || chunkCount%20 == 0 {
+			log.Printf("[ai] emit chunk #%d len=%d", chunkCount, len(chunk))
+		}
+		runtime.EventsEmit(a.ctx, chunkEvent, chunk)
+	}
+	onThinking := func(chunk string) {
+		if a.ctx == nil || streamID == "" {
+			return
+		}
+		thinkingCount++
+		if thinkingCount <= 3 || thinkingCount%50 == 0 {
+			log.Printf("[ai] emit thinking #%d len=%d", thinkingCount, len(chunk))
+		}
+		runtime.EventsEmit(a.ctx, thinkingEvent, chunk)
+	}
+	resp, err := a.api.ExplainDiffStream(desktopapi.ExplainDiffRequest{
+		DiffText: req.DiffText,
+		Mode:     req.Mode,
+		Language: req.Language,
+		Model:    req.Model,
+	}, onChunk, onThinking)
+	respErr := ""
+	if resp != nil {
+		respErr = resp.Error
+	}
+	log.Printf("[ai] explain stream done chunks=%d thinking=%d resp.err=%q go.err=%v", chunkCount, thinkingCount, respErr, err)
+	return resp, err
 }
 
 func (a *App) StartAISetup(req desktopapi.AISetupRequest) error {

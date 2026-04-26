@@ -162,6 +162,14 @@ export type ExplainDiffRequest = {
   model?: string
 }
 
+export type ExplainDiffStreamRequest = {
+  diffText: string
+  mode: ExplainDiffMode
+  language?: string
+  model?: string
+  streamId: string
+}
+
 export type ExplainDiffResponse = {
   explanation: string
   provider: string

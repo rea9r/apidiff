@@ -106,6 +106,19 @@ func (s *Service) AIProviderStatus() (*AIProviderStatus, error) {
 }
 
 func (s *Service) ExplainDiff(req ExplainDiffRequest) (*ExplainDiffResponse, error) {
+	return s.explainDiffInternal(req, nil, nil)
+}
+
+// ExplainDiffStream is identical to ExplainDiff except it invokes onChunk for
+// each partial-token chunk the model emits and onThinking for each reasoning
+// chunk emitted by thinking models. The returned response also contains the
+// fully accumulated explanation, so callers may rely on either streaming or
+// the final response.
+func (s *Service) ExplainDiffStream(req ExplainDiffRequest, onChunk func(string), onThinking func(string)) (*ExplainDiffResponse, error) {
+	return s.explainDiffInternal(req, onChunk, onThinking)
+}
+
+func (s *Service) explainDiffInternal(req ExplainDiffRequest, onChunk func(string), onThinking func(string)) (*ExplainDiffResponse, error) {
 	diff := strings.TrimSpace(req.DiffText)
 	if diff == "" {
 		return nil, errors.New("diffText is required")
@@ -128,14 +141,28 @@ func (s *Service) ExplainDiff(req ExplainDiffRequest) (*ExplainDiffResponse, err
 		model = aiDefaultModel
 	}
 
-	answer, err := client.Chat(ctx, *provider, aiclient.ChatRequest{
+	// Disable thinking mode for reasoning models (qwen3, deepseek-r1, etc.).
+	// Small models (e.g. qwen3.5:0.8b) frequently get stuck in repetitive
+	// reasoning loops on diff explanation; bypassing the thinking step gives
+	// a faster, more reliable answer. Older Ollama versions and non-reasoning
+	// models simply ignore this field.
+	noThink := false
+	chatReq := aiclient.ChatRequest{
 		Model: model,
 		Messages: []aiclient.ChatMessage{
 			{Role: "system", Content: aiSystemInstruction},
 			{Role: "user", Content: buildExplainPrompt(diff, req.Mode, req.Language)},
 		},
 		KeepAlive: aiKeepAlive,
-	})
+		Think:     &noThink,
+	}
+
+	var answer string
+	if onChunk != nil || onThinking != nil {
+		answer, err = client.ChatStream(ctx, *provider, chatReq, onChunk, onThinking)
+	} else {
+		answer, err = client.Chat(ctx, *provider, chatReq)
+	}
 	if err != nil {
 		return &ExplainDiffResponse{
 			Provider: provider.Name,

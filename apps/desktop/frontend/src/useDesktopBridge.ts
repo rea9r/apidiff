@@ -14,6 +14,7 @@ import type {
   DesktopState,
   ExplainDiffRequest,
   ExplainDiffResponse,
+  ExplainDiffStreamRequest,
   LoadTextFileRequest,
   LoadTextFileResponse,
 } from './types'
@@ -61,6 +62,9 @@ export function useDesktopBridge() {
 
       explainDiff: (req: ExplainDiffRequest): Promise<ExplainDiffResponse> =>
         App.ExplainDiff(req as any) as unknown as Promise<ExplainDiffResponse>,
+
+      explainDiffStream: (req: ExplainDiffStreamRequest): Promise<ExplainDiffResponse> =>
+        App.ExplainDiffStream(req as any) as unknown as Promise<ExplainDiffResponse>,
 
       startAISetup: (req: AISetupRequest): Promise<void> =>
         App.StartAISetup(req as any),

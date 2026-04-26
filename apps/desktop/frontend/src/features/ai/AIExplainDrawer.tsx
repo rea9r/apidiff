@@ -26,6 +26,7 @@ import {
   IconWallet,
 } from '@tabler/icons-react'
 import { useDesktopBridge } from '../../useDesktopBridge'
+import { EventsOff, EventsOn } from '../../../wailsjs/runtime/runtime'
 import type {
   AIProviderStatus,
   AISetupPhase,
@@ -226,7 +227,7 @@ function TierCard({
 export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDrawerProps) {
   const {
     aiProviderStatus,
-    explainDiff,
+    explainDiffStream,
     startAISetup,
     aiSetupProgress,
     cancelAISetup,
@@ -236,6 +237,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
 
   const [status, setStatus] = useState<AIProviderStatus | null>(null)
   const [explanation, setExplanation] = useState('')
+  const [thinking, setThinking] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeModel, setActiveModel] = useState<string>('')
@@ -255,6 +257,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   const samplesRef = useRef<{ t: number; bytes: number }[]>([])
   const prevPhaseRef = useRef<AISetupPhase | undefined>(undefined)
   const revertTimeoutRef = useRef<number | null>(null)
+  const activeStreamIdRef = useRef<string | null>(null)
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -277,30 +280,61 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   const runExplain = useCallback(
     async (modelOverride?: string) => {
       if (!diffText.trim()) return
+
+      // Detach any prior stream listener before starting a new one.
+      const prevId = activeStreamIdRef.current
+      if (prevId) {
+        EventsOff(`ai-explain-chunk-${prevId}`)
+        EventsOff(`ai-explain-thinking-${prevId}`)
+      }
+
+      const streamId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      activeStreamIdRef.current = streamId
+
       setIsLoading(true)
       setError(null)
       setExplanation('')
+      setThinking('')
+
+      EventsOn(`ai-explain-chunk-${streamId}`, (chunk: string) => {
+        if (activeStreamIdRef.current !== streamId) return
+        setExplanation((prev) => prev + chunk)
+      })
+      EventsOn(`ai-explain-thinking-${streamId}`, (chunk: string) => {
+        if (activeStreamIdRef.current !== streamId) return
+        setThinking((prev) => prev + chunk)
+      })
+
       try {
-        const res = await explainDiff({
+        const res = await explainDiffStream({
           diffText,
           mode,
           model: modelOverride ?? activeModel,
           language,
+          streamId,
         })
+        if (activeStreamIdRef.current !== streamId) return
         if (res.error) {
           setError(res.error)
         } else {
+          // Trust the final response over accumulated chunks (server trims).
           setExplanation(res.explanation)
         }
         if (res.provider) setUsedProvider(res.provider)
         if (res.model) setUsedModel(res.model)
       } catch (e) {
+        if (activeStreamIdRef.current !== streamId) return
         setError(formatUnknownError(e))
       } finally {
-        setIsLoading(false)
+        if (activeStreamIdRef.current === streamId) {
+          setIsLoading(false)
+          activeStreamIdRef.current = null
+        }
+        EventsOff(`ai-explain-chunk-${streamId}`)
+        EventsOff(`ai-explain-thinking-${streamId}`)
       }
     },
-    [activeModel, diffText, explainDiff, mode, language],
+    [activeModel, diffText, explainDiffStream, mode, language],
   )
 
   // Re-detect provider every time the drawer opens — state outside the app
@@ -316,6 +350,17 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
     }
     void refreshStatus()
   }, [opened, refreshStatus])
+
+  useEffect(() => {
+    return () => {
+      const id = activeStreamIdRef.current
+      if (id) {
+        EventsOff(`ai-explain-chunk-${id}`)
+        EventsOff(`ai-explain-thinking-${id}`)
+        activeStreamIdRef.current = null
+      }
+    }
+  }, [])
 
   // Default selected tier follows hardware tier (low → compact, else balanced).
   const recommendedTier = useMemo(
@@ -338,15 +383,17 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   }, [status, activeModel])
 
   // Auto-explain when a usable provider/model is in place and the diff changed.
+  // Do NOT depend on `explanation` here — runExplain calls setExplanation('')
+  // at start, which would re-fire this effect and spawn parallel streams.
   useEffect(() => {
     if (!opened) return
     if (showReadyFlash) return
     if (!status?.available) return
     if (!diffText.trim()) return
-    if (lastDiffRef.current === diffText && explanation) return
+    if (lastDiffRef.current === diffText) return
     lastDiffRef.current = diffText
     void runExplain()
-  }, [opened, status?.available, diffText, explanation, runExplain, showReadyFlash])
+  }, [opened, status?.available, diffText, runExplain, showReadyFlash])
 
   // Poll setup progress while a setup run is in flight.
   useEffect(() => {
@@ -830,13 +877,25 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
                 </Text>
               ) : null}
 
-              {isLoading ? (
-                <Group gap="xs">
-                  <Loader size="xs" />
-                  <Text size="sm" c="dimmed">
-                    Generating explanation…
-                  </Text>
-                </Group>
+              {isLoading && !explanation ? (
+                <Stack gap={6}>
+                  <Group gap="xs">
+                    <Loader size="xs" />
+                    <Text size="sm" c="dimmed">
+                      {thinking ? 'Thinking…' : 'Generating explanation…'}
+                    </Text>
+                  </Group>
+                  {thinking ? (
+                    <Text
+                      size="xs"
+                      c="dimmed"
+                      fs="italic"
+                      style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                    >
+                      {thinking.length > 500 ? '… ' + thinking.slice(-500) : thinking}
+                    </Text>
+                  ) : null}
+                </Stack>
               ) : null}
 
               {error ? (
@@ -852,6 +911,11 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
                     style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                   >
                     {explanation}
+                    {isLoading ? (
+                      <Text component="span" c="dimmed">
+                        ▋
+                      </Text>
+                    ) : null}
                   </Text>
                 </ScrollArea>
               ) : null}

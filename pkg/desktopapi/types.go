@@ -173,6 +173,14 @@ type ExplainDiffRequest struct {
 	Model    string `json:"model,omitempty"`
 }
 
+type ExplainDiffStreamRequest struct {
+	DiffText string `json:"diffText"`
+	Mode     string `json:"mode"`
+	Language string `json:"language,omitempty"`
+	Model    string `json:"model,omitempty"`
+	StreamID string `json:"streamId"`
+}
+
 type ExplainDiffResponse struct {
 	Explanation string `json:"explanation"`
 	Provider    string `json:"provider"`
