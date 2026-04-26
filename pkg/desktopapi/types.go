@@ -86,11 +86,10 @@ type CompareDirectoriesResponse struct {
 }
 
 type CompareResponse struct {
-	ExitCode  int      `json:"exitCode"`
-	DiffFound bool     `json:"diffFound"`
-	Output    string   `json:"output"`
-	Error     string   `json:"error,omitempty"`
-	Paths     []string `json:"paths,omitempty"`
+	ExitCode  int    `json:"exitCode"`
+	DiffFound bool   `json:"diffFound"`
+	Output    string `json:"output"`
+	Error     string `json:"error,omitempty"`
 }
 
 type JSONRichDiffItem struct {
