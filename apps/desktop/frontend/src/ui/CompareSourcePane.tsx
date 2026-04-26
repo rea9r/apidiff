@@ -7,6 +7,7 @@ type CompareSourcePaneProps = {
   actions?: ReactNode
   children: ReactNode
   className?: string
+  dropTarget?: string
 }
 
 export function CompareSourcePane({
@@ -15,11 +16,18 @@ export function CompareSourcePane({
   actions,
   children,
   className,
+  dropTarget,
 }: CompareSourcePaneProps) {
-  const paneClassName = ['compare-source-pane', className].filter(Boolean).join(' ')
+  const paneClassName = [
+    'compare-source-pane',
+    dropTarget ? 'compare-source-pane--droppable' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className={paneClassName}>
+    <div className={paneClassName} data-drop-target={dropTarget}>
       <div className="compare-source-pane-header">
         <div className="compare-source-pane-title">
           <label className="field-label">{title}</label>

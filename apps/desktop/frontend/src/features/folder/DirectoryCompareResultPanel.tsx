@@ -198,6 +198,7 @@ export function DirectoryCompareResultPanel({
           <div className="folder-root-bar">
             <div
               className="folder-root-field"
+              data-drop-target="folder-left"
               onClick={() => void onBrowseFolderRoot('left')}
               role="button"
               tabIndex={loading ? -1 : 0}
@@ -234,6 +235,7 @@ export function DirectoryCompareResultPanel({
             </div>
             <div
               className="folder-root-field"
+              data-drop-target="folder-right"
               onClick={() => void onBrowseFolderRoot('right')}
               role="button"
               tabIndex={loading ? -1 : 0}

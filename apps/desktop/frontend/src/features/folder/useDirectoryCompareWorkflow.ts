@@ -127,6 +127,29 @@ export function useDirectoryCompareWorkflow({
     runFolderCompare,
   ])
 
+  const setFolderRootPath = useCallback(
+    (target: 'left' | 'right', path: string) => {
+      if (target === 'left') {
+        setFolderLeftRoot(path)
+      } else {
+        setFolderRightRoot(path)
+      }
+
+      setFolderCurrentPath('')
+      setSelectedFolderItemPath('')
+      setFolderResult(null)
+      setFolderStatus('')
+    },
+    [
+      setFolderCurrentPath,
+      setFolderLeftRoot,
+      setFolderResult,
+      setFolderRightRoot,
+      setFolderStatus,
+      setSelectedFolderItemPath,
+    ],
+  )
+
   const browseFolderRoot = useCallback(
     async (target: 'left' | 'right') => {
       if (!pickFolderRoot) {
@@ -141,16 +164,7 @@ export function useDirectoryCompareWorkflow({
           return
         }
 
-        if (target === 'left') {
-          setFolderLeftRoot(selected)
-        } else {
-          setFolderRightRoot(selected)
-        }
-
-        setFolderCurrentPath('')
-        setSelectedFolderItemPath('')
-        setFolderResult(null)
-        setFolderStatus('')
+        setFolderRootPath(target, selected)
       } catch (error) {
         const message = `Failed to pick directory: ${formatUnknownError(error)}`
         setFolderStatus(message)
@@ -161,17 +175,14 @@ export function useDirectoryCompareWorkflow({
       onDirectoryPickerError,
       onDirectoryPickerUnavailable,
       pickFolderRoot,
-      setFolderCurrentPath,
-      setFolderLeftRoot,
-      setFolderResult,
-      setFolderRightRoot,
+      setFolderRootPath,
       setFolderStatus,
-      setSelectedFolderItemPath,
     ],
   )
 
   return {
     browseFolderRoot,
+    setFolderRootPath,
     runFolderCompare,
   }
 }

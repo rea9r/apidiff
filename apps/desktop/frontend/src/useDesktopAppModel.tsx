@@ -10,6 +10,7 @@ import { useDesktopShellModel } from './useDesktopShellModel'
 import { useJSONCompareModel } from './features/json/useJSONCompareModel'
 import { useTextCompareModel } from './features/text/useTextCompareModel'
 import { useFolderCompareModel } from './features/folder/useFolderCompareModel'
+import { useFileDrop } from './features/dragdrop/useFileDrop'
 
 export function useDesktopAppModel() {
   const { mode, setMode, compareOptionsOpened, setCompareOptionsOpened, onModeChange } =
@@ -117,6 +118,38 @@ export function useDesktopAppModel() {
       setCurrentPath: folderModel.state.setFolderCurrentPath,
       setViewMode: folderModel.viewState.setFolderViewMode,
       setRecentPairs: folderModel.state.setFolderRecentPairs,
+    },
+  })
+
+  // --- Drag & drop ---
+
+  useFileDrop({
+    'text-old': (paths) => {
+      void textModel.workflow.loadTextFromPath('old', paths[0])
+      if (paths[1]) {
+        void textModel.workflow.loadTextFromPath('new', paths[1])
+      }
+    },
+    'text-new': (paths) => {
+      void textModel.workflow.loadTextFromPath('new', paths[0])
+    },
+    'json-old': (paths) => {
+      void jsonModel.workflow.loadJSONFromPath('old', paths[0])
+      if (paths[1]) {
+        void jsonModel.workflow.loadJSONFromPath('new', paths[1])
+      }
+    },
+    'json-new': (paths) => {
+      void jsonModel.workflow.loadJSONFromPath('new', paths[0])
+    },
+    'folder-left': (paths) => {
+      folderModel.workflow.setFolderRootPath('left', paths[0])
+      if (paths[1]) {
+        folderModel.workflow.setFolderRootPath('right', paths[1])
+      }
+    },
+    'folder-right': (paths) => {
+      folderModel.workflow.setFolderRootPath('right', paths[0])
     },
   })
 

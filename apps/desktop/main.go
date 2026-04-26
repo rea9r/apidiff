@@ -114,6 +114,10 @@ func main() {
 			Assets: assets,
 		},
 		Bind: []interface{}{app},
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop:     true,
+			DisableWebViewDrop: true,
+		},
 	})
 	if err != nil {
 		panic(err)

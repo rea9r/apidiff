@@ -226,11 +226,10 @@ export function useTextCompareWorkflow({
     }
   }, [])
 
-  const loadTextFromFile = useCallback(
-    async (target: TextInputTarget) => {
-      const pickTextFile = getPickTextFile()
+  const loadTextFromPath = useCallback(
+    async (target: TextInputTarget, path: string) => {
       const loadTextFile = getLoadTextFile()
-      if (!pickTextFile || !loadTextFile) {
+      if (!loadTextFile) {
         showErrorNotification('Text loader unavailable', 'Text file loader is not available.')
         return
       }
@@ -238,14 +237,9 @@ export function useTextCompareWorkflow({
       setTextFileBusyTarget(target)
 
       try {
-        const selected = await pickTextFile()
-        if (!selected) {
-          return
-        }
-
         const encoding = target === 'old' ? textOldEncoding : textNewEncoding
         const loaded = await loadTextFile({
-          path: selected,
+          path,
           encoding,
         } satisfies LoadTextFileRequest)
 
@@ -267,7 +261,25 @@ export function useTextCompareWorkflow({
         setTextFileBusyTarget(null)
       }
     },
-    [getLoadTextFile, getPickTextFile, textNewEncoding, textOldEncoding],
+    [getLoadTextFile, textNewEncoding, textOldEncoding],
+  )
+
+  const loadTextFromFile = useCallback(
+    async (target: TextInputTarget) => {
+      const pickTextFile = getPickTextFile()
+      if (!pickTextFile) {
+        showErrorNotification('Text loader unavailable', 'Text file loader is not available.')
+        return
+      }
+
+      const selected = await pickTextFile()
+      if (!selected) {
+        return
+      }
+
+      await loadTextFromPath(target, selected)
+    },
+    [getPickTextFile, loadTextFromPath],
   )
 
   const reloadTextWithEncoding = useCallback(
@@ -432,6 +444,7 @@ export function useTextCompareWorkflow({
     runTextCompareWithValues,
     pasteTextFromClipboard,
     loadTextFromFile,
+    loadTextFromPath,
     copyTextInput,
     clearTextInput,
     copyTextResultRawOutput,

@@ -57,6 +57,7 @@ export function JSONCompareSourceWorkspace({
         <CompareSourcePane
           title="Old JSON"
           sourcePath={oldSourcePath}
+          dropTarget="json-old"
           actions={
             <ComparePaneActions>
               <ComparePaneAction
@@ -105,6 +106,7 @@ export function JSONCompareSourceWorkspace({
         <CompareSourcePane
           title="New JSON"
           sourcePath={newSourcePath}
+          dropTarget="json-new"
           actions={
             <ComparePaneActions>
               <ComparePaneAction

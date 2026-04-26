@@ -288,11 +288,10 @@ export function useJSONCompareWorkflow({
     }
   }, [])
 
-  const loadJSONFromFile = useCallback(
-    async (target: JSONTextInputTarget) => {
-      const pickJSONFile = getPickJSONFile()
+  const loadJSONFromPath = useCallback(
+    async (target: JSONTextInputTarget, path: string) => {
       const loadTextFile = getLoadTextFile()
-      if (!pickJSONFile || !loadTextFile) {
+      if (!loadTextFile) {
         showErrorNotification('JSON loader unavailable', 'JSON file loader is not available.')
         return
       }
@@ -300,14 +299,7 @@ export function useJSONCompareWorkflow({
       setJSONFileBusyTarget(target)
 
       try {
-        const selected = await pickJSONFile()
-        if (!selected) {
-          return
-        }
-
-        const loaded = await loadTextFile({
-          path: selected,
-        } satisfies LoadTextFileRequest)
+        const loaded = await loadTextFile({ path } satisfies LoadTextFileRequest)
 
         if (target === 'old') {
           setJSONOldText(loaded.content)
@@ -325,7 +317,25 @@ export function useJSONCompareWorkflow({
         setJSONFileBusyTarget(null)
       }
     },
-    [getLoadTextFile, getPickJSONFile],
+    [getLoadTextFile],
+  )
+
+  const loadJSONFromFile = useCallback(
+    async (target: JSONTextInputTarget) => {
+      const pickJSONFile = getPickJSONFile()
+      if (!pickJSONFile) {
+        showErrorNotification('JSON loader unavailable', 'JSON file loader is not available.')
+        return
+      }
+
+      const selected = await pickJSONFile()
+      if (!selected) {
+        return
+      }
+
+      await loadJSONFromPath(target, selected)
+    },
+    [getPickJSONFile, loadJSONFromPath],
   )
 
   const copyJSONInput = useCallback(
@@ -447,6 +457,7 @@ export function useJSONCompareWorkflow({
     runJSONCompareWithValues,
     pasteJSONFromClipboard,
     loadJSONFromFile,
+    loadJSONFromPath,
     copyJSONInput,
     clearJSONInput,
     copyJSONResultRawOutput,

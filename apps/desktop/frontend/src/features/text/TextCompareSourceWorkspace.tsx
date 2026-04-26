@@ -68,6 +68,7 @@ export function TextCompareSourceWorkspace({
           <CompareSourcePane
             title="Old text"
             sourcePath={oldSourcePath}
+            dropTarget="text-old"
             actions={
               <ComparePaneActions>
                 <EncodingSelect
@@ -118,6 +119,7 @@ export function TextCompareSourceWorkspace({
           <CompareSourcePane
             title="New text"
             sourcePath={newSourcePath}
+            dropTarget="text-new"
             actions={
               <ComparePaneActions>
                 <EncodingSelect
