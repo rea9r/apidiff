@@ -81,6 +81,21 @@ const ETA_MIN_SAMPLES = 5
 const ETA_MAX_SAMPLES = 10
 const READY_FLASH_MS = 900
 
+const LANGUAGE_STORAGE_KEY = 'xdiff.ai.explainLanguage'
+const LANGUAGE_OPTIONS = [
+  { value: 'English', label: 'English' },
+  { value: 'Japanese', label: '日本語' },
+]
+function loadStoredLanguage(): string {
+  try {
+    const v = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+    if (v && LANGUAGE_OPTIONS.some((o) => o.value === v)) return v
+  } catch {
+    /* noop */
+  }
+  return 'English'
+}
+
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -234,6 +249,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   const [manageMode, setManageMode] = useState(false)
   const [confirmDeleteModel, setConfirmDeleteModel] = useState<string | null>(null)
   const [deletingModel, setDeletingModel] = useState<string | null>(null)
+  const [language, setLanguage] = useState<string>(loadStoredLanguage)
 
   const lastDiffRef = useRef<string>('')
   const samplesRef = useRef<{ t: number; bytes: number }[]>([])
@@ -269,6 +285,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
           diffText,
           mode,
           model: modelOverride ?? activeModel,
+          language,
         })
         if (res.error) {
           setError(res.error)
@@ -283,7 +300,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
         setIsLoading(false)
       }
     },
-    [activeModel, diffText, explainDiff, mode],
+    [activeModel, diffText, explainDiff, mode, language],
   )
 
   // Re-detect provider every time the drawer opens — state outside the app
@@ -453,6 +470,20 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
     setSetupProgress(null)
     void refreshStatus()
   }, [refreshStatus])
+
+  const handleLanguageChange = useCallback(
+    (value: string | null) => {
+      const next = value ?? 'English'
+      setLanguage(next)
+      try {
+        window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next)
+      } catch {
+        /* noop */
+      }
+      lastDiffRef.current = ''
+    },
+    [],
+  )
 
   const queueDeleteConfirm = useCallback((m: string | null) => {
     if (revertTimeoutRef.current !== null) {
@@ -755,7 +786,17 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
                     value={activeModel}
                     onChange={(value) => setActiveModel(value ?? '')}
                     data={status.models}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minWidth: 0 }}
+                    comboboxProps={{ withinPortal: true }}
+                    allowDeselect={false}
+                  />
+                  <Select
+                    label="Language"
+                    size="xs"
+                    value={language}
+                    onChange={handleLanguageChange}
+                    data={LANGUAGE_OPTIONS}
+                    style={{ width: 110, flex: 'none' }}
                     comboboxProps={{ withinPortal: true }}
                     allowDeselect={false}
                   />

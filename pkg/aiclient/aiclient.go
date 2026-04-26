@@ -40,9 +40,10 @@ type ChatMessage struct {
 }
 
 type ChatRequest struct {
-	Model    string        `json:"model"`
-	Messages []ChatMessage `json:"messages"`
-	Stream   bool          `json:"stream"`
+	Model     string        `json:"model"`
+	Messages  []ChatMessage `json:"messages"`
+	Stream    bool          `json:"stream"`
+	KeepAlive string        `json:"keep_alive,omitempty"`
 }
 
 type Client struct {
@@ -118,7 +119,52 @@ func (c *Client) ListOllamaModels(ctx context.Context, baseURL string) ([]string
 	return names, nil
 }
 
-func (c *Client) Chat(ctx context.Context, baseURL string, req ChatRequest) (string, error) {
+func (c *Client) Chat(ctx context.Context, provider Provider, req ChatRequest) (string, error) {
+	if provider.Name == ProviderOllama {
+		return c.chatOllama(ctx, provider.BaseURL, req)
+	}
+	return c.chatOpenAI(ctx, provider.BaseURL, req)
+}
+
+func (c *Client) chatOllama(ctx context.Context, baseURL string, req ChatRequest) (string, error) {
+	req.Stream = false
+	body, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/api/chat", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.http.Do(httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		msg, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("ollama /api/chat returned %d: %s", resp.StatusCode, string(msg))
+	}
+
+	var out struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+		Error string `json:"error,omitempty"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return "", err
+	}
+	if out.Error != "" {
+		return "", errors.New(out.Error)
+	}
+	return out.Message.Content, nil
+}
+
+func (c *Client) chatOpenAI(ctx context.Context, baseURL string, req ChatRequest) (string, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return "", err

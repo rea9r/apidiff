@@ -17,14 +17,17 @@ const (
 	aiCallTimeout       = 180 * time.Second
 	aiDefaultModel      = "qwen3.5:0.8b"
 	aiDiffSnippetLimit  = 16000
+	aiKeepAlive         = "30m"
 	aiSystemInstruction = `You are a senior code reviewer. The user gives you a diff (unified diff for text mode, structured diff lines for JSON mode). Explain the changes for someone reviewing them.
+
+The user message starts with a "Reply in:" line specifying the response language. Use exactly that language for your entire response — do not switch to any other language.
 
 Output format:
 - One short sentence summarizing the change.
 - Bulleted list of the most important concrete changes (max 6 bullets). Quote identifier names where relevant.
 - A short "Watch out" line only if there is a real risk (breaking change, removed API, behavioral shift). Skip otherwise.
 
-Respond in the same language the diff content is written in. If ambiguous, use English. Be concise. Do not restate the diff verbatim.`
+Be concise. Do not restate the diff verbatim.`
 )
 
 const (
@@ -125,12 +128,13 @@ func (s *Service) ExplainDiff(req ExplainDiffRequest) (*ExplainDiffResponse, err
 		model = aiDefaultModel
 	}
 
-	answer, err := client.Chat(ctx, provider.BaseURL, aiclient.ChatRequest{
+	answer, err := client.Chat(ctx, *provider, aiclient.ChatRequest{
 		Model: model,
 		Messages: []aiclient.ChatMessage{
 			{Role: "system", Content: aiSystemInstruction},
 			{Role: "user", Content: buildExplainPrompt(diff, req.Mode, req.Language)},
 		},
+		KeepAlive: aiKeepAlive,
 	})
 	if err != nil {
 		return &ExplainDiffResponse{
@@ -332,11 +336,13 @@ func buildExplainPrompt(diff, mode, language string) string {
 	default:
 		b.WriteString("Mode: text/code diff\n")
 	}
-	if lang := strings.TrimSpace(language); lang != "" {
-		b.WriteString("Reply in: ")
-		b.WriteString(lang)
-		b.WriteString("\n")
+	lang := strings.TrimSpace(language)
+	if lang == "" {
+		lang = "English"
 	}
+	b.WriteString("Reply in: ")
+	b.WriteString(lang)
+	b.WriteString("\n")
 	b.WriteString("\nDiff:\n```\n")
 	b.WriteString(diff)
 	b.WriteString("\n```\n")
