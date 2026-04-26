@@ -305,12 +305,23 @@ body {
 .xdiff-tab {
   display: inline-flex;
   align-items: center;
-  padding: 0 var(--xdiff-space-4);
+  gap: var(--xdiff-space-2);
+  padding: 0 var(--xdiff-space-3);
   font-size: var(--xdiff-text-sm);
   color: var(--mantine-color-dimmed);
   border-bottom: 2px solid transparent;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  outline: none;
+}
+
+.xdiff-tab:hover {
+  color: var(--mantine-color-text);
+  background: var(--mantine-color-default-hover);
+}
+
+.xdiff-tab:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--xdiff-accent);
 }
 
 .xdiff-tab.is-active {
@@ -320,6 +331,49 @@ body {
 
 .xdiff-tab-label {
   white-space: nowrap;
+}
+
+.xdiff-tab-close,
+.xdiff-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--mantine-color-dimmed);
+  cursor: pointer;
+  border-radius: var(--xdiff-radius-sm);
+}
+
+.xdiff-tab-close {
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+
+.xdiff-tab:hover .xdiff-tab-close,
+.xdiff-tab.is-active .xdiff-tab-close,
+.xdiff-tab-close:focus-visible {
+  opacity: 1;
+}
+
+.xdiff-tab-close:hover {
+  background: var(--mantine-color-default-hover);
+  color: var(--mantine-color-text);
+}
+
+.xdiff-tab-add {
+  width: 24px;
+  height: 100%;
+  margin-left: var(--xdiff-space-1);
+  align-self: stretch;
+}
+
+.xdiff-tab-add:hover {
+  background: var(--mantine-color-default-hover);
+  color: var(--mantine-color-text);
 }
 
 .workspace-shell {

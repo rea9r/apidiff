@@ -24,9 +24,12 @@ export function App() {
       {tabsManager.tabs.map((tab) => (
         <DesktopTabSurface
           key={tab.id}
+          tabId={tab.id}
           isActive={tab.id === tabsManager.activeTabId}
+          isInitialTab={tab.id === tabsManager.initialTabId}
           api={api}
           recentPairs={recentPairs}
+          onLabelChange={tabsManager.updateTabLabel}
         />
       ))}
     </DesktopTabSlotsProvider>
@@ -35,7 +38,7 @@ export function App() {
 
 function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerState }) {
   const slots = useActiveDesktopTabSlots()
-  const { tabs, activeTabId } = tabsManager
+  const { tabs, activeTabId, setActiveTabId, addTab, closeTab } = tabsManager
 
   if (!slots) {
     return null
@@ -51,7 +54,15 @@ function ActiveTabAppChrome({ tabsManager }: { tabsManager: DesktopTabsManagerSt
       main={slots.main}
       inspector={slots.inspector}
       inspectorOpen={slots.inspectorOpen}
-      tabBar={<TabBar tabs={tabs} activeTabId={activeTabId} />}
+      tabBar={
+        <TabBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={setActiveTabId}
+          onAddTab={addTab}
+          onCloseTab={closeTab}
+        />
+      }
     />
   )
 }

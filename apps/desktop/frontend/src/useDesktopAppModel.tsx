@@ -6,6 +6,7 @@ import { useRecentActionRunner } from './useRecentActionRunner'
 import { useDesktopHeaderActions } from './useDesktopHeaderActions'
 import { useDesktopShellModel } from './useDesktopShellModel'
 import { useDesktopTabModel } from './useDesktopTabModel'
+import { deriveTabLabel } from './utils/deriveTabLabel'
 
 export type UseDesktopAppModelOptions = {
   api: ReturnType<typeof useDesktopBridge>
@@ -123,6 +124,16 @@ export function useDesktopAppModel({ api, recentPairs, enabled = true }: UseDesk
     directoryInteractions: directoryModel.interactions,
   })
 
+  const tabLabel = deriveTabLabel({
+    mode,
+    textOldSourcePath: textModel.workflow.textOldSourcePath,
+    textNewSourcePath: textModel.workflow.textNewSourcePath,
+    jsonOldSourcePath: jsonModel.workflow.jsonOldSourcePath,
+    jsonNewSourcePath: jsonModel.workflow.jsonNewSourcePath,
+    directoryLeftRoot: directoryModel.state.directoryLeftRoot,
+    directoryRightRoot: directoryModel.state.directoryRightRoot,
+  })
+
   return {
     mode,
     onModeChange,
@@ -132,5 +143,6 @@ export function useDesktopAppModel({ api, recentPairs, enabled = true }: UseDesk
     main,
     inspector,
     inspectorOpen,
+    tabLabel,
   }
 }
