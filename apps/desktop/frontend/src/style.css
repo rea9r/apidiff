@@ -94,6 +94,7 @@
   --xdiff-code-scale: 1;
   --xdiff-mono-font-size: calc(13px * var(--xdiff-code-scale));
   --xdiff-mono-line-height: 1.4;
+  --xdiff-diff-gutter-width: calc(56px * var(--xdiff-code-scale));
 
   /* Diff pane */
   --xdiff-diff-pane-gap: var(--xdiff-space-3);
@@ -1617,7 +1618,7 @@ button {
 
 .split-diff-cell {
   display: grid;
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: var(--xdiff-diff-gutter-width) 1fr;
   min-width: 0;
 }
 
@@ -1638,6 +1639,8 @@ button {
   text-align: right;
   color: var(--xdiff-viewer-text-dimmed);
   border-right: 1px solid var(--xdiff-viewer-border-strong);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .split-diff-content {
@@ -1666,7 +1669,7 @@ button {
 
 .text-diff-row {
   display: grid;
-  grid-template-columns: 56px 56px 1fr;
+  grid-template-columns: var(--xdiff-diff-gutter-width) var(--xdiff-diff-gutter-width) 1fr;
   align-items: start;
 }
 
@@ -1756,6 +1759,8 @@ button {
   text-align: right;
   color: var(--xdiff-viewer-text-dimmed);
   border-right: 1px solid var(--xdiff-viewer-border-strong);
+  font-size: var(--xdiff-mono-font-size);
+  line-height: var(--xdiff-mono-line-height);
 }
 
 .text-diff-content {
