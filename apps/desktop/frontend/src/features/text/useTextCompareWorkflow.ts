@@ -6,6 +6,8 @@ import type {
   DesktopRecentPair,
   LoadTextFileRequest,
   LoadTextFileResponse,
+  SaveTextFileRequest,
+  SaveTextFileResponse,
   TextEncoding,
 } from '../../types'
 import {
@@ -30,13 +32,17 @@ type CompareTextFn = (req: {
 }) => Promise<CompareResponse>
 
 type PickTextFileFn = () => Promise<string>
+type PickSaveTextFileFn = (defaultName: string) => Promise<string>
 type LoadTextFileFn = (req: LoadTextFileRequest) => Promise<LoadTextFileResponse>
+type SaveTextFileFn = (req: SaveTextFileRequest) => Promise<SaveTextFileResponse>
 
 export type UseTextCompareWorkflowOptions = {
   initialCommon: CompareCommon
   getCompareText: () => CompareTextFn | undefined
   getPickTextFile: () => PickTextFileFn | undefined
+  getPickSaveTextFile: () => PickSaveTextFileFn | undefined
   getLoadTextFile: () => LoadTextFileFn | undefined
+  getSaveTextFile: () => SaveTextFileFn | undefined
   onTextCompareCompleted?: (res: CompareResponse) => void
   setTextRecentPairs: Dispatch<SetStateAction<DesktopRecentPair[]>>
 }
@@ -52,7 +58,9 @@ export function useTextCompareWorkflow({
   initialCommon,
   getCompareText,
   getPickTextFile,
+  getPickSaveTextFile,
   getLoadTextFile,
+  getSaveTextFile,
   onTextCompareCompleted,
   setTextRecentPairs,
 }: UseTextCompareWorkflowOptions) {
@@ -72,11 +80,15 @@ export function useTextCompareWorkflow({
   const [textClipboardBusyTarget, setTextClipboardBusyTarget] =
     useState<TextInputTarget | null>(null)
   const [textFileBusyTarget, setTextFileBusyTarget] = useState<TextInputTarget | null>(null)
+  const [textSaveBusyTarget, setTextSaveBusyTarget] = useState<TextInputTarget | null>(null)
   const [textCopyBusy, setTextCopyBusy] = useState(false)
   const [textPaneCopyBusyTarget, setTextPaneCopyBusyTarget] =
     useState<TextInputTarget | null>(null)
 
-  const textEditorBusy = textClipboardBusyTarget !== null || textFileBusyTarget !== null
+  const textEditorBusy =
+    textClipboardBusyTarget !== null ||
+    textFileBusyTarget !== null ||
+    textSaveBusyTarget !== null
 
   const nowISO = () => new Date().toISOString()
 
@@ -323,6 +335,78 @@ export function useTextCompareWorkflow({
     [getLoadTextFile, textNewSourcePath, textOldSourcePath],
   )
 
+  const saveTextSide = useCallback(
+    async (
+      target: TextInputTarget,
+      options: { saveAs?: boolean } = {},
+    ): Promise<boolean> => {
+      const saveTextFile = getSaveTextFile()
+      if (!saveTextFile) {
+        showErrorNotification('Save unavailable', 'Text save is not available.')
+        return false
+      }
+
+      const content = target === 'old' ? textOld : textNew
+      const sourcePath = target === 'old' ? textOldSourcePath : textNewSourcePath
+      const encoding = target === 'old' ? textOldEncoding : textNewEncoding
+
+      let path = sourcePath
+      if (options.saveAs || !path) {
+        const pickSaveTextFile = getPickSaveTextFile()
+        if (!pickSaveTextFile) {
+          showErrorNotification('Save unavailable', 'Save dialog is not available.')
+          return false
+        }
+        const fallbackName = target === 'old' ? 'old.txt' : 'new.txt'
+        const defaultName = sourcePath
+          ? sourcePath.split(/[/\\]/).pop() ?? fallbackName
+          : fallbackName
+        const picked = await pickSaveTextFile(defaultName)
+        if (!picked) {
+          return false
+        }
+        path = picked
+      }
+
+      setTextSaveBusyTarget(target)
+      try {
+        const resp = await saveTextFile({ path, content, encoding })
+        const savedPath = resp.path ?? path
+        const savedEncoding = (resp.encoding as TextEncoding | undefined) ?? encoding
+        if (target === 'old') {
+          setTextOldSourcePath(savedPath)
+          setTextOldEncoding(savedEncoding)
+        } else {
+          setTextNewSourcePath(savedPath)
+          setTextNewEncoding(savedEncoding)
+        }
+        showSuccessNotification(
+          'Saved',
+          `${target === 'old' ? 'Old' : 'New'} text saved to ${savedPath}.`,
+        )
+        return true
+      } catch (error) {
+        showErrorNotification(
+          'Save failed',
+          `Failed to save text file: ${formatUnknownError(error)}`,
+        )
+        return false
+      } finally {
+        setTextSaveBusyTarget(null)
+      }
+    },
+    [
+      getPickSaveTextFile,
+      getSaveTextFile,
+      textNew,
+      textNewEncoding,
+      textNewSourcePath,
+      textOld,
+      textOldEncoding,
+      textOldSourcePath,
+    ],
+  )
+
   const clearTextInput = useCallback((target: TextInputTarget) => {
     if (target === 'old') {
       setTextOld('')
@@ -435,6 +519,7 @@ export function useTextCompareWorkflow({
     setTextLastRunOutputFormat,
     textClipboardBusyTarget,
     textFileBusyTarget,
+    textSaveBusyTarget,
     textCopyBusy,
     textPaneCopyBusyTarget,
     textEditorBusy,
@@ -444,6 +529,7 @@ export function useTextCompareWorkflow({
     pasteTextFromClipboard,
     loadTextFromFile,
     loadTextFromPath,
+    saveTextSide,
     copyTextInput,
     clearTextInput,
     copyTextResultRawOutput,

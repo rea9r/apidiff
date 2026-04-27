@@ -40,6 +40,17 @@ type LoadTextFileResponse struct {
 	Encoding string `json:"encoding"`
 }
 
+type SaveTextFileRequest struct {
+	Path     string `json:"path"`
+	Content  string `json:"content"`
+	Encoding string `json:"encoding,omitempty"`
+}
+
+type SaveTextFileResponse struct {
+	Path     string `json:"path"`
+	Encoding string `json:"encoding"`
+}
+
 type CompareDirectoriesRequest struct {
 	LeftRoot    string `json:"leftRoot"`
 	RightRoot   string `json:"rightRoot"`

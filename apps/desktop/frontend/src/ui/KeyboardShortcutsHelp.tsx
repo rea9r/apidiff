@@ -26,6 +26,15 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Text edit',
+    items: [
+      { keys: ['⌘/Ctrl', 'Z'], label: 'Undo adopt' },
+      { keys: ['⌘/Ctrl', 'Shift', 'Z'], label: 'Redo adopt' },
+      { keys: ['⌘/Ctrl', 'S'], label: 'Save text panes' },
+      { keys: ['⌘/Ctrl', 'Shift', 'S'], label: 'Save text panes as…' },
+    ],
+  },
+  {
     title: 'Directory compare',
     items: [
       { keys: ['↓'], label: 'Select next entry' },

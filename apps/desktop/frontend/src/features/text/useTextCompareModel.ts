@@ -8,7 +8,9 @@ export type TextCompareModelDeps = Pick<
   UseTextCompareWorkflowOptions,
   | 'getCompareText'
   | 'getPickTextFile'
+  | 'getPickSaveTextFile'
   | 'getLoadTextFile'
+  | 'getSaveTextFile'
   | 'onTextCompareCompleted'
   | 'setTextRecentPairs'
 >
@@ -18,7 +20,9 @@ export function useTextCompareModel(deps: TextCompareModelDeps) {
     initialCommon: defaultTextCommon,
     getCompareText: deps.getCompareText,
     getPickTextFile: deps.getPickTextFile,
+    getPickSaveTextFile: deps.getPickSaveTextFile,
     getLoadTextFile: deps.getLoadTextFile,
+    getSaveTextFile: deps.getSaveTextFile,
     onTextCompareCompleted: deps.onTextCompareCompleted,
     setTextRecentPairs: deps.setTextRecentPairs,
   })

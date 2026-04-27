@@ -1,11 +1,11 @@
 import { ActionIcon, Tooltip } from '@mantine/core'
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 export const COMPARE_PANE_ACTION_SIZE = 26
 
 type ComparePaneActionProps = {
   label: string
-  onClick?: () => void
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
   loading?: boolean
   danger?: boolean

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActionIcon, Tooltip } from '@mantine/core'
 import { IconChevronDown } from '@tabler/icons-react'
 import type {
@@ -201,6 +201,57 @@ export function useDesktopShellModel({
     restoreTextAdoptSnapshot(snapshot)
   }
 
+  const onSaveText = useCallback(
+    async (target: 'old' | 'new', options: { saveAs?: boolean } = {}) => {
+      const ok = await textWorkflow.saveTextSide(target, options)
+      if (ok) {
+        setTextAdoptUndoStack([])
+        setTextAdoptRedoStack([])
+      }
+      return ok
+    },
+    [textWorkflow.saveTextSide],
+  )
+
+  const saveAllRef = useRef<(saveAs: boolean) => void>(() => {})
+  saveAllRef.current = (saveAs: boolean) => {
+    if (mode !== 'text') {
+      return
+    }
+    const hasOld = !!textWorkflow.textOld
+    const hasNew = !!textWorkflow.textNew
+    if (!hasOld && !hasNew) {
+      return
+    }
+    void (async () => {
+      let saved = false
+      if (hasOld) {
+        saved = (await onSaveText('old', { saveAs })) || saved
+      }
+      if (hasNew) {
+        saved = (await onSaveText('new', { saveAs })) || saved
+      }
+      return saved
+    })()
+  }
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const ctrlOrCmd = event.ctrlKey || event.metaKey
+      if (!ctrlOrCmd || event.altKey) {
+        return
+      }
+      if (event.key.toLowerCase() !== 's') {
+        return
+      }
+      event.preventDefault()
+      saveAllRef.current(event.shiftKey)
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   const main = (
     <DesktopMainContent
       mode={mode}
@@ -217,10 +268,12 @@ export function useDesktopShellModel({
         fileBusyTarget: textWorkflow.textFileBusyTarget,
         clipboardBusyTarget: textWorkflow.textClipboardBusyTarget,
         copyBusyTarget: textWorkflow.textPaneCopyBusyTarget,
+        saveBusyTarget: textWorkflow.textSaveBusyTarget,
         onOpenFile: (target) => void textWorkflow.loadTextFromFile(target),
         onPasteClipboard: (target) => void textWorkflow.pasteTextFromClipboard(target),
         onCopyInput: (target) => void textWorkflow.copyTextInput(target),
         onClearInput: textWorkflow.clearTextInput,
+        onSaveFile: (target, options) => void onSaveText(target, options),
         onEncodingChange: (target, encoding) =>
           void textWorkflow.reloadTextWithEncoding(target, encoding),
         onOldChange: textWorkflow.setTextOldInput,

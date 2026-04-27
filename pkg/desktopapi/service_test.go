@@ -428,6 +428,70 @@ func TestLoadTextFileUnsupportedEncoding(t *testing.T) {
 	}
 }
 
+func TestSaveTextFileRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "out.txt")
+	body := "hello\nworld\n"
+
+	svc := NewService()
+	saved, err := svc.SaveTextFile(SaveTextFileRequest{Path: path, Content: body})
+	if err != nil {
+		t.Fatalf("SaveTextFile() error = %v", err)
+	}
+	if saved.Path != path {
+		t.Fatalf("SaveTextFile() path = %q, want %q", saved.Path, path)
+	}
+	if saved.Encoding != "utf-8" {
+		t.Fatalf("SaveTextFile() encoding = %q, want utf-8", saved.Encoding)
+	}
+
+	loaded, err := svc.LoadTextFile(LoadTextFileRequest{Path: path})
+	if err != nil {
+		t.Fatalf("LoadTextFile() error = %v", err)
+	}
+	if loaded.Content != body {
+		t.Fatalf("round-trip content = %q, want %q", loaded.Content, body)
+	}
+}
+
+func TestSaveTextFileShiftJISRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "out_sjis.txt")
+	body := "こんにちは"
+
+	svc := NewService()
+	if _, err := svc.SaveTextFile(SaveTextFileRequest{Path: path, Content: body, Encoding: "shift-jis"}); err != nil {
+		t.Fatalf("SaveTextFile() error = %v", err)
+	}
+
+	loaded, err := svc.LoadTextFile(LoadTextFileRequest{Path: path, Encoding: "shift-jis"})
+	if err != nil {
+		t.Fatalf("LoadTextFile() error = %v", err)
+	}
+	if loaded.Content != body {
+		t.Fatalf("round-trip content = %q, want %q", loaded.Content, body)
+	}
+}
+
+func TestSaveTextFileEmptyPathRejected(t *testing.T) {
+	svc := NewService()
+	_, err := svc.SaveTextFile(SaveTextFileRequest{Path: "  ", Content: "hi"})
+	if err == nil {
+		t.Fatal("SaveTextFile() error = nil, want non-nil")
+	}
+}
+
+func TestSaveTextFileUnsupportedEncoding(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "out.txt")
+
+	svc := NewService()
+	_, err := svc.SaveTextFile(SaveTextFileRequest{Path: path, Content: "hi", Encoding: "klingon"})
+	if err == nil {
+		t.Fatal("SaveTextFile() error = nil, want non-nil")
+	}
+}
+
 func TestCompareDirectories_NavigateRootListing(t *testing.T) {
 	leftRoot := filepath.Join(t.TempDir(), "left")
 	rightRoot := filepath.Join(t.TempDir(), "right")

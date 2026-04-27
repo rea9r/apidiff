@@ -25,7 +25,9 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
   const textModel = useTextCompareModel({
     getCompareText: () => api.compareText,
     getPickTextFile: () => api.pickTextFile,
+    getPickSaveTextFile: () => api.pickSaveTextFile,
     getLoadTextFile: () => api.loadTextFile,
+    getSaveTextFile: () => api.saveTextFile,
     onTextCompareCompleted: (res) => setResult(res),
     setTextRecentPairs: recentPairs.setTextRecentPairs,
   })

@@ -17,6 +17,8 @@ import type {
   ExplainDiffStreamRequest,
   LoadTextFileRequest,
   LoadTextFileResponse,
+  SaveTextFileRequest,
+  SaveTextFileResponse,
 } from './types'
 
 // ---------------------------------------------------------------------------
@@ -46,10 +48,15 @@ export function useDesktopBridge() {
 
       pickJSONFile: App.PickJSONFile,
       pickTextFile: App.PickTextFile,
+      pickSaveTextFile: (defaultName: string): Promise<string> =>
+        App.PickSaveTextFile(defaultName),
       pickDirectoryRoot: App.PickDirectoryRoot,
 
       loadTextFile: (req: LoadTextFileRequest): Promise<LoadTextFileResponse> =>
         App.LoadTextFile(req as any) as unknown as Promise<LoadTextFileResponse>,
+
+      saveTextFile: (req: SaveTextFileRequest): Promise<SaveTextFileResponse> =>
+        App.SaveTextFile(req as any) as unknown as Promise<SaveTextFileResponse>,
 
       loadDesktopState: (): Promise<DesktopState> =>
         App.LoadDesktopState() as Promise<DesktopState>,

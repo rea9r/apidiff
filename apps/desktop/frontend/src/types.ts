@@ -64,6 +64,17 @@ export type LoadTextFileResponse = {
   encoding: TextEncoding
 }
 
+export type SaveTextFileRequest = {
+  path: string
+  content: string
+  encoding?: TextEncoding
+}
+
+export type SaveTextFileResponse = {
+  path: string
+  encoding: TextEncoding
+}
+
 export type CompareDirectoriesRequest = {
   leftRoot: string
   rightRoot: string

@@ -36,7 +36,9 @@ describe('useTextCompareWorkflow', () => {
         initialCommon,
         getCompareText: () => compareText,
         getPickTextFile: () => undefined,
+        getPickSaveTextFile: () => undefined,
         getLoadTextFile: () => undefined,
+        getSaveTextFile: () => undefined,
       }),
     )
 
@@ -72,7 +74,9 @@ describe('useTextCompareWorkflow', () => {
         initialCommon,
         getCompareText: () => undefined,
         getPickTextFile: () => undefined,
+        getPickSaveTextFile: () => undefined,
         getLoadTextFile: () => undefined,
+        getSaveTextFile: () => undefined,
       }),
     )
 
@@ -86,5 +90,70 @@ describe('useTextCompareWorkflow', () => {
 
     expect(result.current.textOld).toBe('from clipboard')
     expect(result.current.textOldSourcePath).toBe('')
+  })
+
+  it('saves new side via existing source path and updates state', async () => {
+    const calls: Array<{ path: string; content: string; encoding?: string }> = []
+
+    const { result } = renderHook(() =>
+      useWorkflowWithRecent({
+        initialCommon,
+        getCompareText: () => undefined,
+        getPickTextFile: () => undefined,
+        getPickSaveTextFile: () => async () => '/tmp/picked.txt',
+        getLoadTextFile: () => undefined,
+        getSaveTextFile: () => async (req) => {
+          calls.push(req)
+          return { path: req.path, encoding: req.encoding ?? 'utf-8' }
+        },
+      }),
+    )
+
+    act(() => {
+      result.current.setTextNew('hello')
+      result.current.setTextNewSourcePath('/tmp/new.txt')
+    })
+
+    let ok = false
+    await act(async () => {
+      ok = await result.current.saveTextSide('new')
+    })
+
+    expect(ok).toBe(true)
+    expect(calls).toEqual([{ path: '/tmp/new.txt', content: 'hello', encoding: 'utf-8' }])
+    expect(result.current.textNewSourcePath).toBe('/tmp/new.txt')
+  })
+
+  it('falls back to picker when no source path on Save', async () => {
+    const calls: Array<{ path: string; content: string; encoding?: string }> = []
+
+    const { result } = renderHook(() =>
+      useWorkflowWithRecent({
+        initialCommon,
+        getCompareText: () => undefined,
+        getPickTextFile: () => undefined,
+        getPickSaveTextFile: () => async () => '/tmp/picked.txt',
+        getLoadTextFile: () => undefined,
+        getSaveTextFile: () => async (req) => {
+          calls.push(req)
+          return { path: req.path, encoding: req.encoding ?? 'utf-8' }
+        },
+      }),
+    )
+
+    act(() => {
+      result.current.setTextOld('saved-via-picker')
+    })
+
+    let ok = false
+    await act(async () => {
+      ok = await result.current.saveTextSide('old')
+    })
+
+    expect(ok).toBe(true)
+    expect(calls).toEqual([
+      { path: '/tmp/picked.txt', content: 'saved-via-picker', encoding: 'utf-8' },
+    ])
+    expect(result.current.textOldSourcePath).toBe('/tmp/picked.txt')
   })
 })

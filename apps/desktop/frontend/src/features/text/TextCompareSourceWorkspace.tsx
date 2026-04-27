@@ -2,6 +2,7 @@ import {
   IconBackspace,
   IconClipboardText,
   IconCopy,
+  IconDeviceFloppy,
   IconFolderOpen,
   IconX,
 } from '@tabler/icons-react'
@@ -29,10 +30,12 @@ export type TextCompareSourceWorkspaceProps = {
   fileBusyTarget: TextInputTarget | null
   clipboardBusyTarget: TextInputTarget | null
   copyBusyTarget: TextInputTarget | null
+  saveBusyTarget: TextInputTarget | null
   onOpenFile: (target: TextInputTarget) => void
   onPasteClipboard: (target: TextInputTarget) => void
   onCopyInput: (target: TextInputTarget) => void
   onClearInput: (target: TextInputTarget) => void
+  onSaveFile: (target: TextInputTarget, options?: { saveAs?: boolean }) => void
   onEncodingChange: (target: TextInputTarget, encoding: TextEncoding) => void
   onOldChange: (value: string) => void
   onNewChange: (value: string) => void
@@ -50,10 +53,12 @@ export function TextCompareSourceWorkspace({
   fileBusyTarget,
   clipboardBusyTarget,
   copyBusyTarget,
+  saveBusyTarget,
   onOpenFile,
   onPasteClipboard,
   onCopyInput,
   onClearInput,
+  onSaveFile,
   onEncodingChange,
   onOldChange,
   onNewChange,
@@ -84,6 +89,20 @@ export function TextCompareSourceWorkspace({
                   loading={fileBusyTarget === 'old'}
                 >
                   <IconFolderOpen size={14} />
+                </ComparePaneAction>
+                <ComparePaneAction
+                  label={
+                    oldSourcePath
+                      ? 'Save Old text (Shift: Save As)'
+                      : 'Save Old text as…'
+                  }
+                  onClick={(event) =>
+                    void onSaveFile('old', { saveAs: event.shiftKey || !oldSourcePath })
+                  }
+                  disabled={busy || !oldValue}
+                  loading={saveBusyTarget === 'old'}
+                >
+                  <IconDeviceFloppy size={14} />
                 </ComparePaneAction>
                 <ComparePaneAction
                   label="Paste clipboard into Old text"
@@ -135,6 +154,20 @@ export function TextCompareSourceWorkspace({
                   loading={fileBusyTarget === 'new'}
                 >
                   <IconFolderOpen size={14} />
+                </ComparePaneAction>
+                <ComparePaneAction
+                  label={
+                    newSourcePath
+                      ? 'Save New text (Shift: Save As)'
+                      : 'Save New text as…'
+                  }
+                  onClick={(event) =>
+                    void onSaveFile('new', { saveAs: event.shiftKey || !newSourcePath })
+                  }
+                  disabled={busy || !newValue}
+                  loading={saveBusyTarget === 'new'}
+                >
+                  <IconDeviceFloppy size={14} />
                 </ComparePaneAction>
                 <ComparePaneAction
                   label="Paste clipboard into New text"

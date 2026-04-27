@@ -61,6 +61,28 @@ func (s *Service) LoadTextFile(req LoadTextFileRequest) (*LoadTextFileResponse, 
 	}, nil
 }
 
+func (s *Service) SaveTextFile(req SaveTextFileRequest) (*SaveTextFileResponse, error) {
+	path := strings.TrimSpace(req.Path)
+	if path == "" {
+		return nil, fmt.Errorf("path is required")
+	}
+
+	enc := normalizeEncoding(req.Encoding)
+	body, err := encodeBytes(req.Content, enc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(path, body, 0o600); err != nil { //nolint:gosec // G304: path is user-provided desktop input
+		return nil, err
+	}
+
+	return &SaveTextFileResponse{
+		Path:     path,
+		Encoding: enc,
+	}, nil
+}
+
 func normalizeEncoding(value string) string {
 	v := strings.ToLower(strings.TrimSpace(value))
 	switch v {
@@ -110,4 +132,32 @@ func decodeWith(body []byte, dec *encoding.Decoder, label string) (string, error
 		return "", fmt.Errorf("failed to decode as %s: %w", label, err)
 	}
 	return string(out), nil
+}
+
+func encodeBytes(content, enc string) ([]byte, error) {
+	switch enc {
+	case "utf-8":
+		return []byte(content), nil
+	case "shift-jis":
+		return encodeWith(content, japanese.ShiftJIS.NewEncoder(), enc)
+	case "euc-jp":
+		return encodeWith(content, japanese.EUCJP.NewEncoder(), enc)
+	case "utf-16-le":
+		return encodeWith(content, unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder(), enc)
+	case "utf-16-be":
+		return encodeWith(content, unicode.UTF16(unicode.BigEndian, unicode.UseBOM).NewEncoder(), enc)
+	case "iso-8859-1":
+		return encodeWith(content, charmap.ISO8859_1.NewEncoder(), enc)
+	default:
+		return nil, fmt.Errorf("unsupported encoding: %s", enc)
+	}
+}
+
+func encodeWith(content string, enc *encoding.Encoder, label string) ([]byte, error) {
+	reader := transform.NewReader(strings.NewReader(content), enc)
+	out, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode as %s: %w", label, err)
+	}
+	return out, nil
 }

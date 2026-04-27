@@ -44,6 +44,10 @@ func (a *App) LoadTextFile(req desktopapi.LoadTextFileRequest) (*desktopapi.Load
 	return a.api.LoadTextFile(req)
 }
 
+func (a *App) SaveTextFile(req desktopapi.SaveTextFileRequest) (*desktopapi.SaveTextFileResponse, error) {
+	return a.api.SaveTextFile(req)
+}
+
 func (a *App) CompareDirectories(req desktopapi.CompareDirectoriesRequest) (*desktopapi.CompareDirectoriesResponse, error) {
 	return a.api.CompareDirectories(req)
 }
@@ -150,6 +154,27 @@ func (a *App) PickTextFile() (string, error) {
 		{
 			DisplayName: "All files (*.*)",
 			Pattern:     "*.*",
+		},
+	})
+}
+
+func (a *App) PickSaveTextFile(defaultName string) (string, error) {
+	if a.ctx == nil {
+		return "", nil
+	}
+
+	return runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Save text file",
+		DefaultFilename: defaultName,
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Text-like (*.txt;*.md;*.log;*.csv;*.tsv;*.yaml;*.yml;*.json;*.xml;*.html;*.css;*.js;*.ts;*.tsx;*.jsx;*.go;*.py;*.sh;*.sql)",
+				Pattern:     "*.txt;*.md;*.log;*.csv;*.tsv;*.yaml;*.yml;*.json;*.xml;*.html;*.css;*.js;*.ts;*.tsx;*.jsx;*.go;*.py;*.sh;*.sql",
+			},
+			{
+				DisplayName: "All files (*.*)",
+				Pattern:     "*.*",
+			},
 		},
 	})
 }
