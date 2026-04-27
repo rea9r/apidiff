@@ -28,7 +28,6 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 	}
 	run := runner.RunJSONValuesDetailed(oldValue, newValue, opts)
 	rawResult := DiffResponse{
-		ExitCode:  run.ExitCode,
 		DiffFound: run.DiffFound,
 		Output:    run.Output,
 		Error:     errString(run.Err),

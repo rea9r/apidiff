@@ -159,9 +159,6 @@ func TestDiffText(t *testing.T) {
 	if res == nil {
 		t.Fatal("expected response")
 	}
-	if res.ExitCode != 1 {
-		t.Fatalf("expected exitCode 1, got %d", res.ExitCode)
-	}
 	if !res.DiffFound {
 		t.Fatal("expected diffFound=true")
 	}

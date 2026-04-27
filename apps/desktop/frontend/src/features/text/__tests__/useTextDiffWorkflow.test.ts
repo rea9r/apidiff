@@ -24,7 +24,6 @@ function useWorkflowWithRecent(
 describe('useTextDiffWorkflow', () => {
   it('stores diff result and recent pair when running with source paths', async () => {
     const response: DiffResponse = {
-      exitCode: 1,
       diffFound: true,
       output: 'diff output',
     }

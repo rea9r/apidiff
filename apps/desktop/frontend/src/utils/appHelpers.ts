@@ -22,18 +22,11 @@ export function summarizeResponse(res: unknown): string {
   if (!res || typeof res !== 'object') return ''
 
   const r = res as {
-    exitCode?: number
     diffFound?: boolean
     error?: string
-    summary?: { total: number; ok: number; diff: number; error: number; exitCode: number }
-  }
-
-  if (r.summary) {
-    return `exit=${r.summary.exitCode} total=${r.summary.total} ok=${r.summary.ok} diff=${r.summary.diff} error=${r.summary.error}`
   }
 
   const parts: string[] = []
-  if (typeof r.exitCode === 'number') parts.push(`exit=${r.exitCode}`)
   if (typeof r.diffFound === 'boolean') parts.push(`diff=${r.diffFound ? 'yes' : 'no'}`)
   if (r.error) parts.push('error=yes')
 

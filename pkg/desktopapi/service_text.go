@@ -29,7 +29,6 @@ func (s *Service) DiffText(req DiffTextRequest) (*DiffResponse, error) {
 
 	res := runner.RunTextValuesDetailed(req.OldText, req.NewText, opts)
 	return &DiffResponse{
-		ExitCode:  res.ExitCode,
 		DiffFound: res.DiffFound,
 		Output:    res.Output,
 		Error:     errString(res.Err),

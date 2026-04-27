@@ -90,7 +90,6 @@ type DiffDirectoriesResponse struct {
 }
 
 type DiffResponse struct {
-	ExitCode  int    `json:"exitCode"`
 	DiffFound bool   `json:"diffFound"`
 	Output    string `json:"output"`
 	Error     string `json:"error,omitempty"`

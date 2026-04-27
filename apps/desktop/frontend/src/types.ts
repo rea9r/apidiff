@@ -10,7 +10,6 @@ export type DiffCommon = {
 }
 
 export type DiffResponse = {
-  exitCode: number
   diffFound: boolean
   output: string
   error?: string

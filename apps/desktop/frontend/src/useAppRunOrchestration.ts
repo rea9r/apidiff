@@ -25,7 +25,6 @@ type UseAppRunOrchestrationOptions = {
 
 function buildDiffErrorResult(errorText: string): DiffResponse {
   return {
-    exitCode: 2,
     diffFound: false,
     output: '',
     error: errorText,
