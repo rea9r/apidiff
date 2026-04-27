@@ -8,6 +8,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -207,6 +208,9 @@ func main() {
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
 			DisableWebViewDrop: true,
+		},
+		Mac: &mac.Options{
+			TitleBar: mac.TitleBarHidden(),
 		},
 	})
 	if err != nil {

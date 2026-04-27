@@ -186,6 +186,21 @@ body {
   min-height: 100%;
 }
 
+.xdiff-app-header.is-macos {
+  padding-left: 76px;
+  -webkit-app-region: drag;
+}
+
+.xdiff-app-header.is-macos button,
+.xdiff-app-header.is-macos a,
+.xdiff-app-header.is-macos input,
+.xdiff-app-header.is-macos select,
+.xdiff-app-header.is-macos [role="combobox"],
+.xdiff-app-header.is-macos [role="button"],
+.xdiff-app-header.is-macos [role="slider"] {
+  -webkit-app-region: no-drag;
+}
+
 .xdiff-header-burger {
   width: var(--xdiff-header-control-height);
   height: var(--xdiff-header-control-height);

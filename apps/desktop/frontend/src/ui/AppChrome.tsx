@@ -39,6 +39,9 @@ const DEFAULT_NAVBAR_WIDTH = 320
 const MIN_NAVBAR_WIDTH = 280
 const MAX_NAVBAR_WIDTH = 460
 
+const IS_MACOS =
+  typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent)
+
 function clampNavbarWidth(width: number): number {
   return Math.max(MIN_NAVBAR_WIDTH, Math.min(MAX_NAVBAR_WIDTH, width))
 }
@@ -125,7 +128,7 @@ export function AppChrome({
 
   return (
     <AppShell
-      header={{ height: 44 }}
+      header={{ height: 36 }}
       navbar={
         isSidebarLayout
           ? {
@@ -137,8 +140,8 @@ export function AppChrome({
       }
       padding="md"
     >
-      <AppShell.Header>
-        <Group justify="space-between" h="100%" px={6}>
+      <AppShell.Header className={IS_MACOS ? 'xdiff-app-header is-macos' : 'xdiff-app-header'}>
+        <Group justify="space-between" h="100%" px="md">
           <HeaderRailGroup>
             {isSidebarLayout ? (
               <Burger
