@@ -81,6 +81,9 @@ jobs:
       - name: Run frontend tests
         run: npm run test:run
 
+      - name: Lint dead code
+        run: npm run lint:dead
+
       - name: Build frontend
         run: npm run build
 
