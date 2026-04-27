@@ -9,15 +9,15 @@ import {
 
 const STORAGE_KEY = 'xdiff:code-font-scale'
 const DEFAULT_SCALE = 1
-const SCALE_PRESETS = [0.85, 1, 1.15, 1.3, 1.45] as const
+const MIN_SCALE = 0.7
+const MAX_SCALE = 1.6
+const SCALE_STEP = 0.01
+const KEYBOARD_STEP = 0.05
 
 function clampScale(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_SCALE
-  const min = SCALE_PRESETS[0]
-  const max = SCALE_PRESETS[SCALE_PRESETS.length - 1]
-  if (value < min) return min
-  if (value > max) return max
-  return value
+  const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, value))
+  return Math.round(clamped * 100) / 100
 }
 
 function loadInitialScale(): number {
@@ -31,22 +31,11 @@ function loadInitialScale(): number {
   }
 }
 
-function indexOfPreset(value: number): number {
-  let bestIndex = 0
-  let bestDelta = Math.abs(SCALE_PRESETS[0] - value)
-  for (let i = 1; i < SCALE_PRESETS.length; i++) {
-    const delta = Math.abs(SCALE_PRESETS[i] - value)
-    if (delta < bestDelta) {
-      bestDelta = delta
-      bestIndex = i
-    }
-  }
-  return bestIndex
-}
-
 type CodeFontScaleContextValue = {
   scale: number
-  presets: readonly number[]
+  min: number
+  max: number
+  step: number
   setScale: (value: number) => void
   increase: () => void
   decrease: () => void
@@ -72,17 +61,11 @@ export function CodeFontScaleProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const increase = useCallback(() => {
-    setScaleState((prev) => {
-      const idx = indexOfPreset(prev)
-      return SCALE_PRESETS[Math.min(idx + 1, SCALE_PRESETS.length - 1)]
-    })
+    setScaleState((prev) => clampScale(prev + KEYBOARD_STEP))
   }, [])
 
   const decrease = useCallback(() => {
-    setScaleState((prev) => {
-      const idx = indexOfPreset(prev)
-      return SCALE_PRESETS[Math.max(idx - 1, 0)]
-    })
+    setScaleState((prev) => clampScale(prev - KEYBOARD_STEP))
   }, [])
 
   const reset = useCallback(() => {
@@ -116,7 +99,16 @@ export function CodeFontScaleProvider({ children }: { children: ReactNode }) {
 
   return (
     <CodeFontScaleContext.Provider
-      value={{ scale, presets: SCALE_PRESETS, setScale, increase, decrease, reset }}
+      value={{
+        scale,
+        min: MIN_SCALE,
+        max: MAX_SCALE,
+        step: SCALE_STEP,
+        setScale,
+        increase,
+        decrease,
+        reset,
+      }}
     >
       {children}
     </CodeFontScaleContext.Provider>
@@ -125,7 +117,9 @@ export function CodeFontScaleProvider({ children }: { children: ReactNode }) {
 
 const NOOP_CODE_FONT_SCALE: CodeFontScaleContextValue = {
   scale: DEFAULT_SCALE,
-  presets: SCALE_PRESETS,
+  min: MIN_SCALE,
+  max: MAX_SCALE,
+  step: SCALE_STEP,
   setScale: () => {},
   increase: () => {},
   decrease: () => {},
