@@ -64,6 +64,8 @@ const textResultProps = {
   textActiveDiffIndex: 0,
   activeTextDiffBlock: null,
   moveTextDiff: noop,
+  ignoreWhitespace: false,
+  onToggleIgnoreWhitespace: noop,
 }
 
 const jsonSourceProps = {

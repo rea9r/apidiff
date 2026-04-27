@@ -1,4 +1,11 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import { upsertRecentPair } from '../../persistence'
 import type {
   DiffCommon,
@@ -178,6 +185,46 @@ export function useTextDiffWorkflow({
       newSourcePath: textNewSourcePath,
     })
   }, [runTextDiffWithValues, textNew, textNewSourcePath, textOld, textOldSourcePath])
+
+  const rerunTextWithLastInputs = useCallback(async () => {
+    const diffText = getDiffText()
+    if (!diffText) return
+    try {
+      const result = await diffText({
+        oldText: textLastRunOld,
+        newText: textLastRunNew,
+        common: textCommon,
+      })
+      setTextResult(result)
+      setTextLastRunOutputFormat(textCommon.outputFormat === 'json' ? 'json' : 'text')
+      onTextDiffCompleted?.(result)
+    } catch (err) {
+      showErrorNotification('Failed to re-run diff', formatUnknownError(err))
+    }
+  }, [
+    getDiffText,
+    onTextDiffCompleted,
+    textCommon,
+    textLastRunNew,
+    textLastRunOld,
+  ])
+
+  const rerunRef = useRef(rerunTextWithLastInputs)
+  const textResultRef = useRef<DiffResponse | null>(textResult)
+  useEffect(() => {
+    rerunRef.current = rerunTextWithLastInputs
+    textResultRef.current = textResult
+  })
+
+  const skipInitialCommonEffectRef = useRef(true)
+  useEffect(() => {
+    if (skipInitialCommonEffectRef.current) {
+      skipInitialCommonEffectRef.current = false
+      return
+    }
+    if (!textResultRef.current) return
+    void rerunRef.current()
+  }, [textCommon])
 
   const runTextFromRecent = useCallback(
     async (pair: DesktopRecentPair) => {

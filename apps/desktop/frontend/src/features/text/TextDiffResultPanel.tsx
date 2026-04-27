@@ -5,6 +5,8 @@ import {
   IconArrowForwardUp,
   IconCopy,
   IconSparkles,
+  IconSpace,
+  IconSpaceOff,
 } from '@tabler/icons-react'
 import type { DiffResponse } from '../../types'
 import { AIExplainDrawer } from '../ai/AIExplainDrawer'
@@ -66,6 +68,8 @@ export type TextDiffResultPanelProps = {
   canRedoAdopt?: boolean
   onUndoAdopt?: () => void
   onRedoAdopt?: () => void
+  ignoreWhitespace: boolean
+  onToggleIgnoreWhitespace: () => void
 }
 
 function buildTextSummaryBadgeItems(params: {
@@ -132,6 +136,8 @@ export function TextDiffResultPanel({
   canRedoAdopt = false,
   onUndoAdopt,
   onRedoAdopt,
+  ignoreWhitespace,
+  onToggleIgnoreWhitespace,
 }: TextDiffResultPanelProps) {
   const raw = textResult ? renderResult(textResult) : ''
   const hasTextResult = !!textResult
@@ -252,6 +258,20 @@ export function TextDiffResultPanel({
           summary={<DiffStatusBadges items={textSummaryItems} />}
           secondary={
             <>
+              <Tooltip label={ignoreWhitespace ? 'Show whitespace' : 'Hide whitespace'}>
+                <ActionIcon
+                  variant={ignoreWhitespace ? 'light' : 'default'}
+                  color={ignoreWhitespace ? 'blue' : undefined}
+                  size={28}
+                  aria-label={ignoreWhitespace ? 'Show whitespace' : 'Hide whitespace'}
+                  aria-pressed={ignoreWhitespace}
+                  className="text-result-action"
+                  onClick={onToggleIgnoreWhitespace}
+                  disabled={!hasTextResult}
+                >
+                  {ignoreWhitespace ? <IconSpaceOff size={15} /> : <IconSpace size={15} />}
+                </ActionIcon>
+              </Tooltip>
               <Tooltip label="Explain diff with local AI">
                 <ActionIcon
                   variant="default"

@@ -319,6 +319,12 @@ export function useDesktopShellModel({
         canRedoAdopt: textAdoptRedoStack.length > 0,
         onUndoAdopt: onUndoTextAdopt,
         onRedoAdopt: onRedoTextAdopt,
+        ignoreWhitespace: textWorkflow.textCommon.ignoreWhitespace,
+        onToggleIgnoreWhitespace: () =>
+          textWorkflow.updateTextCommon(
+            'ignoreWhitespace',
+            !textWorkflow.textCommon.ignoreWhitespace,
+          ),
       }}
       jsonSourceProps={{
         oldSourcePath: jsonWorkflow.jsonOldSourcePath,

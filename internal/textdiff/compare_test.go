@@ -36,3 +36,23 @@ func TestCompare_InsertLine(t *testing.T) {
 		t.Fatalf("diff mismatch (-want +got):\n%s", d)
 	}
 }
+
+func TestCompareWithDisplay_PreservesOriginalLines(t *testing.T) {
+	dispOld := "Hello   World\nfoo\n"
+	dispNew := "Hello World\nbar\n"
+	cmpOld := Normalize(dispOld, NormalizeOptions{IgnoreWhitespace: true})
+	cmpNew := Normalize(dispNew, NormalizeOptions{IgnoreWhitespace: true})
+
+	got := CompareWithDisplay(cmpOld, cmpNew, dispOld, dispNew)
+	// Whitespace-only difference on line 1 is treated as equal; line 2
+	// changes. OldValue/NewValue must come from the original (display)
+	// text, not the normalized one.
+	want := []delta.Diff{
+		{Type: delta.Removed, Path: "line[2]", OldValue: "foo"},
+		{Type: delta.Added, Path: "line[2]", NewValue: "bar"},
+	}
+
+	if d := cmp.Diff(want, got); d != "" {
+		t.Fatalf("diff mismatch (-want +got):\n%s", d)
+	}
+}

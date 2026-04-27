@@ -16,10 +16,10 @@ func RunTextValuesDetailed(oldText, newText string, opts DiffOptions) RunResult 
 		IgnoreCase:       opts.IgnoreCase,
 		IgnoreEOL:        opts.IgnoreEOL,
 	}
-	oldText = textdiff.Normalize(oldText, normOpts)
-	newText = textdiff.Normalize(newText, normOpts)
+	cmpOldText := textdiff.Normalize(oldText, normOpts)
+	cmpNewText := textdiff.Normalize(newText, normOpts)
 
-	diffs := textdiff.Compare(oldText, newText)
+	diffs := textdiff.CompareWithDisplay(cmpOldText, cmpNewText, oldText, newText)
 	filtered := delta.ApplyOptions(diffs, delta.Options{
 		IgnorePaths: opts.IgnorePaths,
 	})
@@ -40,7 +40,7 @@ func RunTextValuesDetailed(oldText, newText string, opts DiffOptions) RunResult 
 		if style == TextStyleSemantic {
 			out = output.RenderSemanticText(filtered)
 		} else {
-			out = output.RenderUnifiedText(oldText, newText)
+			out = output.RenderUnifiedTextWithDisplay(oldText, newText, cmpOldText, cmpNewText)
 		}
 	case output.JSONFormat:
 		rendered, err := output.RenderJSON(filtered)

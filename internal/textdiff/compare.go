@@ -33,10 +33,21 @@ func Normalize(text string, opts NormalizeOptions) string {
 }
 
 func Compare(oldText, newText string) []delta.Diff {
-	oldLines := difflib.SplitLines(oldText)
-	newLines := difflib.SplitLines(newText)
+	return CompareWithDisplay(oldText, newText, oldText, newText)
+}
 
-	matcher := difflib.NewMatcher(oldLines, newLines)
+// CompareWithDisplay matches lines using compareOld/compareNew but emits
+// OldValue/NewValue from displayOld/displayNew. The caller must keep line
+// counts identical between the compare and display sides (Normalize is
+// line-preserving, so feeding normalized text on the compare side and the
+// original on the display side is safe).
+func CompareWithDisplay(compareOld, compareNew, displayOld, displayNew string) []delta.Diff {
+	cmpOld := difflib.SplitLines(compareOld)
+	cmpNew := difflib.SplitLines(compareNew)
+	dispOld := difflib.SplitLines(displayOld)
+	dispNew := difflib.SplitLines(displayNew)
+
+	matcher := difflib.NewMatcher(cmpOld, cmpNew)
 	opCodes := matcher.GetOpCodes()
 
 	out := make([]delta.Diff, 0)
@@ -47,7 +58,7 @@ func Compare(oldText, newText string) []delta.Diff {
 				out = append(out, delta.Diff{
 					Type:     delta.Removed,
 					Path:     linePath(i + 1),
-					OldValue: normalizeLine(oldLines[i]),
+					OldValue: normalizeLine(dispOld[i]),
 				})
 			}
 		case 'i':
@@ -55,7 +66,7 @@ func Compare(oldText, newText string) []delta.Diff {
 				out = append(out, delta.Diff{
 					Type:     delta.Added,
 					Path:     linePath(j + 1),
-					NewValue: normalizeLine(newLines[j]),
+					NewValue: normalizeLine(dispNew[j]),
 				})
 			}
 		case 'r':
@@ -63,14 +74,14 @@ func Compare(oldText, newText string) []delta.Diff {
 				out = append(out, delta.Diff{
 					Type:     delta.Removed,
 					Path:     linePath(i + 1),
-					OldValue: normalizeLine(oldLines[i]),
+					OldValue: normalizeLine(dispOld[i]),
 				})
 			}
 			for j := op.J1; j < op.J2; j++ {
 				out = append(out, delta.Diff{
 					Type:     delta.Added,
 					Path:     linePath(j + 1),
-					NewValue: normalizeLine(newLines[j]),
+					NewValue: normalizeLine(dispNew[j]),
 				})
 			}
 		}
