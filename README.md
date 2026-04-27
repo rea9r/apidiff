@@ -1,253 +1,32 @@
 # xdiff
 
-A general-purpose diff tool for JSON and plain text (and directories in the desktop GUI), built in Go.
+Interactive desktop GUI for diffing text, JSON, and directories. Built with Wails (Go) + React + Mantine.
 
-## Overview
+## What it does
 
-`xdiff` ships in two forms:
+- **Text diff** — paste or load files, semantic and patch views, line search, encoding selection.
+- **JSON diff** — semantic rich diff with grouped path/value table, raw fallback, ignore array order, ignore noisy paths.
+- **Directory diff** — recursive scan with list and tree views, status filters, child-entry launch into Text or JSON diff.
+- **AI Explain** — optional natural-language summary of the current diff via local Ollama.
+- **Persistence** — last session restores paths, roots, and options. Recent targets per mode.
+- **Theme & font** — light / dark / system; global code font scale (⌘+ / ⌘- / ⌘0).
 
-- **CLI** for scripting local file comparisons (`xdiff json`, `xdiff text`).
-- **Desktop GUI** (Wails + React) for interactive JSON / text / directory compare workflows.
+Press `?` inside the app for the full keyboard shortcut list.
 
-## Quick Start
+## Run it
 
-Try it from the repository root:
+See [`apps/desktop/README.md`](apps/desktop/README.md) for prerequisites and the dev / build commands.
 
-```bash
-go run ./cmd/xdiff json examples/json/old.json examples/json/new.json
-```
-
-Install once:
-
-```bash
-go install ./cmd/xdiff
-```
-
-Then compare your own files:
-
-```bash
-xdiff json old.json new.json
-xdiff text before.txt after.txt
-```
-
-## Commands
-
-List commands and usage:
-
-```bash
-xdiff
-```
-
-Compare local JSON files:
-
-```bash
-xdiff json [options] <old-file> <new-file>
-```
-
-Arguments:
-- `<old-file>`: base file containing JSON
-- `<new-file>`: file containing JSON to compare
-
-Compare local text files:
-
-```bash
-xdiff text [options] <old-file> <new-file>
-```
-
-Arguments:
-- `<old-file>`: base plain-text file
-- `<new-file>`: plain-text file to compare
-
-## Options
-
-Common options (`xdiff json` and `xdiff text`):
-
-| Option | Description | Default |
-| --- | --- | --- |
-| `--output-format text\|json` | Output format | `text` |
-| `--ignore-path <path>` | Ignore an exact canonical diff path (repeatable) | none |
-| `--text-style auto\|patch\|semantic` | Text rendering style for `--output-format text` | `auto` |
-| `--no-color` | Disable colored text output | `false` |
-| `--ignore-whitespace` | Collapse runs of whitespace within each line before comparing | `false` |
-| `--ignore-case` | Compare text case-insensitively | `false` |
-| `--ignore-eol` | Normalize CRLF/CR to LF before comparing | `false` |
-
-JSON-specific options (`xdiff json`):
-
-| Option | Description | Default |
-| --- | --- | --- |
-| `--ignore-order` | Treat JSON arrays as unordered when comparing | `false` |
-
-## Behavior Notes
-
-### Canonical Diff Paths
-
-`--ignore-path` matches canonical diff paths exactly.
-
-### `--ignore-order`
-
-- Arrays are compared as unordered normalized values.
-- This does not perform ID-based object matching.
-- Diff indices may reflect normalized comparison order rather than original source order.
-
-### `--text-style`
-
-- `auto` keeps the current behavior.
-- `patch` uses unified patch output when that style is supported.
-- `semantic` always renders structured diffs.
-- `patch` is invalid with semantic-only filters such as `--ignore-path` or `--ignore-order`.
-- For incompatible combinations, the CLI prints a suggested next step.
-
-## Runnable examples
-
-Small runnable examples are available under:
-
-- `examples/json`
-- `examples/text`
-
-## Desktop fixture examples
-
-Desktop-only fixture sets for the Directory Compare workflow:
-
-- `examples/directory/basic`
-- `examples/directory/filters`
-
-## Examples
-
-Compare local JSON files:
-
-```bash
-xdiff json old.json new.json
-```
-
-Compare local text files:
-
-```bash
-xdiff text before.txt after.txt
-```
-
-Output JSON for scripting:
-
-```bash
-xdiff json --output-format json old.json new.json
-```
-
-Ignore noisy fields:
-
-```bash
-xdiff json --ignore-path user.updated_at --ignore-path meta.request_id old.json new.json
-```
-
-Ignore array order in local JSON comparison:
-
-```bash
-xdiff json --ignore-order old.json new.json
-```
-
-Force semantic text output for JSON comparison:
-
-```bash
-xdiff json --text-style semantic old.json new.json
-```
-
-Force patch-style text output for plain text comparison:
-
-```bash
-xdiff text --text-style patch before.txt after.txt
-```
-
-## Output Samples
-
-Default output (GitHub-like patch):
-
-```diff
---- old
-+++ new
-@@ -1,12 +1,13 @@
- {
-   "items": [
-     "a",
--    "b"
-+    "c",
-+    "d"
-   ],
-   "user": {
--    "age": "20",
--    "email": "taro@example.com",
--    "name": "Taro"
-+    "age": 20,
-+    "name": "Hanako",
-+    "phone": "090-xxxx-xxxx"
-   }
- }
-```
-
-Machine-readable output (`--output-format json`):
-
-```json
-{
-  "diffs": [
-    {
-      "type": "changed",
-      "path": "items[1]",
-      "old_value": "b",
-      "new_value": "c"
-    },
-    {
-      "type": "added",
-      "path": "items[2]",
-      "new_value": "d"
-    },
-    {
-      "type": "removed",
-      "path": "user.email",
-      "old_value": "taro@example.com"
-    },
-    {
-      "type": "type_changed",
-      "path": "user.age",
-      "old_value": "20",
-      "new_value": 20,
-      "old_type": "string",
-      "new_type": "number"
-    },
-    {
-      "type": "changed",
-      "path": "user.name",
-      "old_value": "Taro",
-      "new_value": "Hanako"
-    },
-    {
-      "type": "added",
-      "path": "user.phone",
-      "new_value": "090-xxxx-xxxx"
-    }
-  ],
-  "summary": {
-    "added": 2,
-    "removed": 1,
-    "changed": 2,
-    "type_changed": 1
-  }
-}
-```
-
-## Exit Codes
-
-`xdiff` follows `diff(1)` conventions:
-
-- `0`: no differences
-- `1`: differences found
-- `2`: execution error
-
-## Desktop App
-
-An interactive desktop GUI lives under `apps/desktop/`. See `apps/desktop/README.md` for setup and the supported JSON / text / directory compare workflows.
+Sample data for Directory diff lives under `examples/directory/basic` and `examples/directory/filters`.
 
 ## Development
+
+From the repository root:
 
 ```bash
 go fmt ./...
 go test ./...
 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.3 run --config=.golangci.yml
 ```
+
+CI runs the same `go test`, the desktop frontend tests/build, and `golangci-lint` on every push and PR.
