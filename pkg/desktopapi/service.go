@@ -1,7 +1,6 @@
 package desktopapi
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/rea9r/xdiff/internal/output"
@@ -60,13 +59,6 @@ func errString(err error) string {
 		return ""
 	}
 	return err.Error()
-}
-
-func pickDiffText(primary, fallback string) string {
-	if strings.TrimSpace(primary) != "" {
-		return primary
-	}
-	return fallback
 }
 
 func normalizeOutputFormat(v string) string {

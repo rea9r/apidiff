@@ -3,6 +3,7 @@ package desktopapi
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/rea9r/xdiff/internal/delta"
 	"github.com/rea9r/xdiff/internal/output"
@@ -33,10 +34,15 @@ func (s *Service) DiffJSONValuesRich(req DiffJSONValuesRequest) (*DiffJSONRichRe
 		Error:     errString(run.Err),
 	}
 
+	diffText := buildPatchDiffText(oldValue, newValue, opts, run.DiffFound)
+	if strings.TrimSpace(diffText) == "" {
+		diffText = rawResult.Output
+	}
+
 	structured := buildStructuredDiffs(run.Diffs)
 	return &DiffJSONRichResponse{
 		Result:   rawResult,
-		DiffText: pickDiffText(buildPatchDiffText(oldValue, newValue, opts, run.DiffFound), rawResult.Output),
+		DiffText: diffText,
 		Summary:  summarizeJSONRichDiffs(structured),
 		Diffs:    structured,
 	}, nil
