@@ -81,7 +81,7 @@ export function DiffCodeInputBody({
             >
               <LazyCodeMirror
                 value={value}
-                height="220px"
+                height="100%"
                 extensions={editorExtensions}
                 onChange={onChange}
                 basicSetup={{

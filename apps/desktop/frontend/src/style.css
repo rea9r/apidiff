@@ -882,6 +882,50 @@ button {
   min-width: 0;
 }
 
+.diff-source-grid-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.diff-source-grid-resizer {
+  position: relative;
+  height: 7px;
+  margin-top: 4px;
+  cursor: ns-resize;
+  border-radius: var(--xdiff-radius-sm);
+  background: var(--xdiff-viewer-surface-subtle);
+  border: 1px solid var(--xdiff-viewer-border);
+  transition: background-color 120ms ease, border-color 120ms ease;
+  touch-action: none;
+}
+
+.diff-source-grid-resizer::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background: var(--xdiff-viewer-text-dimmed);
+  border-radius: 999px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.diff-source-grid-resizer:hover,
+.diff-source-grid-resizer:active {
+  background: color-mix(in srgb, var(--xdiff-accent) 18%, transparent);
+  border-color: var(--xdiff-accent);
+}
+
+.diff-source-grid-resizer:hover::before,
+.diff-source-grid-resizer:active::before {
+  background: var(--xdiff-accent);
+  opacity: 1;
+}
+
 .diff-source-pane {
   display: flex;
   flex-direction: column;
@@ -979,7 +1023,7 @@ button {
 }
 
 .diff-text-input-body {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .diff-code-input-body-wrap {
@@ -1004,7 +1048,7 @@ button {
 
 .diff-code-input-shell {
   position: relative;
-  height: 220px;
+  height: var(--xdiff-input-pane-height, 220px);
   overflow: hidden;
 }
 
@@ -1222,10 +1266,10 @@ button {
 }
 
 .text-editor {
-  min-height: 220px;
+  height: var(--xdiff-input-pane-height, 220px);
   width: 100%;
   box-sizing: border-box;
-  resize: vertical;
+  resize: none;
   padding: var(--xdiff-space-3) var(--xdiff-space-4);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: var(--xdiff-mono-font-size);

@@ -69,6 +69,7 @@ export function TextDiffSourceWorkspace({
   return (
     <div className="text-diff-source-workspace">
       <DiffSourceGrid
+        resizeKey="text"
         left={
           <DiffSourcePane
             title="Old text"

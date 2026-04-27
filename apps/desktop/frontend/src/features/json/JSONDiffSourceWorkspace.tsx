@@ -53,6 +53,7 @@ export function JSONDiffSourceWorkspace({
 }: JSONDiffSourceWorkspaceProps) {
   return (
     <DiffSourceGrid
+      resizeKey="json"
       left={
         <DiffSourcePane
           title="Old JSON"
