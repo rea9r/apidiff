@@ -9,6 +9,7 @@ import {
   Drawer,
   Group,
   Loader,
+  Popover,
   Progress,
   ScrollArea,
   Select,
@@ -20,9 +21,11 @@ import {
 import {
   IconArrowsExchange,
   IconCheck,
+  IconChevronDown,
   IconLock,
+  IconPlus,
   IconRefresh,
-  IconSettings,
+  IconTrash,
   IconWallet,
 } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
@@ -359,7 +362,8 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
   const [selectedTier, setSelectedTier] = useState<TierId | null>(null)
   const [showReadyFlash, setShowReadyFlash] = useState(false)
   const [etaMs, setEtaMs] = useState<number | null>(null)
-  const [manageMode, setManageMode] = useState(false)
+  const [addingModel, setAddingModel] = useState(false)
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [confirmDeleteModel, setConfirmDeleteModel] = useState<string | null>(null)
   const [deletingModel, setDeletingModel] = useState<string | null>(null)
   const [language, setLanguage] = useState<string>(loadStoredLanguage)
@@ -450,10 +454,10 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
 
   // Re-detect provider every time the drawer opens — state outside the app
   // (Ollama install, daemon start) may have changed since last open. Also
-  // reset transient manage-mode state so each open starts in the normal view.
+  // close the inline add-model picker so each open starts in the normal view.
   useEffect(() => {
     if (!opened) return
-    setManageMode(false)
+    setAddingModel(false)
     setConfirmDeleteModel(null)
     if (revertTimeoutRef.current !== null) {
       window.clearTimeout(revertTimeoutRef.current)
@@ -478,11 +482,30 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
     () => pickRecommendedTier(status?.hardwareTier),
     [status?.hardwareTier],
   )
+  const installedSet = useMemo(
+    () => new Set(status?.models ?? []),
+    [status?.models],
+  )
+  const availableTiers = useMemo(
+    () => TIERS.filter((t) => !installedSet.has(t.modelId)),
+    [installedSet],
+  )
   useEffect(() => {
     if (selectedTier) return
     if (!status) return
     setSelectedTier(recommendedTier)
   }, [status, selectedTier, recommendedTier])
+
+  // When the user opens "Add model", make sure the current selection is one
+  // they can actually pull — if it's already installed, jump to the next
+  // recommended tier (or first available).
+  useEffect(() => {
+    if (!addingModel) return
+    if (availableTiers.length === 0) return
+    if (selectedTier && availableTiers.some((t) => t.id === selectedTier)) return
+    const recommended = availableTiers.find((t) => t.id === recommendedTier)
+    setSelectedTier(recommended?.id ?? availableTiers[0]!.id)
+  }, [addingModel, availableTiers, selectedTier, recommendedTier])
 
   // First-model autopick when status reports availability but we haven't picked one yet.
   useEffect(() => {
@@ -522,6 +545,7 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
         setSetupProgress(p)
         if (p.phase === 'ready') {
           setIsSettingUp(false)
+          setAddingModel(false)
           const next = await refreshStatus()
           if (next.available && next.models && next.models.length > 0) {
             const pickedModel = p.model || next.models[0]
@@ -677,9 +701,6 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
           const fallback = next.models?.[0] ?? ''
           setActiveModel(fallback)
           lastDiffRef.current = ''
-        }
-        if (!next.models || next.models.length === 0) {
-          setManageMode(false)
         }
       } catch (e) {
         setError(formatUnknownError(e))
@@ -888,147 +909,266 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
         ) : null}
 
         {viewState === 'available' && status?.available ? (
-          manageMode ? (
-            <Stack gap="xs">
-              <Group justify="space-between" wrap="nowrap">
-                <Text fw={600} size="sm">
-                  Manage models
-                </Text>
-                <Button
-                  size="compact-xs"
-                  variant="default"
-                  onClick={() => setManageMode(false)}
-                >
-                  Done
-                </Button>
-              </Group>
-              <Text size="xs" c="dimmed">
-                Click Delete twice to remove a model.
-              </Text>
-              {(status.models ?? []).length === 0 ? (
-                <Text size="xs" c="dimmed">
-                  No models installed.
-                </Text>
-              ) : (
-                <Stack gap={4}>
-                  {(status.models ?? []).map((m) => (
-                    <Group key={m} justify="space-between" wrap="nowrap" gap="xs">
-                      <Text
-                        size="sm"
-                        ff="monospace"
-                        style={{
-                          minWidth: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {m}
-                      </Text>
+          <>
+            <Group gap={6} wrap="nowrap" align="center">
+              <Popover
+                opened={modelMenuOpen}
+                onChange={setModelMenuOpen}
+                position="bottom-start"
+                shadow="md"
+                width={360}
+                withinPortal
+                trapFocus={false}
+              >
+                <Popover.Target>
+                  <Button
+                    variant="default"
+                    size="xs"
+                    fullWidth
+                    rightSection={
+                      <IconChevronDown size={12} style={{ opacity: 0.55 }} />
+                    }
+                    onClick={() => setModelMenuOpen((o) => !o)}
+                    styles={{
+                      root: { flex: 1, minWidth: 0, fontWeight: 400 },
+                      inner: { justifyContent: 'space-between' },
+                      label: {
+                        fontFamily:
+                          'var(--mantine-font-family-monospace, ui-monospace, monospace)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      },
+                    }}
+                  >
+                    {activeModel || '—'}
+                  </Button>
+                </Popover.Target>
+                <Popover.Dropdown p="xs">
+                  <Stack gap="xs">
+                    <Stack gap={2}>
+                      {(status.models ?? []).map((m) => {
+                        const isActive = m === activeModel
+                        const isConfirming = confirmDeleteModel === m
+                        const isDeleting = deletingModel === m
+                        return (
+                          <Group
+                            key={m}
+                            wrap="nowrap"
+                            gap="xs"
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              background: isActive
+                                ? 'var(--mantine-color-default-hover)'
+                                : 'transparent',
+                              cursor: isActive ? 'default' : 'pointer',
+                            }}
+                            onClick={() => {
+                              if (!isActive) {
+                                setActiveModel(m)
+                                setModelMenuOpen(false)
+                              }
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 12,
+                                display: 'inline-flex',
+                                justifyContent: 'center',
+                                flex: 'none',
+                              }}
+                            >
+                              {isActive ? (
+                                <IconCheck
+                                  size={12}
+                                  style={{ color: 'var(--mantine-color-green-5)' }}
+                                />
+                              ) : null}
+                            </span>
+                            <Text
+                              size="sm"
+                              ff="monospace"
+                              style={{
+                                minWidth: 0,
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {m}
+                            </Text>
+                            <Tooltip
+                              label={
+                                isConfirming ? 'Click again to confirm' : 'Delete'
+                              }
+                            >
+                              <ActionIcon
+                                size="sm"
+                                variant={isConfirming ? 'filled' : 'subtle'}
+                                color={isConfirming ? 'red' : 'gray'}
+                                loading={isDeleting}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void handleDeleteClick(m)
+                                }}
+                                aria-label={
+                                  isConfirming
+                                    ? `Confirm delete ${m}`
+                                    : `Delete ${m}`
+                                }
+                              >
+                                <IconTrash size={13} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
+                        )
+                      })}
+                    </Stack>
+
+                    {addingModel ? (
+                      <Stack gap="xs" style={{ paddingTop: 2 }}>
+                        {availableTiers.length > 0 ? (
+                          <>
+                            {availableTiers.map((tier) => (
+                              <TierCard
+                                key={tier.id}
+                                tier={tier}
+                                selected={selectedTier === tier.id}
+                                recommended={recommendedTier === tier.id}
+                                blocked={isTierBlocked(
+                                  tier.id,
+                                  status.hardwareTier,
+                                )}
+                                onClick={() => setSelectedTier(tier.id)}
+                              />
+                            ))}
+                            <Group gap="xs">
+                              <Button
+                                size="compact-sm"
+                                onClick={() => void handleStartSetup()}
+                                disabled={!effectiveTier}
+                              >
+                                {effectiveTier
+                                  ? `Pull ${effectiveTier.name} (${effectiveTier.size})`
+                                  : 'Pull'}
+                              </Button>
+                              <Button
+                                size="compact-sm"
+                                variant="default"
+                                onClick={() => setAddingModel(false)}
+                              >
+                                Cancel
+                              </Button>
+                            </Group>
+                          </>
+                        ) : (
+                          <>
+                            <Text size="xs" c="dimmed">
+                              All recommended tiers are installed. Browse{' '}
+                              <Anchor
+                                href="https://ollama.com/library"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                ollama.com/library
+                              </Anchor>{' '}
+                              for more.
+                            </Text>
+                            <Group gap="xs">
+                              <Button
+                                size="compact-sm"
+                                variant="default"
+                                onClick={() => setAddingModel(false)}
+                              >
+                                Cancel
+                              </Button>
+                            </Group>
+                          </>
+                        )}
+                      </Stack>
+                    ) : (
                       <Button
                         size="compact-xs"
-                        color={confirmDeleteModel === m ? 'red' : 'gray'}
-                        variant={confirmDeleteModel === m ? 'filled' : 'subtle'}
-                        loading={deletingModel === m}
-                        onClick={() => void handleDeleteClick(m)}
+                        variant="subtle"
+                        color="gray"
+                        leftSection={<IconPlus size={12} />}
+                        onClick={() => setAddingModel(true)}
+                        style={{ alignSelf: 'flex-start' }}
                       >
-                        {confirmDeleteModel === m ? 'Confirm' : 'Delete'}
+                        Add model
                       </Button>
-                    </Group>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          ) : (
-            <>
-              {status.models && status.models.length > 0 ? (
-                <Group gap="xs" align="end" wrap="nowrap">
-                  <Select
-                    label="Model"
-                    size="xs"
-                    value={activeModel}
-                    onChange={(value) => setActiveModel(value ?? '')}
-                    data={status.models}
-                    style={{ flex: 1, minWidth: 0 }}
-                    comboboxProps={{ withinPortal: true }}
-                    allowDeselect={false}
-                  />
-                  <Select
-                    label="Language"
-                    size="xs"
-                    value={language}
-                    onChange={handleLanguageChange}
-                    data={LANGUAGE_OPTIONS}
-                    style={{ width: 110, flex: 'none' }}
-                    comboboxProps={{ withinPortal: true }}
-                    allowDeselect={false}
-                  />
-                  <Tooltip label="Regenerate">
-                    <ActionIcon
-                      variant="default"
-                      size={30}
-                      onClick={() => void runExplain()}
-                      disabled={isLoading || !diffText.trim()}
-                      aria-label="Regenerate"
-                    >
-                      <IconRefresh size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                  <Tooltip label="Manage models">
-                    <ActionIcon
-                      variant="default"
-                      size={30}
-                      onClick={() => setManageMode(true)}
-                      aria-label="Manage models"
-                    >
-                      <IconSettings size={15} />
-                    </ActionIcon>
-                  </Tooltip>
+                    )}
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+
+              <Select
+                size="xs"
+                value={language}
+                onChange={handleLanguageChange}
+                data={LANGUAGE_OPTIONS}
+                style={{ width: 110, flex: 'none' }}
+                comboboxProps={{ withinPortal: true }}
+                allowDeselect={false}
+                aria-label="Response language"
+              />
+
+              <Tooltip label="Regenerate">
+                <ActionIcon
+                  variant="default"
+                  size={30}
+                  onClick={() => void runExplain()}
+                  disabled={isLoading || !diffText.trim()}
+                  aria-label="Regenerate"
+                >
+                  <IconRefresh size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+
+            {!diffText.trim() ? (
+              <Text size="sm" c="dimmed">
+                Run a comparison first — there is no diff to explain yet.
+              </Text>
+            ) : null}
+
+            {isLoading && !explanation ? (
+              <Stack gap={6}>
+                <Group gap="xs">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed">
+                    {thinking ? 'Thinking…' : 'Generating explanation…'}
+                  </Text>
                 </Group>
-              ) : null}
+                {thinking ? (
+                  <Text
+                    size="xs"
+                    c="dimmed"
+                    fs="italic"
+                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  >
+                    {thinking.length > 500 ? '… ' + thinking.slice(-500) : thinking}
+                  </Text>
+                ) : null}
+              </Stack>
+            ) : null}
 
-              {!diffText.trim() ? (
-                <Text size="sm" c="dimmed">
-                  Run a comparison first — there is no diff to explain yet.
-                </Text>
-              ) : null}
+            {error ? (
+              <Alert color="red" variant="light" title="Failed to explain diff">
+                <Text size="sm">{error}</Text>
+              </Alert>
+            ) : null}
 
-              {isLoading && !explanation ? (
-                <Stack gap={6}>
-                  <Group gap="xs">
-                    <Loader size="xs" />
-                    <Text size="sm" c="dimmed">
-                      {thinking ? 'Thinking…' : 'Generating explanation…'}
-                    </Text>
-                  </Group>
-                  {thinking ? (
-                    <Text
-                      size="xs"
-                      c="dimmed"
-                      fs="italic"
-                      style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-                    >
-                      {thinking.length > 500 ? '… ' + thinking.slice(-500) : thinking}
-                    </Text>
-                  ) : null}
-                </Stack>
-              ) : null}
-
-              {error ? (
-                <Alert color="red" variant="light" title="Failed to explain diff">
-                  <Text size="sm">{error}</Text>
-                </Alert>
-              ) : null}
-
-              {explanation ? (
-                <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
-                  <ExplanationMarkdown
-                    content={isLoading ? explanation + ' ▋' : explanation}
-                  />
-                </ScrollArea>
-              ) : null}
-            </>
-          )
+            {explanation ? (
+              <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
+                <ExplanationMarkdown
+                  content={isLoading ? explanation + ' ▋' : explanation}
+                />
+              </ScrollArea>
+            ) : null}
+          </>
         ) : null}
       </Stack>
     </Drawer>
