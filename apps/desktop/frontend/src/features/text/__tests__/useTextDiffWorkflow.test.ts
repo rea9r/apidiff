@@ -123,6 +123,47 @@ describe('useTextDiffWorkflow', () => {
     expect(result.current.textNewSourcePath).toBe('/tmp/new.txt')
   })
 
+  it('runText after runTextDiffWithValues reuses populated input state', async () => {
+    const calls: Array<{ oldText: string; newText: string }> = []
+    const diffText = async (req: { oldText: string; newText: string }) => {
+      calls.push({ oldText: req.oldText, newText: req.newText })
+      return { diffFound: true, output: 'diff output' } satisfies DiffResponse
+    }
+
+    const { result } = renderHook(() =>
+      useWorkflowWithRecent({
+        initialCommon,
+        getDiffText: () => diffText,
+        getPickTextFile: () => undefined,
+        getPickSaveTextFile: () => undefined,
+        getLoadTextFile: () => undefined,
+        getSaveTextFile: () => undefined,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.runTextDiffWithValues({
+        oldText: 'left content',
+        newText: 'right content',
+        oldSourcePath: '/dir/left.txt',
+        newSourcePath: '/dir/right.txt',
+      })
+    })
+
+    expect(result.current.textOld).toBe('left content')
+    expect(result.current.textNew).toBe('right content')
+    expect(result.current.textResult).not.toBeNull()
+    expect(calls).toHaveLength(1)
+
+    await act(async () => {
+      await result.current.runText()
+    })
+
+    expect(calls).toHaveLength(2)
+    expect(calls[1]).toEqual({ oldText: 'left content', newText: 'right content' })
+    expect(result.current.textResult).not.toBeNull()
+  })
+
   it('falls back to picker when no source path on Save', async () => {
     const calls: Array<{ path: string; content: string; encoding?: string }> = []
 
