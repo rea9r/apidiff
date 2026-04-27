@@ -13,7 +13,6 @@ export type DiffResponse = {
   diffFound: boolean
   output: string
   error?: string
-  paths?: string[]
 }
 
 export type JSONRichDiffItem = {

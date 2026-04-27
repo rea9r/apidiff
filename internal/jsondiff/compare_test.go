@@ -3,7 +3,6 @@ package jsondiff
 import (
 	"bytes"
 	"encoding/json"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -107,9 +106,9 @@ func TestCompare(t *testing.T) {
 			oldValue := mustParseJSON(t, tt.old)
 			newValue := mustParseJSON(t, tt.new)
 
-			got, err := Compare(oldValue, newValue)
+			got, err := CompareWithOptions(oldValue, newValue, Options{})
 			if err != nil {
-				t.Fatalf("Compare returned error: %v", err)
+				t.Fatalf("CompareWithOptions returned error: %v", err)
 			}
 			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(delta.Diff{}, "OldValue", "NewValue")); diff != "" {
 				t.Fatalf("diff mismatch (-want +got):\n%s", diff)
@@ -180,24 +179,6 @@ func TestCompareWithOptions_DefaultOrderSensitive(t *testing.T) {
 	}
 	if len(got) == 0 {
 		t.Fatal("expected diffs when ignore-order is disabled")
-	}
-}
-
-func TestCompare_EqualsCompareWithDefaultOptions(t *testing.T) {
-	oldValue := mustParseJSON(t, `{"items":[1,2,3],"obj":{"name":"taro"}}`)
-	newValue := mustParseJSON(t, `{"items":[3,2,1],"obj":{"name":"hanako"}}`)
-
-	gotCompare, err := Compare(oldValue, newValue)
-	if err != nil {
-		t.Fatalf("Compare returned error: %v", err)
-	}
-	gotWithOpts, err := CompareWithOptions(oldValue, newValue, Options{})
-	if err != nil {
-		t.Fatalf("CompareWithOptions returned error: %v", err)
-	}
-
-	if !reflect.DeepEqual(gotCompare, gotWithOpts) {
-		t.Fatalf("expected Compare and CompareWithOptions(default) to match\nCompare: %#v\nCompareWithOptions: %#v", gotCompare, gotWithOpts)
 	}
 }
 

@@ -9,10 +9,6 @@ import (
 
 const maxCompareDepth = 1000
 
-func Compare(oldValue, newValue any) ([]delta.Diff, error) {
-	return CompareWithOptions(oldValue, newValue, Options{})
-}
-
 func CompareWithOptions(oldValue, newValue any, opts Options) ([]delta.Diff, error) {
 	if opts.IgnoreOrder {
 		oldValue = normalizeUnorderedValue(oldValue)
