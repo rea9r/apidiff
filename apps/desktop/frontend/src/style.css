@@ -2194,12 +2194,12 @@ button {
 
 .directory-results-table tbody tr {
   cursor: default;
-  transition: background-color 120ms ease;
 }
 
-.directory-results-table tbody tr:hover {
-  background: var(--xdiff-viewer-surface-hover);
-}
+/* No row-level :hover background by design. The selection (.directory-row-selected)
+   carries the accent bg + left bar; if we also painted a hover bg on whatever row
+   the mouse happens to sit on, two unrelated rows could look "selected" at once
+   ("分身"). cursor: pointer on .directory-row-clickable still signals clickability. */
 
 .directory-row-clickable {
   cursor: pointer !important;
@@ -2396,9 +2396,7 @@ button {
   line-height: var(--xdiff-directory-line-height);
 }
 
-.directory-tree-row:hover {
-  background: var(--xdiff-viewer-surface-hover);
-}
+/* No row-level :hover background — see directory-results-table tbody tr above. */
 
 .directory-tree-row.is-selected {
   background: color-mix(in srgb, var(--xdiff-accent) 18%, transparent);
