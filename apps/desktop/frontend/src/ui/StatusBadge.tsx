@@ -22,7 +22,7 @@ export function StatusBadge({
             : 'gray'
 
   return (
-    <Badge color={color} variant="light" radius="sm">
+    <Badge color={color} variant="dot" radius="sm">
       {children}
     </Badge>
   )

@@ -30,6 +30,7 @@
   --xdiff-viewer-input-bg: var(--mantine-color-body);
   --xdiff-viewer-code-bg: var(--mantine-color-gray-1);
   --xdiff-viewer-text-dimmed: var(--mantine-color-dimmed);
+  --xdiff-directory-text: var(--mantine-color-text);
 
   /* Accent / focus */
   --xdiff-accent: var(--mantine-color-blue-5);
@@ -116,10 +117,10 @@
   --xdiff-json-simple-cell-padding-y: 2px;
 
   /* Directory-specific */
-  --xdiff-directory-font-size: var(--xdiff-row-font-size);
+  --xdiff-directory-font-size: var(--xdiff-text-sm);
   --xdiff-directory-line-height: var(--xdiff-row-line-height);
-  --xdiff-directory-small-font-size: 11.5px;
-  --xdiff-directory-cell-padding-y: var(--xdiff-row-padding-y);
+  --xdiff-directory-small-font-size: 11px;
+  --xdiff-directory-cell-padding-y: var(--xdiff-row-padding-y-tight);
   --xdiff-directory-cell-padding-x: var(--xdiff-row-padding-x);
 }
 
@@ -156,6 +157,7 @@
   --xdiff-viewer-textarea-bg: #17181B;
   --xdiff-viewer-code-bg: #1E1F22;
   --xdiff-viewer-text-dimmed: #A0A4AB;
+  --xdiff-directory-text: #EEEFF2;
 
   --xdiff-accent: var(--mantine-color-blue-4);
   --xdiff-accent-strong: var(--mantine-color-blue-5);
@@ -2244,6 +2246,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: var(--xdiff-space-2);
+  color: var(--xdiff-directory-text);
 }
 
 .directory-status-cell .mantine-Badge-root {
@@ -2253,12 +2256,15 @@ button {
 
 .directory-item-name.is-dir {
   cursor: pointer;
-  color: var(--xdiff-accent-fg);
 }
 
-.directory-item-name.is-dir:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* Finder-like: text neutral, color cue lives in the icon. */
+.directory-item-name > svg {
+  color: var(--xdiff-viewer-text-dimmed);
+}
+
+.directory-item-name.is-dir > svg {
+  color: var(--xdiff-accent-fg);
 }
 
 .directory-entry-sub {
@@ -2408,6 +2414,7 @@ button {
   align-items: center;
   gap: var(--xdiff-space-2);
   min-width: 0;
+  color: var(--xdiff-directory-text);
 }
 
 .directory-row-clickable .directory-item-name {
@@ -2419,15 +2426,12 @@ button {
   cursor: pointer;
 }
 
-.directory-tree-name.is-dir > .directory-entry-path,
-.directory-tree-name.is-dir > svg {
-  color: var(--xdiff-accent-fg);
+.directory-tree-name > svg {
+  color: var(--xdiff-viewer-text-dimmed);
 }
 
-.directory-tree-name.is-dir:hover,
-.directory-tree-name.is-openable:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.directory-tree-name.is-dir > svg {
+  color: var(--xdiff-accent-fg);
 }
 
 .directory-tree-indent {
