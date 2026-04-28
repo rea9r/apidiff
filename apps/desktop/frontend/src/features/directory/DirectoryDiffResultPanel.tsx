@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type KeyboardEventHandler,
   type MouseEvent as ReactMouseEvent,
@@ -20,6 +21,7 @@ import {
 import type { DiffDirectoriesResponse, DirectoryDiffItem } from '../../types'
 import { SectionCard } from '../../ui/SectionCard'
 import { StatusBadge } from '../../ui/StatusBadge'
+import { useDiffKeyboardShortcuts } from '../../ui/useDiffKeyboardShortcuts'
 import { DirectoryAISummaryCard } from './DirectoryAISummaryCard'
 import {
   canOpenDirectoryItem,
@@ -130,8 +132,15 @@ export function DirectoryDiffResultPanel({
   onDirectoryTableKeyDown,
   onDirectoryTreeKeyDown,
 }: DirectoryDiffResultPanelProps) {
+  const nameFilterInputRef = useRef<HTMLInputElement | null>(null)
   const [visibleListRows, setVisibleListRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
   const [visibleTreeRows, setVisibleTreeRows] = useState(DEFAULT_DIRECTORY_VISIBLE_ROWS)
+
+  useDiffKeyboardShortcuts({
+    enabled: !!directoryResult,
+    searchInputRef: nameFilterInputRef,
+    canFocusSearch: true,
+  })
   const aiItems = useMemo<DirectoryDiffItem[]>(
     () => (directoryResult && !directoryResult.error ? directoryResult.items : []),
     [directoryResult],
@@ -401,9 +410,20 @@ export function DirectoryDiffResultPanel({
               </button>
             ))}
             <input
+              ref={nameFilterInputRef}
               className="directory-name-filter-input"
               value={directoryNameFilter}
               onChange={(event) => onSetDirectoryNameFilter(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault()
+                  if (directoryNameFilter.length > 0) {
+                    onSetDirectoryNameFilter('')
+                    return
+                  }
+                  event.currentTarget.blur()
+                }
+              }}
               placeholder="name filter"
             />
           </div>
