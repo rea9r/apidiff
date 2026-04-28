@@ -18,8 +18,10 @@ import type { AIProviderStatus, ExplainDiffMode } from '../../types'
 import { formatUnknownError } from '../../utils/appHelpers'
 import { ExplanationMarkdown } from './ExplanationMarkdown'
 import { AIExplainDrawer } from './AIExplainDrawer'
+import { AIModelPicker } from './AIModelPicker'
 
 const LANGUAGE_STORAGE_KEY = 'xdiff.ai.explainLanguage'
+const ACTIVE_MODEL_STORAGE_KEY = 'xdiff.ai.activeModel'
 const LANGUAGE_OPTIONS = [
   { value: 'English', label: 'English' },
   { value: 'Japanese', label: '日本語' },
@@ -33,6 +35,14 @@ function loadStoredLanguage(): string {
     /* noop */
   }
   return 'English'
+}
+
+function loadStoredActiveModel(): string {
+  try {
+    return window.localStorage.getItem(ACTIVE_MODEL_STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export type AIInlineSummaryPrepared = {
@@ -71,12 +81,13 @@ export function AIInlineSummary({
   const [isPreparing, setIsPreparing] = useState(false)
   const [coverage, setCoverage] = useState<ReactNode>(null)
   const [usedProvider, setUsedProvider] = useState<string | null>(null)
-  const [usedModel, setUsedModel] = useState<string | null>(null)
+  const [activeModel, setActiveModel] = useState<string>(loadStoredActiveModel)
   const [language, setLanguage] = useState<string>(loadStoredLanguage)
   const [setupDrawerOpen, setSetupDrawerOpen] = useState(false)
+  const [drawerStartsInAdd, setDrawerStartsInAdd] = useState(false)
 
   const activeStreamIdRef = useRef<string | null>(null)
-  const lastCacheKeyRef = useRef<string>('')
+  const lastInternalCacheKeyRef = useRef<string>('')
   const prepareRef = useRef(prepare)
   prepareRef.current = prepare
 
@@ -92,96 +103,111 @@ export function AIInlineSummary({
     }
   }, [aiProviderStatus])
 
-  const runExplain = useCallback(
-    async (modelOverride?: string) => {
-      const s = status ?? (await refreshStatus())
-      if (!s?.available) return
-      const model = modelOverride ?? s.models?.[0] ?? ''
-      if (!model) return
+  // Reconcile activeModel with the installed model list.
+  // - If nothing installed: clear it.
+  // - If current pick is missing (deleted, never installed): fall back to the
+  //   stored preference if it's available, else first model.
+  useEffect(() => {
+    if (!status?.available) return
+    const models = status.models ?? []
+    if (models.length === 0) {
+      if (activeModel) setActiveModel('')
+      return
+    }
+    if (activeModel && models.includes(activeModel)) return
+    const stored = loadStoredActiveModel()
+    const next = stored && models.includes(stored) ? stored : models[0]!
+    setActiveModel(next)
+  }, [status, activeModel])
 
-      const prevId = activeStreamIdRef.current
-      if (prevId) {
-        EventsOff(`ai-explain-chunk-${prevId}`)
-        EventsOff(`ai-explain-thinking-${prevId}`)
-      }
-      const streamId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      activeStreamIdRef.current = streamId
+  const internalCacheKey = `${cacheKey}#m=${activeModel}#l=${language}`
 
-      setIsLoading(true)
-      setError(null)
-      setExplanation('')
-      setThinking('')
-      setCoverage(null)
+  const runExplain = useCallback(async () => {
+    const s = status ?? (await refreshStatus())
+    if (!s?.available) return
+    const model = activeModel || s.models?.[0] || ''
+    if (!model) return
 
-      let textToExplain = diffText
-      if (prepareRef.current) {
-        setIsPreparing(true)
-        try {
-          const prepared = await prepareRef.current()
-          if (activeStreamIdRef.current !== streamId) return
-          textToExplain = prepared.diffText
-          setCoverage(prepared.coverage ?? null)
-        } catch (e) {
-          if (activeStreamIdRef.current === streamId) {
-            setError(formatUnknownError(e))
-            setIsLoading(false)
-            setIsPreparing(false)
-            activeStreamIdRef.current = null
-          }
-          return
-        } finally {
-          if (activeStreamIdRef.current === streamId) setIsPreparing(false)
-        }
-      }
+    const prevId = activeStreamIdRef.current
+    if (prevId) {
+      EventsOff(`ai-explain-chunk-${prevId}`)
+      EventsOff(`ai-explain-thinking-${prevId}`)
+    }
+    const streamId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    activeStreamIdRef.current = streamId
 
-      if (!textToExplain.trim()) {
+    setIsLoading(true)
+    setError(null)
+    setExplanation('')
+    setThinking('')
+    setCoverage(null)
+
+    let textToExplain = diffText
+    if (prepareRef.current) {
+      setIsPreparing(true)
+      try {
+        const prepared = await prepareRef.current()
+        if (activeStreamIdRef.current !== streamId) return
+        textToExplain = prepared.diffText
+        setCoverage(prepared.coverage ?? null)
+      } catch (e) {
         if (activeStreamIdRef.current === streamId) {
-          setError('Nothing to explain.')
+          setError(formatUnknownError(e))
           setIsLoading(false)
+          setIsPreparing(false)
           activeStreamIdRef.current = null
         }
         return
-      }
-
-      EventsOn(`ai-explain-chunk-${streamId}`, (chunk: string) => {
-        if (activeStreamIdRef.current !== streamId) return
-        setExplanation((prev) => prev + chunk)
-      })
-      EventsOn(`ai-explain-thinking-${streamId}`, (chunk: string) => {
-        if (activeStreamIdRef.current !== streamId) return
-        setThinking((prev) => prev + chunk)
-      })
-
-      try {
-        const res = await explainDiffStream({
-          diffText: textToExplain,
-          mode,
-          model,
-          language,
-          streamId,
-        })
-        if (activeStreamIdRef.current !== streamId) return
-        if (res.error) {
-          setError(res.error)
-        } else {
-          setExplanation(res.explanation)
-        }
-        if (res.provider) setUsedProvider(res.provider)
-        if (res.model) setUsedModel(res.model)
-      } catch (e) {
-        if (activeStreamIdRef.current !== streamId) return
-        setError(formatUnknownError(e))
       } finally {
-        if (activeStreamIdRef.current === streamId) {
-          setIsLoading(false)
-          activeStreamIdRef.current = null
-        }
-        EventsOff(`ai-explain-chunk-${streamId}`)
-        EventsOff(`ai-explain-thinking-${streamId}`)
+        if (activeStreamIdRef.current === streamId) setIsPreparing(false)
       }
-    },
-    [diffText, explainDiffStream, language, mode, refreshStatus, status],
-  )
+    }
+
+    if (!textToExplain.trim()) {
+      if (activeStreamIdRef.current === streamId) {
+        setError('Nothing to explain.')
+        setIsLoading(false)
+        activeStreamIdRef.current = null
+      }
+      return
+    }
+
+    EventsOn(`ai-explain-chunk-${streamId}`, (chunk: string) => {
+      if (activeStreamIdRef.current !== streamId) return
+      setExplanation((prev) => prev + chunk)
+    })
+    EventsOn(`ai-explain-thinking-${streamId}`, (chunk: string) => {
+      if (activeStreamIdRef.current !== streamId) return
+      setThinking((prev) => prev + chunk)
+    })
+
+    try {
+      const res = await explainDiffStream({
+        diffText: textToExplain,
+        mode,
+        model,
+        language,
+        streamId,
+      })
+      if (activeStreamIdRef.current !== streamId) return
+      if (res.error) {
+        setError(res.error)
+      } else {
+        setExplanation(res.explanation)
+      }
+      if (res.provider) setUsedProvider(res.provider)
+    } catch (e) {
+      if (activeStreamIdRef.current !== streamId) return
+      setError(formatUnknownError(e))
+    } finally {
+      if (activeStreamIdRef.current === streamId) {
+        setIsLoading(false)
+        activeStreamIdRef.current = null
+      }
+      EventsOff(`ai-explain-chunk-${streamId}`)
+      EventsOff(`ai-explain-thinking-${streamId}`)
+    }
+  }, [activeModel, diffText, explainDiffStream, language, mode, refreshStatus, status])
 
   useEffect(() => {
     if (!opened) return
@@ -189,15 +215,19 @@ export function AIInlineSummary({
     void (async () => {
       const s = await refreshStatus()
       if (cancelled) return
-      if (s?.available && lastCacheKeyRef.current !== cacheKey) {
-        lastCacheKeyRef.current = cacheKey
+      if (
+        s?.available &&
+        activeModel &&
+        lastInternalCacheKeyRef.current !== internalCacheKey
+      ) {
+        lastInternalCacheKeyRef.current = internalCacheKey
         void runExplain()
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [opened, cacheKey, refreshStatus, runExplain])
+  }, [opened, internalCacheKey, activeModel, refreshStatus, runExplain])
 
   useEffect(
     () => () => {
@@ -212,14 +242,17 @@ export function AIInlineSummary({
   )
 
   useEffect(() => {
-    if (lastCacheKeyRef.current && lastCacheKeyRef.current !== cacheKey) {
+    if (
+      lastInternalCacheKeyRef.current &&
+      lastInternalCacheKeyRef.current !== internalCacheKey
+    ) {
       setExplanation('')
       setThinking('')
       setError(null)
       setCoverage(null)
-      lastCacheKeyRef.current = ''
+      lastInternalCacheKeyRef.current = ''
     }
-  }, [cacheKey])
+  }, [internalCacheKey])
 
   const handleLanguageChange = useCallback((value: string | null) => {
     const next = value ?? 'English'
@@ -229,19 +262,37 @@ export function AIInlineSummary({
     } catch {
       /* noop */
     }
-    lastCacheKeyRef.current = ''
+  }, [])
+
+  const handleActiveModelChange = useCallback((m: string) => {
+    setActiveModel(m)
+    try {
+      window.localStorage.setItem(ACTIVE_MODEL_STORAGE_KEY, m)
+    } catch {
+      /* noop */
+    }
+  }, [])
+
+  const handleAddModel = useCallback(() => {
+    setDrawerStartsInAdd(true)
+    setSetupDrawerOpen(true)
   }, [])
 
   const handleSetupDrawerClose = useCallback(() => {
     setSetupDrawerOpen(false)
+    setDrawerStartsInAdd(false)
     void (async () => {
       const s = await refreshStatus()
-      if (s?.available && lastCacheKeyRef.current !== cacheKey) {
-        lastCacheKeyRef.current = cacheKey
+      if (
+        s?.available &&
+        activeModel &&
+        lastInternalCacheKeyRef.current !== internalCacheKey
+      ) {
+        lastInternalCacheKeyRef.current = internalCacheKey
         void runExplain()
       }
     })()
-  }, [cacheKey, refreshStatus, runExplain])
+  }, [activeModel, internalCacheKey, refreshStatus, runExplain])
 
   if (!opened) {
     return (
@@ -264,6 +315,8 @@ export function AIInlineSummary({
       ? 'Thinking…'
       : 'Generating summary…'
 
+  const installedModels = status?.models ?? []
+
   return (
     <>
       <div className="ai-inline-card">
@@ -285,13 +338,21 @@ export function AIInlineSummary({
                 {usedProvider}
               </Badge>
             ) : null}
-            {usedModel ? (
-              <Text size="xs" c="dimmed" ff="monospace" truncate>
-                {usedModel}
-              </Text>
-            ) : null}
           </button>
           <Group gap={4} wrap="nowrap">
+            {status?.available && installedModels.length > 0 ? (
+              <AIModelPicker
+                models={installedModels}
+                activeModel={activeModel}
+                onChange={handleActiveModelChange}
+                onModelsChanged={async () => {
+                  await refreshStatus()
+                }}
+                onAddModel={handleAddModel}
+                onError={setError}
+                disabled={isLoading}
+              />
+            ) : null}
             <Select
               size="xs"
               value={language}
@@ -307,7 +368,7 @@ export function AIInlineSummary({
                 variant="default"
                 size={26}
                 onClick={() => void runExplain()}
-                disabled={isLoading || !status?.available}
+                disabled={isLoading || !status?.available || !activeModel}
                 aria-label="Regenerate"
               >
                 <IconRefresh size={13} />
@@ -401,6 +462,7 @@ export function AIInlineSummary({
         onClose={handleSetupDrawerClose}
         diffText=""
         mode={mode}
+        startInAddModel={drawerStartsInAdd}
       />
     </>
   )

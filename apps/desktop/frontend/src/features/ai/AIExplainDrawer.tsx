@@ -45,6 +45,11 @@ export type AIExplainDrawerProps = {
   onClose: () => void
   diffText: string
   mode: ExplainDiffMode
+  /**
+   * When true, the drawer opens with the "Add model" panel pre-expanded.
+   * Used when the inline picker delegates the add-model flow here.
+   */
+  startInAddModel?: boolean
 }
 
 type TierId = 'compact' | 'balanced' | 'high'
@@ -228,7 +233,13 @@ function TierCard({
   )
 }
 
-export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDrawerProps) {
+export function AIExplainDrawer({
+  opened,
+  onClose,
+  diffText,
+  mode,
+  startInAddModel = false,
+}: AIExplainDrawerProps) {
   const {
     aiProviderStatus,
     explainDiffStream,
@@ -344,17 +355,20 @@ export function AIExplainDrawer({ opened, onClose, diffText, mode }: AIExplainDr
 
   // Re-detect provider every time the drawer opens — state outside the app
   // (Ollama install, daemon start) may have changed since last open. Also
-  // close the inline add-model picker so each open starts in the normal view.
+  // reset the inline add-model picker. When `startInAddModel` is true, the
+  // caller (e.g. the inline picker's "Add model" action) wants the drawer to
+  // open straight on the add-model panel.
   useEffect(() => {
     if (!opened) return
-    setAddingModel(false)
+    setAddingModel(startInAddModel)
     setConfirmDeleteModel(null)
     if (revertTimeoutRef.current !== null) {
       window.clearTimeout(revertTimeoutRef.current)
       revertTimeoutRef.current = null
     }
+    if (startInAddModel) setModelMenuOpen(true)
     void refreshStatus()
-  }, [opened, refreshStatus])
+  }, [opened, refreshStatus, startInAddModel])
 
   useEffect(() => {
     return () => {
