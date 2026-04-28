@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
   type KeyboardEventHandler,
+  type MouseEvent as ReactMouseEvent,
 } from 'react'
 import { ActionIcon } from '@mantine/core'
 import {
@@ -191,6 +192,19 @@ export function DirectoryDiffResultPanel({
     }
   }, [])
 
+  // Pull focus back to the wrap when the user clicks anywhere inside it that isn't
+  // an interactive control. Without this, after a click on the AI summary card or
+  // any other outside button, clicking a row doesn't restore wrap focus on its own
+  // (browsers don't auto-focus the closest tabbable ancestor on click), so keys
+  // stop working until the user happens to land on the wrap itself.
+  const focusWrapOnMouseDown = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (target?.closest('button, input, select, textarea, a[href]')) {
+      return
+    }
+    event.currentTarget.focus({ preventScroll: true })
+  }, [])
+
   return (
     <SectionCard>
       <div className={`directory-result-shell ${directoryViewMode === 'tree' ? 'is-tree-mode' : ''}`.trim()}>
@@ -372,6 +386,7 @@ export function DirectoryDiffResultPanel({
                 tabIndex={0}
                 ref={focusWrapOnMount}
                 onKeyDown={onDirectoryTableKeyDown}
+                onMouseDown={focusWrapOnMouseDown}
                 onFocus={() => {
                   if (!selectedDirectoryItemPath && sortedDirectoryItems.length > 0) {
                     onSelectDirectoryItemPath(sortedDirectoryItems[0].relativePath)
@@ -522,6 +537,7 @@ export function DirectoryDiffResultPanel({
                 tabIndex={0}
                 ref={focusWrapOnMount}
                 onKeyDown={onDirectoryTreeKeyDown}
+                onMouseDown={focusWrapOnMouseDown}
                 onFocus={() => {
                   if (!selectedDirectoryItemPath && flattenedDirectoryTreeRows.length > 0) {
                     onSelectDirectoryItemPath(flattenedDirectoryTreeRows[0].node.path)

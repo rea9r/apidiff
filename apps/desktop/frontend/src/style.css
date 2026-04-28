@@ -2328,8 +2328,12 @@ button {
   background: color-mix(in srgb, var(--xdiff-accent) 12%, transparent);
 }
 
-.directory-row-selected {
-  background: color-mix(in srgb, var(--xdiff-accent) 14%, transparent);
+.directory-row-selected td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--xdiff-accent);
+}
+
+.directory-row-selected td {
+  background: color-mix(in srgb, var(--xdiff-accent) 18%, transparent);
 }
 
 .directory-tree-wrap {
@@ -2364,7 +2368,8 @@ button {
 }
 
 .directory-tree-row.is-selected {
-  background: color-mix(in srgb, var(--xdiff-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--xdiff-accent) 18%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--xdiff-accent);
 }
 
 .directory-tree-name {

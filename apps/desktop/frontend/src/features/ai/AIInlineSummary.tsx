@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -314,6 +314,12 @@ export function AIInlineSummary({
     setupPhase === 'starting' || setupPhase === 'waiting' || setupPhase === 'pulling'
   const setupPullPercent = Math.round(setupProgress?.pullPercent ?? 0)
 
+  // Preserve whatever was focused before the click (e.g., the directory keyboard-nav
+  // wrap) so keyboard navigation isn't interrupted when the user toggles AI controls.
+  const preserveFocus = (event: ReactMouseEvent) => {
+    event.preventDefault()
+  }
+
   if (!opened) {
     if (setupInProgress) {
       const ctaLabelText =
@@ -327,6 +333,7 @@ export function AIInlineSummary({
           type="button"
           className="ai-inline-cta is-progress"
           onClick={() => setOpened(true)}
+          onMouseDown={preserveFocus}
           aria-label={ctaLabelText}
         >
           <Loader size={12} color="currentColor" />
@@ -350,6 +357,7 @@ export function AIInlineSummary({
         type="button"
         className="ai-inline-cta"
         onClick={() => setOpened(true)}
+        onMouseDown={preserveFocus}
         aria-label={ctaLabel}
       >
         <IconSparkles size={14} />
@@ -375,6 +383,7 @@ export function AIInlineSummary({
             type="button"
             className="ai-inline-card-toggle"
             onClick={() => setOpened(false)}
+            onMouseDown={preserveFocus}
             aria-expanded={true}
             aria-label="Collapse AI summary"
           >
@@ -418,6 +427,7 @@ export function AIInlineSummary({
                 variant="default"
                 size={26}
                 onClick={() => void runExplain()}
+                onMouseDown={preserveFocus}
                 disabled={isLoading || !status?.available || !activeModel}
                 aria-label="Regenerate"
               >
@@ -455,6 +465,7 @@ export function AIInlineSummary({
                 variant="subtle"
                 color="gray"
                 onClick={() => void cancelSetup()}
+                onMouseDown={preserveFocus}
               >
                 Cancel
               </Button>
@@ -475,7 +486,7 @@ export function AIInlineSummary({
               <Stack gap={6}>
                 <Text size="sm">{statusError}</Text>
                 <Group gap="xs">
-                  <Button size="xs" onClick={() => void refreshStatus()}>
+                  <Button size="xs" onClick={() => void refreshStatus()} onMouseDown={preserveFocus}>
                     Retry
                   </Button>
                 </Group>
@@ -490,7 +501,7 @@ export function AIInlineSummary({
                   {status.error ?? 'Install Ollama and pull a model to use local AI.'}
                 </Text>
                 <Group gap="xs">
-                  <Button size="xs" onClick={() => setSetupDrawerOpen(true)}>
+                  <Button size="xs" onClick={() => setSetupDrawerOpen(true)} onMouseDown={preserveFocus}>
                     Set up local AI
                   </Button>
                 </Group>
@@ -524,7 +535,7 @@ export function AIInlineSummary({
               <Stack gap={6}>
                 <Text size="sm">{error}</Text>
                 <Group gap="xs">
-                  <Button size="xs" onClick={() => void runExplain()}>
+                  <Button size="xs" onClick={() => void runExplain()} onMouseDown={preserveFocus}>
                     Retry
                   </Button>
                 </Group>
