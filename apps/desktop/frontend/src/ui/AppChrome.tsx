@@ -9,7 +9,7 @@ import { HeaderRailGroup, HeaderRailSelect } from './HeaderRail'
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp'
 import { ThemeModeControl } from './ThemeModeControl'
 
-export type AppChromeLayoutMode = 'workspace' | 'sidebar'
+type AppChromeLayoutMode = 'workspace' | 'sidebar'
 
 type AppChromeProps = {
   mode: Mode

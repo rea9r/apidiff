@@ -14,7 +14,7 @@ import { formatUnknownError } from '../../utils/appHelpers'
 
 const CONFIRM_REVERT_MS = 3000
 
-export type AIModelPickerProps = {
+type AIModelPickerProps = {
   models: string[]
   activeModel: string
   onChange: (model: string) => void

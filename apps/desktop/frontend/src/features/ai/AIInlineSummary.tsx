@@ -52,7 +52,7 @@ export type AIInlineSummaryPrepared = {
   coverage?: ReactNode
 }
 
-export type AIInlineSummaryProps = {
+type AIInlineSummaryProps = {
   cacheKey: string
   diffText?: string
   prepare?: () => Promise<AIInlineSummaryPrepared>

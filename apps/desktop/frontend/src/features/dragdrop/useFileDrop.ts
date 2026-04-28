@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { OnFileDrop, OnFileDropOff } from '../../../wailsjs/runtime/runtime'
 
-export type FileDropTarget =
+type FileDropTarget =
   | 'text-old'
   | 'text-new'
   | 'json-old'
@@ -9,7 +9,7 @@ export type FileDropTarget =
   | 'directory-left'
   | 'directory-right'
 
-export type FileDropHandlers = {
+type FileDropHandlers = {
   [K in FileDropTarget]?: (paths: string[]) => void
 }
 

@@ -11,9 +11,9 @@ import {
 
 const buildJSONSemanticDiffRowID = (index: number) => `json-semantic-${index}`
 
-export type JSONResultView = 'diff' | 'semantic' | 'raw'
+type JSONResultView = 'diff' | 'semantic' | 'raw'
 
-export type JSONDiffGroup = {
+type JSONDiffGroup = {
   key: string
   items: JSONRichDiffItem[]
   summary: {

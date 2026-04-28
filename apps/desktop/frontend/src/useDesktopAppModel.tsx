@@ -10,7 +10,7 @@ import { deriveTabLabel } from './utils/deriveTabLabel'
 import type { DesktopTabSession } from './types'
 import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
-export type UseDesktopAppModelOptions = {
+type UseDesktopAppModelOptions = {
   api: ReturnType<typeof useDesktopBridge>
   recentPairs: DesktopRecentPairsState
   initialSession: DesktopTabSession

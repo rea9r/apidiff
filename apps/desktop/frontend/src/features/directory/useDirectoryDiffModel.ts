@@ -9,7 +9,7 @@ import { formatUnknownError } from '../../utils/appHelpers'
 import { showErrorNotification } from '../../utils/notifications'
 import type { DesktopRecentDirectoryPair, Mode } from '../../types'
 
-export type DirectoryDiffModelDeps = {
+type DirectoryDiffModelDeps = {
   mode: Mode
   setMode: (mode: Mode) => void
   loadTextFile: Parameters<typeof useDirectoryChildDiffOpeners>[0]['loadTextFile']
@@ -159,4 +159,4 @@ export function useDirectoryDiffModel(deps: DirectoryDiffModelDeps) {
   }
 }
 
-export type DirectoryDiffModel = ReturnType<typeof useDirectoryDiffModel>
+type DirectoryDiffModel = ReturnType<typeof useDirectoryDiffModel>

@@ -21,7 +21,7 @@ function pairLabel(oldPath: string, newPath: string): string | null {
   return null
 }
 
-export type DeriveTabLabelInput = {
+type DeriveTabLabelInput = {
   mode: Mode
   textOldSourcePath: string
   textNewSourcePath: string

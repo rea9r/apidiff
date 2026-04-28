@@ -7,7 +7,7 @@ export type DesktopTab = {
   label: string
 }
 
-export type UseDesktopTabsManagerOptions = {
+type UseDesktopTabsManagerOptions = {
   initial: DesktopState
   commit: DesktopStatePersistor['commit']
   fallbackTabSession: DesktopStatePersistor['fallbackTabSession']

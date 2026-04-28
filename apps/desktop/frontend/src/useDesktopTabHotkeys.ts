@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { DesktopTabsManagerState } from './useDesktopTabsManager'
 
-export type DesktopTabHotkeyOverrides = {
+type DesktopTabHotkeyOverrides = {
   closeTab?: (id: string) => void
 }
 

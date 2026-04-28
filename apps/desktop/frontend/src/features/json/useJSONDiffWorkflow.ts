@@ -24,7 +24,7 @@ import {
   showSuccessNotification,
 } from '../../utils/notifications'
 
-export type JSONTextInputTarget = 'old' | 'new'
+type JSONTextInputTarget = 'old' | 'new'
 
 type DiffJSONValuesRichFn = (
   req: DiffJSONValuesRequest,

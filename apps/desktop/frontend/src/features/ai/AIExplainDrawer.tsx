@@ -40,7 +40,7 @@ import type {
 } from '../../types'
 import { formatUnknownError } from '../../utils/appHelpers'
 
-export type AIExplainDrawerProps = {
+type AIExplainDrawerProps = {
   opened: boolean
   onClose: () => void
   diffText: string

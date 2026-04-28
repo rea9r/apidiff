@@ -22,7 +22,7 @@ export type JSONRichDiffItem = {
   newValue?: unknown
 }
 
-export type JSONRichSummary = {
+type JSONRichSummary = {
   added: number
   removed: number
   changed: number
@@ -82,7 +82,7 @@ export type DiffDirectoriesRequest = {
   nameFilter: string
 }
 
-export type DirectoryDiffSummary = {
+type DirectoryDiffSummary = {
   total: number
   same: number
   changed: number
@@ -118,21 +118,21 @@ export type DiffDirectoriesResponse = {
   error?: string
 }
 
-export type DesktopJSONSession = {
+type DesktopJSONSession = {
   oldSourcePath: string
   newSourcePath: string
   ignoreOrder: boolean
   common: DiffCommon
 }
 
-export type DesktopTextSession = {
+type DesktopTextSession = {
   oldSourcePath: string
   newSourcePath: string
   common: DiffCommon
   diffLayout: 'split' | 'unified'
 }
 
-export type DesktopDirectorySession = {
+type DesktopDirectorySession = {
   leftRoot: string
   rightRoot: string
   currentPath: string
@@ -179,7 +179,7 @@ export type DirectorySummaryRequest = {
   maxFileSize?: number
 }
 
-export type DirectorySummarySkipped = {
+type DirectorySummarySkipped = {
   path: string
   reason: string
 }

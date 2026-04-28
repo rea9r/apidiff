@@ -1,7 +1,7 @@
-export type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
-export type InlineDiffKind = 'same' | 'add' | 'remove'
+type UnifiedDiffRowKind = 'meta' | 'hunk' | 'context' | 'add' | 'remove'
+type InlineDiffKind = 'same' | 'add' | 'remove'
 
-export type InlineDiffSegment = {
+type InlineDiffSegment = {
   kind: InlineDiffKind
   text: string
 }
@@ -27,7 +27,7 @@ export type RichDiffItem =
       lines: string[]
     }
 
-export type OmittedDiffItem = Extract<RichDiffItem, { kind: 'omitted' }>
+type OmittedDiffItem = Extract<RichDiffItem, { kind: 'omitted' }>
 
 export type TextSearchMatch = {
   id: string

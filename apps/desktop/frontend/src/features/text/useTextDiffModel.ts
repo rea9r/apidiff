@@ -4,7 +4,7 @@ import {
 import { useTextDiffWorkflow, type UseTextDiffWorkflowOptions } from './useTextDiffWorkflow'
 import { useTextDiffViewState } from './useTextDiffViewState'
 
-export type TextDiffModelDeps = Pick<
+type TextDiffModelDeps = Pick<
   UseTextDiffWorkflowOptions,
   | 'getDiffText'
   | 'getPickTextFile'
@@ -37,4 +37,4 @@ export function useTextDiffModel(deps: TextDiffModelDeps) {
   return { workflow, viewState }
 }
 
-export type TextDiffModel = ReturnType<typeof useTextDiffModel>
+type TextDiffModel = ReturnType<typeof useTextDiffModel>

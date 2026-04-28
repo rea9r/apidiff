@@ -12,13 +12,13 @@ import {
   type UnifiedDiffRow,
 } from '../features/text/textDiff'
 
-export type AdoptDirection = 'to-new' | 'to-old'
+type AdoptDirection = 'to-new' | 'to-old'
 
 export type AdoptBlockHandler = (block: TextChangeBlock, direction: AdoptDirection) => void
 
 type SearchRowRefRegistrar = (matchId: string) => (node: HTMLDivElement | null) => void
 
-export type OmittedSectionExpansion = { top: number; bottom: number }
+type OmittedSectionExpansion = { top: number; bottom: number }
 
 type OmittedSectionConfig = {
   getExpansion?: (sectionId: string) => OmittedSectionExpansion

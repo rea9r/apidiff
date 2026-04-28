@@ -5,7 +5,7 @@ import { useJSONDiffWorkflow, type UseJSONDiffWorkflowOptions } from './useJSOND
 import { useJSONDiffViewState } from './useJSONDiffViewState'
 import type { TextDiffLayout } from '../text/useTextDiffViewState'
 
-export type JSONDiffModelDeps = Pick<
+type JSONDiffModelDeps = Pick<
   UseJSONDiffWorkflowOptions,
   | 'getDiffJSONValuesRich'
   | 'getPickJSONFile'
@@ -39,4 +39,4 @@ export function useJSONDiffModel(deps: JSONDiffModelDeps) {
   return { workflow, viewState, diffDisabled }
 }
 
-export type JSONDiffModel = ReturnType<typeof useJSONDiffModel>
+type JSONDiffModel = ReturnType<typeof useJSONDiffModel>

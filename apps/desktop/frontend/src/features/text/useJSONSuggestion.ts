@@ -20,7 +20,7 @@ export function isLikelyJSON(input: string): boolean {
   }
 }
 
-export type JSONSuggestion = {
+type JSONSuggestion = {
   shouldShow: boolean
   dismiss: () => void
 }

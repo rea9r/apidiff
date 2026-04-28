@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DesktopRecentDirectoryPair, DesktopRecentPair, DesktopState } from './types'
 import type { DesktopStatePersistor } from './useDesktopStatePersistor'
 
-export type UseDesktopRecentPairsOptions = {
+type UseDesktopRecentPairsOptions = {
   initial: DesktopState
   commit: DesktopStatePersistor['commit']
 }

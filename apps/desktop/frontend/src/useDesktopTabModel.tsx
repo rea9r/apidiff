@@ -8,7 +8,7 @@ import { useDirectoryDiffModel } from './features/directory/useDirectoryDiffMode
 import { useFileDrop } from './features/dragdrop/useFileDrop'
 import type { DesktopRecentPairsState } from './useDesktopRecentPairs'
 
-export type UseDesktopTabModelOptions = {
+type UseDesktopTabModelOptions = {
   api: ReturnType<typeof useDesktopBridge>
   recentPairs: DesktopRecentPairsState
 }
@@ -124,4 +124,4 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
   }
 }
 
-export type DesktopTabModel = ReturnType<typeof useDesktopTabModel>
+type DesktopTabModel = ReturnType<typeof useDesktopTabModel>

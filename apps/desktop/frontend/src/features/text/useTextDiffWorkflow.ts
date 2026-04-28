@@ -30,7 +30,7 @@ import {
   showSuccessNotification,
 } from '../../utils/notifications'
 
-export type TextInputTarget = 'old' | 'new'
+type TextInputTarget = 'old' | 'new'
 
 type DiffTextFn = (req: {
   oldText: string

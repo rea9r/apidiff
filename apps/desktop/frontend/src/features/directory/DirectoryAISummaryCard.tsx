@@ -53,7 +53,7 @@ function CoverageLine({ ctx }: { ctx: DirectorySummaryResponse }) {
   )
 }
 
-export type DirectoryAISummaryCardProps = {
+type DirectoryAISummaryCardProps = {
   items: DirectoryDiffItem[]
   changedCount: number
 }

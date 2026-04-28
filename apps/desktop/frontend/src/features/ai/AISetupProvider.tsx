@@ -16,7 +16,7 @@ const ETA_MIN_SAMPLES = 5
 const ETA_MAX_SAMPLES = 10
 const READY_FLASH_MS = 1500
 
-export type AISetupContextValue = {
+type AISetupContextValue = {
   progress: AISetupProgress | null
   isSettingUp: boolean
   etaMs: number | null

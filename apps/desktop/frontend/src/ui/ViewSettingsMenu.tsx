@@ -1,7 +1,7 @@
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconCheck } from '@tabler/icons-react'
 
-export type ViewSettingsItem = {
+type ViewSettingsItem = {
   key: string
   label: string
   active: boolean
@@ -9,7 +9,7 @@ export type ViewSettingsItem = {
   onSelect: () => void
 }
 
-export type ViewSettingsSection = {
+type ViewSettingsSection = {
   title: string
   items: ViewSettingsItem[]
 }

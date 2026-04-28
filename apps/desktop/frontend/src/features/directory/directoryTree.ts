@@ -31,7 +31,7 @@ export type DirectoryTreeRow = {
   node: DirectoryTreeNode
 }
 
-export type DirectoryTreeBreadcrumb = {
+type DirectoryTreeBreadcrumb = {
   label: string
   path: string
 }

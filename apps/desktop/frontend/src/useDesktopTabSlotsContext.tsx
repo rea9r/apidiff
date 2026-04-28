@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { useDesktopAppModel } from './useDesktopAppModel'
 
-export type DesktopTabSlots = ReturnType<typeof useDesktopAppModel>
+type DesktopTabSlots = ReturnType<typeof useDesktopAppModel>
 
 const ActiveSlotsContext = createContext<DesktopTabSlots | null>(null)
 const PublishSlotsContext = createContext<((slots: DesktopTabSlots) => void) | null>(null)

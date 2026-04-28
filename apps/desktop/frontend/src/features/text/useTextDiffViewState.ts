@@ -13,10 +13,10 @@ import {
 export type TextResultView = 'diff' | 'raw'
 export type TextDiffLayout = 'split' | 'unified'
 
-export type SectionExpansion = { top: number; bottom: number }
-export type SectionExpansionMap = Record<string, SectionExpansion>
+type SectionExpansion = { top: number; bottom: number }
+type SectionExpansionMap = Record<string, SectionExpansion>
 
-export const SECTION_EXPANSION_STEP = 20
+const SECTION_EXPANSION_STEP = 20
 const EMPTY_EXPANSION: SectionExpansion = { top: 0, bottom: 0 }
 
 function clampNonNegative(value: number, max: number): number {
