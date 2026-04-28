@@ -2,8 +2,9 @@ import { AppShell, Box, Burger, Group, ScrollArea } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconCheck } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { Mode } from '../types'
+import { WindowToggleMaximise } from '../../wailsjs/runtime/runtime'
 import { CodeFontScaleControl } from './CodeFontScaleControl'
 import { HeaderRailGroup, HeaderRailSelect } from './HeaderRail'
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp'
@@ -126,6 +127,38 @@ export function AppChrome({
     setNavbarWidth(DEFAULT_NAVBAR_WIDTH)
   }
 
+  // macOS uses TitleBarHidden, so double-clicking the title bar doesn't trigger
+  // the OS zoom behavior. Restore it manually for clicks on the drag region only
+  // (interactive children are marked no-drag and shouldn't toggle the window).
+  const isHeaderDragSurface = (target: HTMLElement | null): boolean => {
+    if (!IS_MACOS || !target) {
+      return false
+    }
+    return !target.closest(
+      'button, input, select, textarea, a[href], [role="combobox"], [role="button"], [role="slider"]',
+    )
+  }
+
+  // Suppress the browser's default "select word" behavior on the second mousedown
+  // of a double-click — without this, double-clicking the drag region selects text
+  // in whatever content sits below the header.
+  const handleHeaderMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.detail < 2) {
+      return
+    }
+    if (!isHeaderDragSurface(event.target as HTMLElement | null)) {
+      return
+    }
+    event.preventDefault()
+  }
+
+  const handleHeaderDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!isHeaderDragSurface(event.target as HTMLElement | null)) {
+      return
+    }
+    WindowToggleMaximise()
+  }
+
   return (
     <AppShell
       header={{ height: 36 }}
@@ -140,7 +173,11 @@ export function AppChrome({
       }
       padding="md"
     >
-      <AppShell.Header className={IS_MACOS ? 'xdiff-app-header is-macos' : 'xdiff-app-header'}>
+      <AppShell.Header
+        className={IS_MACOS ? 'xdiff-app-header is-macos' : 'xdiff-app-header'}
+        onMouseDown={handleHeaderMouseDown}
+        onDoubleClick={handleHeaderDoubleClick}
+      >
         <Group justify="space-between" h="100%" px="md">
           <HeaderRailGroup>
             {isSidebarLayout ? (
