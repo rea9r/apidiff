@@ -135,7 +135,7 @@
   --xdiff-viewer-surface-subtle: #FFFFFF;
   --xdiff-viewer-surface-muted: #F4F5F8;
   --xdiff-viewer-surface-hover: color-mix(in srgb, var(--mantine-color-blue-5) 8%, transparent);
-  --xdiff-viewer-input-bg: #EFF2F7;
+  --xdiff-viewer-input-bg: #FFFFFF;
   --xdiff-viewer-textarea-bg: #FFFFFF;
   --xdiff-viewer-code-bg: #F4F5F8;
   --xdiff-folder-icon: var(--mantine-color-blue-4);

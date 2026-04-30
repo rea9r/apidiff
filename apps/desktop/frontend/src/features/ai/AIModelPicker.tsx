@@ -101,15 +101,20 @@ export function AIModelPicker({
     >
       <Popover.Target>
         <Button
-          variant="subtle"
-          color="gray"
-          size="compact-xs"
+          variant="default"
+          size="xs"
           rightSection={<IconChevronDown size={11} style={{ opacity: 0.6 }} />}
           onClick={() => setOpened((o) => !o)}
           disabled={disabled}
           aria-label="Switch model"
           styles={{
-            root: { fontWeight: 400, maxWidth: 220, minWidth: 0 },
+            root: {
+              fontWeight: 400,
+              maxWidth: 220,
+              minWidth: 0,
+              background: 'var(--xdiff-viewer-input-bg)',
+              borderColor: 'var(--xdiff-viewer-border)',
+            },
             label: {
               fontFamily:
                 'var(--mantine-font-family-monospace, ui-monospace, monospace)',
