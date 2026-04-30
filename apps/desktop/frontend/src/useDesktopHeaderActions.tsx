@@ -14,8 +14,6 @@ type StructuredResultView = Pick<DiffJSONRichResponse, 'result' | 'diffText'>
 type UseDesktopHeaderActionsOptions = {
   mode: Mode
   loading: boolean
-  diffOptionsOpened: boolean
-  onToggleDiffOptions: () => void
   jsonDiffDisabled: boolean
   directoryDiffDisabled: boolean
   onRun: () => void
@@ -38,8 +36,6 @@ type UseDesktopHeaderActionsOptions = {
 export function useDesktopHeaderActions({
   mode,
   loading,
-  diffOptionsOpened,
-  onToggleDiffOptions,
   jsonDiffDisabled,
   directoryDiffDisabled,
   onRun,
@@ -122,8 +118,6 @@ export function useDesktopHeaderActions({
           loading={loading}
           diffDisabled={mode === 'json' ? jsonDiffDisabled : false}
           onDiff={() => void onRun()}
-          optionsOpen={diffOptionsOpened}
-          onToggleOptions={onToggleDiffOptions}
           recentItems={diffRecentItems}
           onClearRecent={mode === 'json' ? onClearJSONRecent : onClearTextRecent}
         />
@@ -145,7 +139,6 @@ export function useDesktopHeaderActions({
 
     return undefined
   }, [
-    diffOptionsOpened,
     diffRecentItems,
     directoryDiffDisabled,
     directoryRecentItems,
@@ -156,7 +149,6 @@ export function useDesktopHeaderActions({
     onClearJSONRecent,
     onClearTextRecent,
     onRun,
-    onToggleDiffOptions,
   ])
 
   return {

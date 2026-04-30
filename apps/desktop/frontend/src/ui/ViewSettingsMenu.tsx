@@ -1,11 +1,13 @@
 import { ActionIcon, Menu, Tooltip } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconCheck } from '@tabler/icons-react'
+import type { ReactNode } from 'react'
 
 type ViewSettingsItem = {
   key: string
   label: string
   active: boolean
   disabled?: boolean
+  closeMenuOnClick?: boolean
   onSelect: () => void
 }
 
@@ -17,6 +19,7 @@ type ViewSettingsSection = {
 type ViewSettingsMenuProps = {
   tooltip: string
   sections: ViewSettingsSection[]
+  footer?: ReactNode
 }
 
 function renderMenuCheck(active: boolean) {
@@ -27,11 +30,11 @@ function renderMenuCheck(active: boolean) {
   )
 }
 
-export function ViewSettingsMenu({ tooltip, sections }: ViewSettingsMenuProps) {
+export function ViewSettingsMenu({ tooltip, sections, footer }: ViewSettingsMenuProps) {
   const visibleSections = sections.filter((section) => section.items.length > 0)
 
   return (
-    <Menu position="bottom-end" withinPortal>
+    <Menu position="bottom-end" withinPortal closeOnItemClick={false}>
       <Menu.Target>
         <Tooltip label={tooltip}>
           <ActionIcon
@@ -56,12 +59,19 @@ export function ViewSettingsMenu({ tooltip, sections }: ViewSettingsMenuProps) {
                 leftSection={renderMenuCheck(item.active)}
                 onClick={item.onSelect}
                 disabled={item.disabled}
+                closeMenuOnClick={item.closeMenuOnClick}
               >
                 {item.label}
               </Menu.Item>
             ))}
           </div>
         ))}
+        {footer ? (
+          <>
+            {visibleSections.length > 0 ? <Menu.Divider /> : null}
+            <div className="view-settings-menu-footer">{footer}</div>
+          </>
+        ) : null}
       </Menu.Dropdown>
     </Menu>
   )

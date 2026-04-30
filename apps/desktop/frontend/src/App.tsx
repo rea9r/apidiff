@@ -119,8 +119,6 @@ function ActiveTabAppChrome({ tabsManager, guardedClose }: ActiveTabAppChromePro
       sidebar={slots.sidebar}
       headerActions={slots.headerActions}
       main={slots.main}
-      inspector={slots.inspector}
-      inspectorOpen={slots.inspectorOpen}
       tabBar={
         <TabBar
           tabs={tabs}

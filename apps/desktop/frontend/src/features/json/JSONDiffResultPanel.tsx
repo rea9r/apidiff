@@ -1,5 +1,5 @@
 import { Fragment, useRef } from 'react'
-import { ActionIcon, Tooltip } from '@mantine/core'
+import { ActionIcon, Stack, Text, Textarea, Tooltip } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import type { DiffResponse, JSONRichDiffItem } from '../../types'
 import { AIInlineSummary } from '../ai/AIInlineSummary'
@@ -73,6 +73,16 @@ export type JSONDiffResultPanelProps = {
   activeJSONDiffTextBlockId: string | null
   moveJSONDiff: (direction: 1 | -1) => void
   registerJSONSemanticDiffRowRef: (id: string) => (node: HTMLTableRowElement | null) => void
+  ignoreOrder: boolean
+  onToggleIgnoreOrder: () => void
+  outputFormat: string
+  onOutputFormatChange: (value: string) => void
+  textStyle: string
+  onTextStyleChange: (value: string) => void
+  patchTextStyleDisabled: boolean
+  ignorePathsDraft: string
+  onIgnorePathsDraftChange: (value: string) => void
+  onIgnorePathsCommit: (value: string) => void
 }
 
 function stringifyJSONValue(value: unknown): string {
@@ -263,6 +273,16 @@ export function JSONDiffResultPanel({
   activeJSONDiffTextBlockId,
   moveJSONDiff,
   registerJSONSemanticDiffRowRef,
+  ignoreOrder,
+  onToggleIgnoreOrder,
+  outputFormat,
+  onOutputFormatChange,
+  textStyle,
+  onTextStyleChange,
+  patchTextStyleDisabled,
+  ignorePathsDraft,
+  onIgnorePathsDraftChange,
+  onIgnorePathsCommit,
 }: JSONDiffResultPanelProps) {
   const raw = jsonResult ? renderResult(jsonResult) : ''
   const showDiff = jsonResultView === 'diff' && canRenderJSONDiff && !!jsonDiffTextItems
@@ -391,6 +411,60 @@ export function JSONDiffResultPanel({
                 tooltip="View settings"
                 sections={[
                   {
+                    title: 'Compare',
+                    items: [
+                      {
+                        key: 'json-compare-ignore-order',
+                        label: 'Ignore array order',
+                        active: ignoreOrder,
+                        onSelect: onToggleIgnoreOrder,
+                      },
+                    ],
+                  },
+                  {
+                    title: 'Output',
+                    items: [
+                      {
+                        key: 'json-output-text',
+                        label: 'Text',
+                        active: outputFormat === 'text',
+                        onSelect: () => onOutputFormatChange('text'),
+                      },
+                      {
+                        key: 'json-output-json',
+                        label: 'JSON',
+                        active: outputFormat === 'json',
+                        onSelect: () => onOutputFormatChange('json'),
+                      },
+                    ],
+                  },
+                  {
+                    title: 'Style',
+                    items: [
+                      {
+                        key: 'json-style-auto',
+                        label: 'Auto',
+                        active: textStyle === 'auto',
+                        disabled: outputFormat === 'json',
+                        onSelect: () => onTextStyleChange('auto'),
+                      },
+                      {
+                        key: 'json-style-patch',
+                        label: 'Patch',
+                        active: textStyle === 'patch',
+                        disabled: outputFormat === 'json' || patchTextStyleDisabled,
+                        onSelect: () => onTextStyleChange('patch'),
+                      },
+                      {
+                        key: 'json-style-semantic',
+                        label: 'Semantic',
+                        active: textStyle === 'semantic',
+                        disabled: outputFormat === 'json',
+                        onSelect: () => onTextStyleChange('semantic'),
+                      },
+                    ],
+                  },
+                  {
                     title: 'Display',
                     items: [
                       {
@@ -442,6 +516,26 @@ export function JSONDiffResultPanel({
                     ],
                   },
                 ]}
+                footer={
+                  <Stack gap={6}>
+                    <Text size="xs" c="dimmed">
+                      Ignore paths
+                    </Text>
+                    <Textarea
+                      size="xs"
+                      autosize
+                      minRows={3}
+                      maxRows={8}
+                      value={ignorePathsDraft}
+                      onChange={(e) => onIgnorePathsDraftChange(e.currentTarget.value)}
+                      onBlur={(e) => onIgnorePathsCommit(e.currentTarget.value)}
+                      placeholder={'user.updated_at\nmeta.request_id'}
+                    />
+                    <Text size="xs" c="dimmed">
+                      One canonical path per line (exact match).
+                    </Text>
+                  </Stack>
+                }
               />
             </>
           }

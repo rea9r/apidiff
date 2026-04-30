@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   Button,
   Group,
   Select,
@@ -50,17 +49,6 @@ export function HeaderRailPrimaryButton(props: any) {
           borderRadius: 'var(--xdiff-header-control-radius)',
         },
       }}
-    />
-  )
-}
-
-export function HeaderRailAction(props: any) {
-  return (
-    <ActionIcon
-      {...props}
-      variant={props.variant ?? 'default'}
-      size={HEADER_RAIL_HEIGHT}
-      radius="md"
     />
   )
 }

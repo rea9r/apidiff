@@ -8,8 +8,6 @@ type DiffHeaderActionsProps = {
   loading?: boolean
   diffDisabled?: boolean
   onDiff: () => void
-  optionsOpen: boolean
-  onToggleOptions: () => void
   recentItems: RecentTargetsMenuItem[]
   onClearRecent: () => void
 }
@@ -32,8 +30,6 @@ export function DesktopModeHeaderActions(props: DesktopModeHeaderActionsProps) {
         loading={props.loading}
         diffDisabled={props.diffDisabled}
         onDiff={props.onDiff}
-        optionsOpen={props.optionsOpen}
-        onToggleOptions={props.onToggleOptions}
         extraActions={
           <RecentTargetsMenu
             buttonLabel="Recent"

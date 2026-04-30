@@ -14,8 +14,7 @@ type UseDesktopTabModelOptions = {
 }
 
 export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptions) {
-  const { mode, setMode, diffOptionsOpened, setDiffOptionsOpened, onModeChange } =
-    useDesktopModeState()
+  const { mode, setMode, onModeChange } = useDesktopModeState()
   const { setSummaryLine, setOutput, loading, setLoading } = useDesktopRunUiState()
 
   // --- Domain models ---
@@ -111,8 +110,6 @@ export function useDesktopTabModel({ api, recentPairs }: UseDesktopTabModelOptio
     mode,
     setMode,
     onModeChange,
-    diffOptionsOpened,
-    setDiffOptionsOpened,
     loading,
     setLoading,
     setSummaryLine,

@@ -26,8 +26,7 @@ export function useDesktopAppModel({
   commit,
 }: UseDesktopAppModelOptions) {
   const tab = useDesktopTabModel({ api, recentPairs })
-  const { mode, setMode, onModeChange, diffOptionsOpened, setDiffOptionsOpened, loading } =
-    tab
+  const { mode, setMode, onModeChange, loading } = tab
   const { textModel, jsonModel, directoryModel } = tab
 
   useDesktopPersistence({
@@ -80,8 +79,6 @@ export function useDesktopAppModel({
   const { headerActions } = useDesktopHeaderActions({
     mode,
     loading,
-    diffOptionsOpened,
-    onToggleDiffOptions: () => setDiffOptionsOpened((prev) => !prev),
     jsonDiffDisabled: jsonModel.diffDisabled,
     directoryDiffDisabled: directoryModel.diffDisabled,
     onRun: tab.onRun,
@@ -101,12 +98,10 @@ export function useDesktopAppModel({
     setMode,
   })
 
-  const { layoutMode, sidebar, main, inspector, inspectorOpen, isDirty } = useDesktopShellModel({
+  const { layoutMode, sidebar, main, isDirty } = useDesktopShellModel({
     mode,
     setMode,
     loading,
-    diffOptionsOpened,
-    onCloseDiffOptions: () => setDiffOptionsOpened(false),
     jsonWorkflow: jsonModel.workflow,
     jsonViewState: jsonModel.viewState,
     textWorkflow: textModel.workflow,
@@ -141,8 +136,6 @@ export function useDesktopAppModel({
     sidebar,
     headerActions,
     main,
-    inspector,
-    inspectorOpen,
     tabLabel,
     isDirty,
   }

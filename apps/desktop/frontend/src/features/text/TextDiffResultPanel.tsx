@@ -69,6 +69,12 @@ export type TextDiffResultPanelProps = {
   onRedoAdopt?: () => void
   ignoreWhitespace: boolean
   onToggleIgnoreWhitespace: () => void
+  ignoreCase: boolean
+  onToggleIgnoreCase: () => void
+  ignoreEOL: boolean
+  onToggleIgnoreEOL: () => void
+  outputFormat: string
+  onOutputFormatChange: (value: string) => void
 }
 
 function buildTextSummaryBadgeItems(params: {
@@ -137,6 +143,12 @@ export function TextDiffResultPanel({
   onRedoAdopt,
   ignoreWhitespace,
   onToggleIgnoreWhitespace,
+  ignoreCase,
+  onToggleIgnoreCase,
+  ignoreEOL,
+  onToggleIgnoreEOL,
+  outputFormat,
+  onOutputFormatChange,
 }: TextDiffResultPanelProps) {
   const raw = textResult ? renderResult(textResult) : ''
   const hasTextResult = !!textResult
@@ -291,6 +303,46 @@ export function TextDiffResultPanel({
                 tooltip="View settings"
                 sections={[
                   {
+                    title: 'Compare',
+                    items: [
+                      {
+                        key: 'text-compare-ignore-whitespace',
+                        label: 'Ignore whitespace',
+                        active: ignoreWhitespace,
+                        onSelect: onToggleIgnoreWhitespace,
+                      },
+                      {
+                        key: 'text-compare-ignore-case',
+                        label: 'Ignore case',
+                        active: ignoreCase,
+                        onSelect: onToggleIgnoreCase,
+                      },
+                      {
+                        key: 'text-compare-ignore-eol',
+                        label: 'Ignore EOL',
+                        active: ignoreEOL,
+                        onSelect: onToggleIgnoreEOL,
+                      },
+                    ],
+                  },
+                  {
+                    title: 'Output',
+                    items: [
+                      {
+                        key: 'text-output-text',
+                        label: 'Text',
+                        active: outputFormat === 'text',
+                        onSelect: () => onOutputFormatChange('text'),
+                      },
+                      {
+                        key: 'text-output-json',
+                        label: 'JSON',
+                        active: outputFormat === 'json',
+                        onSelect: () => onOutputFormatChange('json'),
+                      },
+                    ],
+                  },
+                  {
                     title: 'Display',
                     items: [
                       {
@@ -345,6 +397,7 @@ export function TextDiffResultPanel({
                                 ? 'Collapse unchanged'
                                 : 'Expand unchanged',
                               active: false,
+                              closeMenuOnClick: true,
                               onSelect: toggleAllTextUnchangedSections,
                             },
                           ]

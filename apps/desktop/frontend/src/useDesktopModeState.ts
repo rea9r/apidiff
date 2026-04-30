@@ -43,7 +43,6 @@ function getInitialMode(): Mode {
 
 export function useDesktopModeState() {
   const [mode, setMode] = useState<Mode>(() => getInitialMode())
-  const [diffOptionsOpened, setDiffOptionsOpened] = useState(false)
 
   useEffect(() => {
     try {
@@ -55,16 +54,11 @@ export function useDesktopModeState() {
 
   const onModeChange = (nextMode: Mode) => {
     setMode(nextMode)
-    if (nextMode === 'directory') {
-      setDiffOptionsOpened(false)
-    }
   }
 
   return {
     mode,
     setMode,
-    diffOptionsOpened,
-    setDiffOptionsOpened,
     onModeChange,
   }
 }

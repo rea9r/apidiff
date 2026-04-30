@@ -19,8 +19,6 @@ type AppChromeProps = {
   sidebar?: ReactNode
   main: ReactNode
   headerActions?: ReactNode
-  inspector?: ReactNode
-  inspectorOpen?: boolean
   tabBar?: ReactNode
 }
 
@@ -54,8 +52,6 @@ export function AppChrome({
   sidebar,
   main,
   headerActions,
-  inspector,
-  inspectorOpen = false,
   tabBar,
 }: AppChromeProps) {
   const isSidebarLayout = layoutMode === 'sidebar'
@@ -241,16 +237,7 @@ export function AppChrome({
 
       <AppShell.Main>
         {tabBar}
-        {isSidebarLayout ? (
-          main
-        ) : (
-          <div className={`workspace-shell ${inspectorOpen ? 'with-inspector' : ''}`}>
-            <div className="workspace-main">{main}</div>
-            {inspectorOpen && inspector ? (
-              <aside className="workspace-inspector">{inspector}</aside>
-            ) : null}
-          </div>
-        )}
+        {isSidebarLayout ? main : <div className="workspace-shell">{main}</div>}
       </AppShell.Main>
 
       <KeyboardShortcutsHelp />

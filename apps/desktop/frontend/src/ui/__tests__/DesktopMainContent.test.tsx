@@ -66,6 +66,12 @@ const textResultProps = {
   moveTextDiff: noop,
   ignoreWhitespace: false,
   onToggleIgnoreWhitespace: noop,
+  ignoreCase: false,
+  onToggleIgnoreCase: noop,
+  ignoreEOL: false,
+  onToggleIgnoreEOL: noop,
+  outputFormat: 'text',
+  onOutputFormatChange: noop,
 }
 
 const jsonSourceProps = {
@@ -124,6 +130,16 @@ const jsonResultProps = {
   activeJSONDiffTextBlockId: null,
   moveJSONDiff: noop,
   registerJSONSemanticDiffRowRef: () => noop,
+  ignoreOrder: false,
+  onToggleIgnoreOrder: noop,
+  outputFormat: 'text',
+  onOutputFormatChange: noop,
+  textStyle: 'auto',
+  onTextStyleChange: noop,
+  patchTextStyleDisabled: false,
+  ignorePathsDraft: '',
+  onIgnorePathsDraftChange: noop,
+  onIgnorePathsCommit: noop,
 }
 
 const directoryItem: DirectoryDiffItem = {

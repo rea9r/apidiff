@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { ActionIcon, Tooltip } from '@mantine/core'
-import { IconChevronDown } from '@tabler/icons-react'
 import type {
   DiffDirectoriesResponse,
   Mode,
 } from './types'
 import { parseIgnorePaths } from './utils/appHelpers'
-import { DesktopDiffOptionsContent } from './ui/DesktopDiffOptionsContent'
 import { DesktopMainContent } from './ui/DesktopMainContent'
 import { useDirectoryDiffViewState } from './features/directory/useDirectoryDiffViewState'
 import { useDirectoryDiffWorkflow } from './features/directory/useDirectoryDiffWorkflow'
@@ -25,8 +22,6 @@ type DesktopShellModel = {
   layoutMode: 'workspace' | 'sidebar'
   sidebar: ReactNode | undefined
   main: ReactNode
-  inspector: ReactNode | undefined
-  inspectorOpen: boolean
   isDirty: boolean
 }
 
@@ -39,8 +34,6 @@ type UseDesktopShellModelArgs = {
   mode: Mode
   setMode: (mode: Mode) => void
   loading: boolean
-  diffOptionsOpened: boolean
-  onCloseDiffOptions: () => void
   jsonWorkflow: ReturnType<typeof useJSONDiffWorkflow>
   jsonViewState: ReturnType<typeof useJSONDiffViewState>
   textWorkflow: ReturnType<typeof useTextDiffWorkflow>
@@ -62,8 +55,6 @@ export function useDesktopShellModel({
   mode,
   setMode,
   loading,
-  diffOptionsOpened,
-  onCloseDiffOptions,
   jsonWorkflow,
   jsonViewState,
   textWorkflow,
@@ -81,39 +72,6 @@ export function useDesktopShellModel({
   directoryInteractions,
 }: UseDesktopShellModelArgs): DesktopShellModel {
   const isDiffCentricMode = mode === 'text' || mode === 'json'
-
-  const diffOptionsTitle =
-    mode === 'text' ? 'Text diff options' : 'JSON diff options'
-
-  const diffOptionsContent = (
-    <DesktopDiffOptionsContent
-      mode={mode}
-      jsonProps={{
-        ignoreOrder: jsonWorkflow.ignoreOrder,
-        onIgnoreOrderChange: jsonWorkflow.setIgnoreOrder,
-        outputFormat: jsonWorkflow.jsonCommon.outputFormat,
-        onOutputFormatChange: (value) => jsonWorkflow.updateJSONCommon('outputFormat', value),
-        textStyle: jsonWorkflow.jsonCommon.textStyle,
-        onTextStyleChange: (value) => jsonWorkflow.updateJSONCommon('textStyle', value),
-        patchTextStyleDisabled: jsonWorkflow.jsonPatchBlockedByFilters,
-        ignorePathsDraft: jsonWorkflow.jsonIgnorePathsDraft,
-        onIgnorePathsDraftChange: jsonWorkflow.setJSONIgnorePathsDraft,
-        onIgnorePathsCommit: (value) =>
-          jsonWorkflow.updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
-      }}
-      textProps={{
-        outputFormat: textWorkflow.textCommon.outputFormat,
-        onOutputFormatChange: (value) => textWorkflow.updateTextCommon('outputFormat', value),
-        ignoreWhitespace: textWorkflow.textCommon.ignoreWhitespace,
-        onIgnoreWhitespaceChange: (checked) =>
-          textWorkflow.updateTextCommon('ignoreWhitespace', checked),
-        ignoreCase: textWorkflow.textCommon.ignoreCase,
-        onIgnoreCaseChange: (checked) => textWorkflow.updateTextCommon('ignoreCase', checked),
-        ignoreEOL: textWorkflow.textCommon.ignoreEOL,
-        onIgnoreEOLChange: (checked) => textWorkflow.updateTextCommon('ignoreEOL', checked),
-      }}
-    />
-  )
 
   const sidebar = undefined
 
@@ -325,6 +283,21 @@ export function useDesktopShellModel({
             'ignoreWhitespace',
             !textWorkflow.textCommon.ignoreWhitespace,
           ),
+        ignoreCase: textWorkflow.textCommon.ignoreCase,
+        onToggleIgnoreCase: () =>
+          textWorkflow.updateTextCommon(
+            'ignoreCase',
+            !textWorkflow.textCommon.ignoreCase,
+          ),
+        ignoreEOL: textWorkflow.textCommon.ignoreEOL,
+        onToggleIgnoreEOL: () =>
+          textWorkflow.updateTextCommon(
+            'ignoreEOL',
+            !textWorkflow.textCommon.ignoreEOL,
+          ),
+        outputFormat: textWorkflow.textCommon.outputFormat,
+        onOutputFormatChange: (value) =>
+          textWorkflow.updateTextCommon('outputFormat', value),
       }}
       jsonSourceProps={{
         oldSourcePath: jsonWorkflow.jsonOldSourcePath,
@@ -382,6 +355,19 @@ export function useDesktopShellModel({
         activeJSONDiffTextBlockId: jsonViewState.activeJSONDiffTextBlockId,
         moveJSONDiff: jsonViewState.moveJSONDiff,
         registerJSONSemanticDiffRowRef: jsonViewState.registerJSONSemanticDiffRowRef,
+        ignoreOrder: jsonWorkflow.ignoreOrder,
+        onToggleIgnoreOrder: () => jsonWorkflow.setIgnoreOrder(!jsonWorkflow.ignoreOrder),
+        outputFormat: jsonWorkflow.jsonCommon.outputFormat,
+        onOutputFormatChange: (value) =>
+          jsonWorkflow.updateJSONCommon('outputFormat', value),
+        textStyle: jsonWorkflow.jsonCommon.textStyle,
+        onTextStyleChange: (value) =>
+          jsonWorkflow.updateJSONCommon('textStyle', value),
+        patchTextStyleDisabled: jsonWorkflow.jsonPatchBlockedByFilters,
+        ignorePathsDraft: jsonWorkflow.jsonIgnorePathsDraft,
+        onIgnorePathsDraftChange: jsonWorkflow.setJSONIgnorePathsDraft,
+        onIgnorePathsCommit: (value) =>
+          jsonWorkflow.updateJSONCommon('ignorePaths', parseIgnorePaths(value)),
       }}
       directoryResultProps={{
         directoryResult,
@@ -421,25 +407,6 @@ export function useDesktopShellModel({
     />
   )
 
-  const inspector = isDiffCentricMode ? (
-    <div className="workspace-inspector-panel">
-      <div className="workspace-inspector-header">
-        <h3>{diffOptionsTitle}</h3>
-        <Tooltip label="Close options">
-          <ActionIcon
-            variant="default"
-            size={26}
-            aria-label="Close options"
-            onClick={onCloseDiffOptions}
-          >
-            <IconChevronDown size={14} />
-          </ActionIcon>
-        </Tooltip>
-      </div>
-      <div className="workspace-inspector-body">{diffOptionsContent}</div>
-    </div>
-  ) : undefined
-
   return {
     layoutMode:
       isDiffCentricMode || mode === 'directory'
@@ -447,8 +414,6 @@ export function useDesktopShellModel({
         : 'sidebar',
     sidebar,
     main,
-    inspector,
-    inspectorOpen: isDiffCentricMode && diffOptionsOpened,
     isDirty: textAdoptUndoStack.length > 0,
   }
 }
