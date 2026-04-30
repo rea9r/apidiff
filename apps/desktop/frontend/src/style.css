@@ -2342,6 +2342,8 @@ button {
   max-width: 320px;
   padding: var(--xdiff-space-2) var(--xdiff-control-padding-x-tight);
   font-size: var(--xdiff-text-sm);
+  line-height: var(--xdiff-row-line-height);
+  border: 1px solid var(--xdiff-viewer-border);
 }
 
 .directory-view-mode-toggle {
