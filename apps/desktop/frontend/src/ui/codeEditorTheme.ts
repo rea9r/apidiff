@@ -57,22 +57,22 @@ export function createDiffCodeHighlightStyle(colorScheme: DiffEditorColorScheme)
   const palette =
     colorScheme === 'dark'
       ? {
-          keyword: '#82a7d8',
-          string: '#8db487',
-          number: '#a595cf',
-          atom: '#86abc9',
-          property: '#c2ccdc',
-          punctuation: '#7e8ca5',
-          comment: '#6d7a90',
+          keyword: '#ff7b72',
+          string: '#a5d6ff',
+          number: '#79c0ff',
+          atom: '#79c0ff',
+          property: '#ffa657',
+          punctuation: '#e6edf3',
+          comment: '#8b949e',
         }
       : {
-          keyword: '#4e73a8',
-          string: '#537f56',
-          number: '#7a68a8',
-          atom: '#4f718e',
-          property: '#353c48',
-          punctuation: '#7f8898',
-          comment: '#8a93a5',
+          keyword: '#cf222e',
+          string: '#0a3069',
+          number: '#0550ae',
+          atom: '#0550ae',
+          property: '#953800',
+          punctuation: '#1f2328',
+          comment: '#6e7781',
         }
 
   const style = HighlightStyle.define([
