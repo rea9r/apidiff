@@ -191,7 +191,7 @@ export function AppChrome({
               />
             ) : null}
             <HeaderRailSelect
-              w={220}
+              w={145}
               className="xdiff-header-mode-select"
               data={MODE_OPTIONS}
               withCheckIcon={false}

@@ -212,7 +212,7 @@ body {
 }
 
 .xdiff-header-mode-select {
-  min-width: 220px;
+  min-width: 0;
 }
 
 .menu-check-icon {
