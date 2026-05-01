@@ -2,6 +2,7 @@ package desktopapi
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/rea9r/xdiff/internal/runner"
 )
+
+const maxTextFileSize = 50 * 1024 * 1024 // 50 MiB
 
 func (s *Service) DiffText(req DiffTextRequest) (*DiffResponse, error) {
 	opts := runner.DiffOptions{
@@ -41,7 +44,11 @@ func (s *Service) LoadTextFile(req LoadTextFileRequest) (*LoadTextFileResponse, 
 		return nil, fmt.Errorf("path is required")
 	}
 
-	body, err := os.ReadFile(path) //nolint:gosec // G304: path is user-provided desktop input
+	if err := guardLoadTextFile(path); err != nil {
+		return nil, err
+	}
+
+	body, err := os.ReadFile(path) //nolint:gosec // G304: path is validated by guardLoadTextFile
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +72,17 @@ func (s *Service) SaveTextFile(req SaveTextFileRequest) (*SaveTextFileResponse, 
 		return nil, fmt.Errorf("path is required")
 	}
 
+	if err := guardSaveTextFile(path); err != nil {
+		return nil, err
+	}
+
 	enc := normalizeEncoding(req.Encoding)
 	body, err := encodeBytes(req.Content, enc)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := os.WriteFile(path, body, 0o600); err != nil { //nolint:gosec // G304: path is user-provided desktop input
+	if err := os.WriteFile(path, body, 0o600); err != nil { //nolint:gosec // G304: path is validated by guardSaveTextFile
 		return nil, err
 	}
 
@@ -79,6 +90,40 @@ func (s *Service) SaveTextFile(req SaveTextFileRequest) (*SaveTextFileResponse, 
 		Path:     path,
 		Encoding: enc,
 	}, nil
+}
+
+func guardLoadTextFile(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to load symbolic link: %s", path)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("not a regular file: %s", path)
+	}
+	if info.Size() > maxTextFileSize {
+		return fmt.Errorf("file is too large to load: %d bytes (limit %d bytes)", info.Size(), int64(maxTextFileSize))
+	}
+	return nil
+}
+
+func guardSaveTextFile(path string) error {
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to save through symbolic link: %s", path)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("not a regular file: %s", path)
+	}
+	return nil
 }
 
 func normalizeEncoding(value string) string {
