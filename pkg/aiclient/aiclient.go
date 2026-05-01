@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -173,14 +173,14 @@ func (c *Client) chatStreamOllama(ctx context.Context, baseURL string, req ChatR
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	log.Printf("[aiclient] POST %s/api/chat model=%s msgs=%d keep_alive=%q", baseURL, req.Model, len(req.Messages), req.KeepAlive)
+	slog.Info("aiclient.chat.post", "url", baseURL+"/api/chat", "model", req.Model, "msgs", len(req.Messages), "keep_alive", req.KeepAlive)
 	resp, err := c.pullHTTP.Do(httpReq)
 	if err != nil {
-		log.Printf("[aiclient] /api/chat Do error: %v", err)
+		slog.Error("aiclient.chat.do_error", "err", err)
 		return "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	log.Printf("[aiclient] /api/chat status=%d", resp.StatusCode)
+	slog.Debug("aiclient.chat.status", "status", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := io.ReadAll(resp.Body)
@@ -206,7 +206,7 @@ func (c *Client) chatStreamOllama(ctx context.Context, baseURL string, req ChatR
 			if len(preview) > 200 {
 				preview = preview[:200] + "..."
 			}
-			log.Printf("[aiclient] line #%d: %s", lineCount, preview)
+			slog.Debug("aiclient.chat.line", "n", lineCount, "preview", preview)
 		}
 		var line struct {
 			Message struct {
@@ -225,7 +225,7 @@ func (c *Client) chatStreamOllama(ctx context.Context, baseURL string, req ChatR
 		if line.Message.Thinking != "" {
 			thinkingCount++
 			if thinkingCount > maxThinkingChunks {
-				log.Printf("[aiclient] thinking watchdog tripped at %d chunks; aborting", thinkingCount)
+				slog.Warn("aiclient.chat.thinking_watchdog", "chunks", thinkingCount)
 				return full.String(), fmt.Errorf("reasoning loop detected after %d thinking tokens — try a smaller diff or a larger model", thinkingCount)
 			}
 			if onThinking != nil {
@@ -244,10 +244,10 @@ func (c *Client) chatStreamOllama(ctx context.Context, baseURL string, req ChatR
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("[aiclient] scanner err lines=%d total=%d: %v", lineCount, full.Len(), err)
+		slog.Error("aiclient.chat.scanner_err", "lines", lineCount, "total", full.Len(), "err", err)
 		return full.String(), err
 	}
-	log.Printf("[aiclient] /api/chat finished lines=%d total=%d done=%v ctxErr=%v", lineCount, full.Len(), doneSent, ctx.Err())
+	slog.Info("aiclient.chat.finished", "lines", lineCount, "total", full.Len(), "done", doneSent, "ctx_err", ctx.Err())
 	// Some HTTP transports translate context cancellation into io.EOF when
 	// reading the response body, which bufio.Scanner reports as no error.
 	// Surface the context error explicitly so callers (and users) see why the

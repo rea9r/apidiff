@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/rea9r/xdiff/pkg/desktopapi"
 	"github.com/wailsapp/wails/v2"
@@ -71,14 +72,14 @@ func (a *App) ExplainDiffStream(req desktopapi.ExplainDiffStreamRequest) (*deskt
 	thinkingEvent := "ai-explain-thinking-" + streamID
 	chunkCount := 0
 	thinkingCount := 0
-	log.Printf("[ai] explain stream start event=%s model=%s", chunkEvent, req.Model)
+	slog.Info("ai.explain.stream.start", "event", chunkEvent, "model", req.Model)
 	onChunk := func(chunk string) {
 		if a.ctx == nil || streamID == "" {
 			return
 		}
 		chunkCount++
 		if chunkCount <= 3 || chunkCount%20 == 0 {
-			log.Printf("[ai] emit chunk #%d len=%d", chunkCount, len(chunk))
+			slog.Debug("ai.explain.stream.chunk", "n", chunkCount, "len", len(chunk))
 		}
 		runtime.EventsEmit(a.ctx, chunkEvent, chunk)
 	}
@@ -88,7 +89,7 @@ func (a *App) ExplainDiffStream(req desktopapi.ExplainDiffStreamRequest) (*deskt
 		}
 		thinkingCount++
 		if thinkingCount <= 3 || thinkingCount%50 == 0 {
-			log.Printf("[ai] emit thinking #%d len=%d", thinkingCount, len(chunk))
+			slog.Debug("ai.explain.stream.thinking", "n", thinkingCount, "len", len(chunk))
 		}
 		runtime.EventsEmit(a.ctx, thinkingEvent, chunk)
 	}
@@ -102,7 +103,7 @@ func (a *App) ExplainDiffStream(req desktopapi.ExplainDiffStreamRequest) (*deskt
 	if resp != nil {
 		respErr = resp.Error
 	}
-	log.Printf("[ai] explain stream done chunks=%d thinking=%d resp.err=%q go.err=%v", chunkCount, thinkingCount, respErr, err)
+	slog.Info("ai.explain.stream.done", "chunks", chunkCount, "thinking", thinkingCount, "resp_err", respErr, "go_err", err)
 	return resp, err
 }
 
@@ -198,6 +199,8 @@ func (a *App) pickFile(title string, filters []runtime.FileFilter) (string, erro
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})))
+
 	app := NewApp()
 
 	err := wails.Run(&options.App{
@@ -218,6 +221,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("xdiff desktop failed to start: %v", err)
+		slog.Error("desktop.start.fatal", "err", err)
+		os.Exit(1)
 	}
 }
