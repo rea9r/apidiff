@@ -102,21 +102,21 @@ export function useDesktopAppModel({
     mode,
     setMode,
     loading,
-    jsonWorkflow: jsonModel.workflow,
-    jsonViewState: jsonModel.viewState,
-    textWorkflow: textModel.workflow,
-    textViewState: textModel.viewState,
-    directoryLeftRoot: directoryModel.state.directoryLeftRoot,
-    directoryRightRoot: directoryModel.state.directoryRightRoot,
-    directoryNameFilter: directoryModel.state.directoryNameFilter,
-    setDirectoryNameFilter: directoryModel.state.setDirectoryNameFilter,
-    directoryCurrentPath: directoryModel.state.directoryCurrentPath,
-    directoryResult: directoryModel.state.directoryResult,
-    directoryStatus: directoryModel.state.directoryStatus,
-    directoryViewState: directoryModel.viewState,
-    directoryWorkflow: directoryModel.workflow,
-    directoryChildDiffActions: directoryModel.childDiffActions,
-    directoryInteractions: directoryModel.interactions,
+    text: {
+      workflow: textModel.workflow,
+      viewState: textModel.viewState,
+    },
+    json: {
+      workflow: jsonModel.workflow,
+      viewState: jsonModel.viewState,
+    },
+    directory: {
+      state: directoryModel.state,
+      viewState: directoryModel.viewState,
+      workflow: directoryModel.workflow,
+      childDiffActions: directoryModel.childDiffActions,
+      interactions: directoryModel.interactions,
+    },
   })
 
   const tabLabel = deriveTabLabel({

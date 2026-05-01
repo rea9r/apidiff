@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type {
-  DiffDirectoriesResponse,
-  Mode,
-} from './types'
+import type { Mode } from './types'
 import { parseIgnorePaths } from './utils/appHelpers'
 import { DesktopMainContent } from './ui/DesktopMainContent'
 import { useDirectoryDiffViewState } from './features/directory/useDirectoryDiffViewState'
 import { useDirectoryDiffWorkflow } from './features/directory/useDirectoryDiffWorkflow'
 import { useDirectoryDiffChildActions } from './features/directory/useDirectoryDiffChildActions'
 import { useDirectoryDiffInteractions } from './features/directory/useDirectoryDiffInteractions'
+import { useDirectoryDiffState } from './useDirectoryDiffState'
 import { useTextDiffViewState } from './features/text/useTextDiffViewState'
 import { useTextDiffWorkflow } from './features/text/useTextDiffWorkflow'
 import { applyChangeBlockToNew, applyChangeBlockToOld } from './features/text/textDiff'
@@ -34,42 +32,44 @@ type UseDesktopShellModelArgs = {
   mode: Mode
   setMode: (mode: Mode) => void
   loading: boolean
-  jsonWorkflow: ReturnType<typeof useJSONDiffWorkflow>
-  jsonViewState: ReturnType<typeof useJSONDiffViewState>
-  textWorkflow: ReturnType<typeof useTextDiffWorkflow>
-  textViewState: ReturnType<typeof useTextDiffViewState>
-  directoryLeftRoot: string
-  directoryRightRoot: string
-  directoryNameFilter: string
-  setDirectoryNameFilter: (value: string) => void
-  directoryCurrentPath: string
-  directoryResult: DiffDirectoriesResponse | null
-  directoryStatus: string
-  directoryViewState: ReturnType<typeof useDirectoryDiffViewState>
-  directoryWorkflow: ReturnType<typeof useDirectoryDiffWorkflow>
-  directoryChildDiffActions: ReturnType<typeof useDirectoryDiffChildActions>
-  directoryInteractions: ReturnType<typeof useDirectoryDiffInteractions>
+  text: {
+    workflow: ReturnType<typeof useTextDiffWorkflow>
+    viewState: ReturnType<typeof useTextDiffViewState>
+  }
+  json: {
+    workflow: ReturnType<typeof useJSONDiffWorkflow>
+    viewState: ReturnType<typeof useJSONDiffViewState>
+  }
+  directory: {
+    state: ReturnType<typeof useDirectoryDiffState>
+    viewState: ReturnType<typeof useDirectoryDiffViewState>
+    workflow: ReturnType<typeof useDirectoryDiffWorkflow>
+    childDiffActions: ReturnType<typeof useDirectoryDiffChildActions>
+    interactions: ReturnType<typeof useDirectoryDiffInteractions>
+  }
 }
 
 export function useDesktopShellModel({
   mode,
   setMode,
   loading,
-  jsonWorkflow,
-  jsonViewState,
-  textWorkflow,
-  textViewState,
-  directoryLeftRoot,
-  directoryRightRoot,
-  directoryNameFilter,
-  setDirectoryNameFilter,
-  directoryCurrentPath,
-  directoryResult,
-  directoryStatus,
-  directoryViewState,
-  directoryWorkflow,
-  directoryChildDiffActions,
-  directoryInteractions,
+  text: { workflow: textWorkflow, viewState: textViewState },
+  json: { workflow: jsonWorkflow, viewState: jsonViewState },
+  directory: {
+    state: {
+      directoryLeftRoot,
+      directoryRightRoot,
+      directoryNameFilter,
+      setDirectoryNameFilter,
+      directoryCurrentPath,
+      directoryResult,
+      directoryStatus,
+    },
+    viewState: directoryViewState,
+    workflow: directoryWorkflow,
+    childDiffActions: directoryChildDiffActions,
+    interactions: directoryInteractions,
+  },
 }: UseDesktopShellModelArgs): DesktopShellModel {
   const isDiffCentricMode = mode === 'text' || mode === 'json'
 
