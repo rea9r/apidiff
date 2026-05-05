@@ -44,14 +44,13 @@ Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.y
 The app is ad-hoc signed (so it launches on Apple Silicon) but not signed with a Developer ID and not notarized. macOS will refuse to open it as "damaged" until you remove the quarantine attribute it adds to internet downloads:
 
 ```bash
-cd ~/Downloads
 unzip xdiff-vX.Y.Z-darwin-arm64.zip
 mv xdiff-desktop.app /Applications/
 xattr -cr /Applications/xdiff-desktop.app
 open /Applications/xdiff-desktop.app
 ```
 
-The `xattr -cr` step is a one-time action you trade for not paying the $99/year Apple Developer Program fee.
+This `xattr -cr` is a one-time step. The app isn't notarized through the Apple Developer Program ($99/year), so macOS treats the download as untrusted by default — sorry for the extra step.
 
 ## License
 
