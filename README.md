@@ -5,6 +5,8 @@
 
 Interactive desktop GUI for diffing text, JSON, and directories. Built with Wails (Go) + React + Mantine.
 
+![xdiff demo](docs/screenshots/demo.gif)
+
 ## What it does
 
 - **Text diff** — paste or load files, semantic and patch views, line search, encoding selection.
@@ -43,6 +45,7 @@ Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.y
 The app is ad-hoc signed (so it launches on Apple Silicon) but not signed with a Developer ID and not notarized. macOS will refuse to open it as "damaged" until you remove the quarantine attribute it adds to internet downloads:
 
 ```bash
+cd ~/Downloads
 unzip xdiff-vX.Y.Z-darwin-arm64.zip
 mv xdiff-desktop.app /Applications/
 xattr -cr /Applications/xdiff-desktop.app
