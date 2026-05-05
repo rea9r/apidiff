@@ -34,3 +34,24 @@ if (!window.ResizeObserver) {
     value: ResizeObserverMock,
   })
 }
+
+// jsdom does not implement Element.scrollIntoView; stub it so effects that
+// scroll the active tab/row into view don't throw.
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = vi.fn()
+}
+
+// Wails injects `window.runtime` at runtime; in jsdom we stub the methods
+// the app actually calls so component effects don't throw on mount.
+if (!(window as unknown as { runtime?: unknown }).runtime) {
+  Object.defineProperty(window, 'runtime', {
+    writable: true,
+    value: {
+      OnFileDrop: vi.fn(),
+      OnFileDropOff: vi.fn(),
+      EventsOn: vi.fn(() => () => {}),
+      EventsOff: vi.fn(),
+      WindowToggleMaximise: vi.fn(),
+    },
+  })
+}
