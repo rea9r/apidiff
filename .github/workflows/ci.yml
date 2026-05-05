@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   go-test:
-    name: Go test
+    name: Go Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -28,10 +28,10 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build
+      - name: Build packages
         run: go build ./...
 
-      - name: Run unit tests
+      - name: Run tests with race detector
         run: go test -race -coverprofile=coverage.out ./...
 
       - name: Upload coverage artifact
@@ -41,7 +41,7 @@ jobs:
           path: coverage.out
 
   frontend-test:
-    name: Desktop frontend
+    name: Desktop Frontend Tests
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
@@ -87,17 +87,17 @@ jobs:
         working-directory: apps/desktop
         run: '"$(go env GOPATH)/bin/wails" generate module -tags wailsbindings'
 
-      - name: Run frontend tests
+      - name: Run tests
         run: npm run test:run
 
-      - name: Lint dead code
+      - name: Check for dead code
         run: npm run lint:dead
 
-      - name: Build frontend
+      - name: Build production bundle
         run: npm run build
 
   golangci:
-    name: golangci-lint
+    name: Go Lint
     runs-on: ubuntu-latest
 
     steps:
