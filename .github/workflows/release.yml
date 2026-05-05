@@ -57,6 +57,9 @@ jobs:
           GOFLAGS: -trimpath
         run: wails build -clean -platform ${{ matrix.wails_platform }}
 
+      - name: Ad-hoc codesign (arm64 needs a signature to launch; not a trust statement)
+        run: codesign --force --deep --sign - build/bin/xdiff-desktop.app
+
       - name: Package macOS artifact
         run: |
           cd build/bin

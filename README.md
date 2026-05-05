@@ -36,7 +36,20 @@ CI runs the same `go test`, the desktop frontend tests/build, and `golangci-lint
 
 ## Releases
 
-Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.yml), which builds the desktop app for macOS (arm64) and publishes a draft GitHub Release with the `.app` zip attached. macOS builds are currently unsigned — see the TODO in `release.yml` for the codesign / notarize wiring. Intel macOS / Windows / Linux can be added to the matrix later.
+Tagged commits matching `v*` trigger [`release.yml`](.github/workflows/release.yml), which builds the desktop app for macOS (arm64) and publishes a draft GitHub Release with the `.app` zip attached. Intel macOS / Windows / Linux can be added to the matrix later.
+
+### Installing the macOS build
+
+The app is ad-hoc signed (so it launches on Apple Silicon) but not signed with a Developer ID and not notarized. macOS will refuse to open it as "damaged" until you remove the quarantine attribute it adds to internet downloads:
+
+```bash
+unzip xdiff-vX.Y.Z-darwin-arm64.zip
+mv xdiff-desktop.app /Applications/
+xattr -cr /Applications/xdiff-desktop.app
+open /Applications/xdiff-desktop.app
+```
+
+The `xattr -cr` step is a one-time action you trade for not paying the $99/year Apple Developer Program fee.
 
 ## License
 
